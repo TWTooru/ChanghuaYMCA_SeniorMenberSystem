@@ -1,0 +1,21 @@
+.venv/
+node_modules/
+__pycache__/
+*.pyc
+.superpowers/
+docs/superpowers/
+.idea/
+.vscode/
+*.log
+
+# Local/private data artifacts
+*.db
+*.db.bak
+students.db*
+data/*.xlsx
+data/*.xls
+dashboard/public/*.xlsx
+dashboard/src/data.json
+exports/
+*.export.xlsx
+*_export.xlsx
