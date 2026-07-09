@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { cleanCourseName, cleanDate, cleanInt, cleanScore, cleanStr, extractSeasonNum } from './excelImport'
+import {
+  cleanCourseName,
+  cleanDate,
+  cleanInt,
+  cleanScore,
+  cleanStr,
+  EXCEL_IMPORT_LIMITS,
+  extractSeasonNum,
+  validateWorkbookForImport
+} from './excelImport'
 
 describe('excel import helpers', () => {
   it('cleans primitive cell values', () => {
@@ -32,5 +41,36 @@ describe('excel import helpers', () => {
     expect(extractSeasonNum('第十五期退費')).toBe(15)
     expect(extractSeasonNum('第3季')).toBe(3)
     expect(extractSeasonNum('未知')).toBe(-1)
+  })
+})
+
+describe('validateWorkbookForImport', () => {
+  it('rejects files larger than the configured limit', () => {
+    expect(() => validateWorkbookForImport({
+      fileSize: EXCEL_IMPORT_LIMITS.maxFileBytes + 1,
+      workbook: { SheetNames: [], Sheets: {} }
+    })).toThrow('Excel file is too large')
+  })
+
+  it('rejects workbooks with too many sheets', () => {
+    const sheetNames = Array.from({ length: EXCEL_IMPORT_LIMITS.maxSheets + 1 }, (_, index) => `Sheet ${index}`)
+
+    expect(() => validateWorkbookForImport({
+      fileSize: 100,
+      workbook: { SheetNames: sheetNames, Sheets: {} }
+    })).toThrow('Excel workbook has too many sheets')
+  })
+
+  it('rejects sheets with too many rows', () => {
+    const rows = Array.from({ length: EXCEL_IMPORT_LIMITS.maxRowsPerSheet + 1 }, () => ({}))
+
+    expect(() => validateWorkbookForImport({
+      fileSize: 100,
+      workbook: {
+        SheetNames: ['Sheet 1'],
+        Sheets: { 'Sheet 1': rows }
+      },
+      getRows: (_sheet) => rows
+    })).toThrow('Excel sheet has too many rows')
   })
 })

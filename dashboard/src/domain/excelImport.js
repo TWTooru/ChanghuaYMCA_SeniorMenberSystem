@@ -89,3 +89,29 @@ export function extractSeasonNum(value) {
   const matched = CHINESE_SEASON_NUMBERS.find(([label]) => season.includes(label))
   return matched ? matched[1] : -1
 }
+
+export const EXCEL_IMPORT_LIMITS = {
+  maxFileBytes: 5 * 1024 * 1024,
+  maxSheets: 25,
+  maxRowsPerSheet: 10000
+}
+
+export function validateWorkbookForImport({ fileSize, workbook, getRows }, limits = EXCEL_IMPORT_LIMITS) {
+  if (fileSize > limits.maxFileBytes) {
+    throw new Error(`Excel file is too large. Maximum size is ${Math.round(limits.maxFileBytes / 1024 / 1024)} MB.`)
+  }
+
+  const sheetNames = workbook?.SheetNames || []
+  if (sheetNames.length > limits.maxSheets) {
+    throw new Error(`Excel workbook has too many sheets. Maximum sheet count is ${limits.maxSheets}.`)
+  }
+
+  if (getRows) {
+    for (const sheetName of sheetNames) {
+      const rows = getRows(workbook.Sheets[sheetName])
+      if (rows.length > limits.maxRowsPerSheet) {
+        throw new Error(`Excel sheet has too many rows. Maximum row count per sheet is ${limits.maxRowsPerSheet}.`)
+      }
+    }
+  }
+}

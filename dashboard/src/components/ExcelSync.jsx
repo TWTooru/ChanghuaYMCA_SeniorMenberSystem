@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabaseClient';
 import { Upload } from 'lucide-react';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
-import { cleanCourseName, cleanDate, cleanInt, cleanScore, cleanStr, extractSeasonNum } from '../domain/excelImport';
+import { cleanCourseName, cleanDate, cleanInt, cleanScore, cleanStr, extractSeasonNum, validateWorkbookForImport } from '../domain/excelImport';
 
 const MySwal = withReactContent(Swal);
 
@@ -33,6 +33,11 @@ export default function ExcelSync({ onSyncComplete }) {
 
       const data = await file.arrayBuffer();
       const workbook = XLSX.read(data, { type: 'array' });
+      validateWorkbookForImport({
+        fileSize: file.size,
+        workbook,
+        getRows: sheet => XLSX.utils.sheet_to_json(sheet, { defval: null })
+      });
       const sheets = workbook.SheetNames;
       
       const seasonSheets = sheets.filter(s => (s.includes('季') || s.includes('期')) && !s.includes('退費'));
