@@ -5,7 +5,6 @@ stable
 as $$
   select coalesce(
     nullif(auth.jwt() -> 'app_metadata' ->> 'app_role', ''),
-    nullif(auth.jwt() -> 'user_metadata' ->> 'app_role', ''),
     'viewer'
   );
 $$;

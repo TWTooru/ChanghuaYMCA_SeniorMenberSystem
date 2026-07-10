@@ -31,6 +31,10 @@ export default function ExcelSync({ onSyncComplete }) {
         throw new Error("權限不足：請先登入後再執行同步操作 (Authentication failed).");
       }
 
+      validateWorkbookForImport({
+        fileSize: file.size,
+        workbook: { SheetNames: [], Sheets: {} }
+      });
       const data = await file.arrayBuffer();
       const workbook = XLSX.read(data, { type: 'array' });
       validateWorkbookForImport({
