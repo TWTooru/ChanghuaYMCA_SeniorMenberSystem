@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { X } from 'lucide-react'
-import { supabase } from '../lib/supabaseClient'
-import { createEnrollmentWithCourses } from '../services/enrollmentService'
+import { supabase } from '../../lib/supabaseClient'
+import { createEnrollmentWithCourses } from '../../services/enrollmentService'
 
 export default function AddEnrollModal({ student, onClose, onRefresh }) {
   const [newEnroll, setNewEnroll] = useState({

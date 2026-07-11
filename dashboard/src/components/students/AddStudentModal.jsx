@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
-import { supabase } from '../lib/supabaseClient'
-import { EDUCATION_OPTIONS } from '../domain/studentFields'
+import { supabase } from '../../lib/supabaseClient'
+import { EDUCATION_OPTIONS } from '../../domain/studentFields'
 
 export default function AddStudentModal({ students, onClose, onRefresh }) {
   const [newStudent, setNewStudent] = useState({

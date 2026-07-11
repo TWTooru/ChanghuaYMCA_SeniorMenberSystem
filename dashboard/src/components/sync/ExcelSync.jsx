@@ -1,10 +1,10 @@
 import React, { useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../../lib/supabaseClient';
 import { Upload } from 'lucide-react';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
-import { cleanCourseName, cleanDate, cleanInt, cleanScore, cleanStr, extractSeasonNum, validateWorkbookForImport } from '../domain/excelImport';
+import { cleanCourseName, cleanDate, cleanInt, cleanScore, cleanStr, extractSeasonNum, validateWorkbookForImport } from '../../domain/excelImport';
 
 const MySwal = withReactContent(Swal);
 

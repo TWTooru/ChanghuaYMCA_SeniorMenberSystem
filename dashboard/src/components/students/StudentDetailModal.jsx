@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { X, User, Activity, Edit2, Trash2 } from 'lucide-react'
-import ConfirmDialog from './ConfirmDialog'
-import { supabase } from '../lib/supabaseClient'
+import ConfirmDialog from '../common/ConfirmDialog'
+import { supabase } from '../../lib/supabaseClient'
 
 export default function StudentDetailModal({ student, enrollments, onClose, onAddEnrollment, onRefresh }) {
   const [isEditing, setIsEditing] = useState(false)

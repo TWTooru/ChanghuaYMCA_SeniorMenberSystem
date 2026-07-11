@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as XLSX from 'xlsx'
 import Swal from 'sweetalert2'
 import ExcelSync from './ExcelSync'
-import { EXCEL_IMPORT_LIMITS } from '../domain/excelImport'
+import { EXCEL_IMPORT_LIMITS } from '../../domain/excelImport'
 
 vi.mock('xlsx', () => ({
   read: vi.fn(() => ({ SheetNames: [], Sheets: {} })),
