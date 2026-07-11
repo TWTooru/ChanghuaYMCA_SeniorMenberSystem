@@ -455,6 +455,13 @@
   white-space: nowrap;
 }
 
+.data-table.enrollment-history-table .enrollment-history-note {
+  min-width: 280px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  vertical-align: top;
+}
+
 .data-table tr {
   transition: background-color 0.15s ease;
 }
