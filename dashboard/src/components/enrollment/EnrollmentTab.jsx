@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { Search, ChevronLeft, ChevronRight } from 'lucide-react'
+import { getStudentById } from '../../domain/studentRelations'
 
 export default function EnrollmentTab({ students, enrollments, onSelectStudent }) {
   const [historySearch, setHistorySearch] = useState('')
@@ -138,7 +139,7 @@ export default function EnrollmentTab({ students, enrollments, onSelectStudent }
                     key={`${e.student_id}-${e.season}-${idx}`}
                     className="clickable"
                     onClick={() => {
-                      const student = students.find(s => s.name === e.student_name)
+                      const student = getStudentById(students, e.student_id)
                       if (student && onSelectStudent) onSelectStudent(student)
                     }}
                   >

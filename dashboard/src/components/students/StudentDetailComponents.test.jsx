@@ -1,7 +1,8 @@
-import { fireEvent, render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import StudentInfoView from './StudentInfoView'
 import EnrollmentTimeline from '../enrollment/EnrollmentTimeline'
+import StudentDetailModal from './StudentDetailModal'
 
 const student = {
   student_id: 'S-001',
@@ -13,6 +14,7 @@ const student = {
 }
 
 describe('Student detail components', () => {
+  afterEach(cleanup)
   it('renders the student contact details', () => {
     render(<StudentInfoView student={student} />)
 
@@ -34,5 +36,25 @@ describe('Student detail components', () => {
     expect(screen.getByText('電腦課')).not.toBeNull()
     fireEvent.click(screen.getByRole('button', { name: /新增選課紀錄/ }))
     expect(onAddEnrollment).toHaveBeenCalledOnce()
+  })
+
+  it('shows only enrollments belonging to the selected student_id when names match', () => {
+    render(
+      <StudentDetailModal
+        student={{ ...student, student_id: 'S-002' }}
+        enrollments={[
+          { enrollment_id: 1, student_id: 'S-001', student_name: '王小明', season: '第十四期', courses: ['電腦課'] },
+          { enrollment_id: 2, student_id: 'S-002', student_name: '王小明', season: '第十五期', courses: ['手機課'] }
+        ]}
+        onClose={vi.fn()}
+        onAddEnrollment={vi.fn()}
+        onRefresh={vi.fn()}
+      />
+    )
+
+    expect(screen.getByText('第十五期')).not.toBeNull()
+    expect(screen.getByText('手機課')).not.toBeNull()
+    expect(screen.queryByText('第十四期')).toBeNull()
+    expect(screen.queryByText('電腦課')).toBeNull()
   })
 })
