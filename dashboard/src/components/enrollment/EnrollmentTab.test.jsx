@@ -132,4 +132,16 @@ describe('EnrollmentTab', () => {
       'enrollment-history-note'
     ])
   })
+
+  it('spans all history columns for an empty enrollment state', () => {
+    render(
+      <EnrollmentTab
+        students={[]}
+        enrollments={[]}
+        onSelectStudent={vi.fn()}
+      />
+    )
+
+    expect(screen.getByText('未找到選課歷程。').getAttribute('colspan')).toBe('7')
+  })
 })
