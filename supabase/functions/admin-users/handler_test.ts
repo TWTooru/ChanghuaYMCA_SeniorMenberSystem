@@ -8,6 +8,19 @@ type FakeDeps = HandlerDeps & {
   users: any[]
   auditLogs: any[]
   calls: Calls
+  insertedAudits: Record<string, unknown>[]
+  completedAudits: Array<{ id: string; status: 'success' | 'failure'; errorCode?: string }>
+}
+
+type FakeOptions = {
+  actorRole?: string
+  updateError?: boolean
+  inviteError?: boolean
+  deleteError?: boolean
+  resendError?: boolean
+  resetError?: boolean
+  insertAuditError?: boolean
+  completeAuditError?: boolean
 }
 
 function authUser(id: string, email: string, role: string) {
@@ -31,7 +44,16 @@ function request(body: unknown) {
   })
 }
 
-function fakeDeps({ actorRole = 'admin' }: { actorRole?: string } = {}): FakeDeps {
+function fakeDeps({
+  actorRole = 'admin',
+  updateError = false,
+  inviteError = false,
+  deleteError = false,
+  resendError = false,
+  resetError = false,
+  insertAuditError = false,
+  completeAuditError = false,
+}: FakeOptions = {}): FakeDeps {
   const calls: Calls = {
     getActor: 0,
     listUsers: 0,
@@ -49,6 +71,8 @@ function fakeDeps({ actorRole = 'admin' }: { actorRole?: string } = {}): FakeDep
     users: [],
     auditLogs: [],
     calls,
+    insertedAudits: [],
+    completedAudits: [],
     async getActor() {
       calls.getActor++
       return deps.actor
@@ -57,29 +81,38 @@ function fakeDeps({ actorRole = 'admin' }: { actorRole?: string } = {}): FakeDep
       calls.listUsers++
       return deps.users
     },
-    async inviteUser() {
+    async inviteUser(email) {
       calls.inviteUser++
-      return authUser('invited', 'invited@example.com', 'viewer')
+      if (inviteError) throw new Error('invite failed')
+      return authUser('invited', email, 'viewer')
     },
-    async updateUser() {
+    async updateUser(id, attributes) {
       calls.updateUser++
-      return authUser('updated', 'updated@example.com', 'viewer')
+      if (updateError) throw new Error('update failed')
+      return { ...authUser(id, 'updated@example.com', 'viewer'), ...attributes }
     },
     async deleteUser() {
       calls.deleteUser++
+      if (deleteError) throw new Error('delete failed')
     },
     async resendInvite() {
       calls.resendInvite++
+      if (resendError) throw new Error('resend failed')
     },
     async sendPasswordReset() {
       calls.sendPasswordReset++
+      if (resetError) throw new Error('reset failed')
     },
-    async insertAudit() {
+    async insertAudit(row) {
       calls.insertAudit++
+      if (insertAuditError) throw new Error('insert audit failed')
+      deps.insertedAudits.push(row)
       return { id: 'audit-1' }
     },
-    async completeAudit() {
+    async completeAudit(id, status, errorCode) {
       calls.completeAudit++
+      if (completeAuditError) throw new Error('complete audit failed')
+      deps.completedAudits.push({ id, status, errorCode })
     },
     async listAuditLogs() {
       calls.listAuditLogs++
@@ -94,6 +127,7 @@ Deno.test('rejects a stale admin JWT when the fresh actor is editor', async () =
   const response = await createAdminUsersHandler(deps)(request({ action: 'list_users' }))
   assertEquals(response.status, 403)
   assertEquals(deps.calls.listUsers, 0)
+  assertEquals(deps.calls.insertAudit, 0)
 })
 
 Deno.test('lists only safe user fields for an admin', async () => {
@@ -116,6 +150,7 @@ Deno.test('rejects a request without a bearer token', async () => {
   }))
   assertEquals(response.status, 401)
   assertEquals(deps.calls.getActor, 0)
+  assertEquals(deps.calls.insertAudit, 0)
 })
 
 Deno.test('rejects an empty bearer token before actor or user reads', async () => {
@@ -128,6 +163,7 @@ Deno.test('rejects an empty bearer token before actor or user reads', async () =
   assertEquals(response.status, 401)
   assertEquals(deps.calls.getActor, 0)
   assertEquals(deps.calls.listUsers, 0)
+  assertEquals(deps.calls.insertAudit, 0)
 })
 
 Deno.test('rejects a whitespace-only bearer token before actor or user reads', async () => {
@@ -140,6 +176,7 @@ Deno.test('rejects a whitespace-only bearer token before actor or user reads', a
   assertEquals(response.status, 401)
   assertEquals(deps.calls.getActor, 0)
   assertEquals(deps.calls.listUsers, 0)
+  assertEquals(deps.calls.insertAudit, 0)
 })
 
 Deno.test('rejects malformed JSON', async () => {
@@ -192,4 +229,177 @@ Deno.test('returns only adapter-shaped audit log snapshots', async () => {
   assertEquals(response.status, 200)
   assertEquals(body.auditLogs, deps.auditLogs)
   assertEquals('actor_user_id' in body.auditLogs[0], false)
+})
+
+Deno.test('invite defaults to viewer and rolls back when metadata update fails', async () => {
+  const deps = fakeDeps({ actorRole: 'admin', updateError: true })
+  const response = await createAdminUsersHandler(deps)(request({
+    action: 'invite_user', email: 'new@example.com', role: 'viewer',
+  }))
+  assertEquals(response.status, 502)
+  assertEquals(deps.calls.deleteUser, 1)
+  assertEquals(deps.completedAudits.at(-1)?.status, 'failure')
+  assertEquals(deps.completedAudits.at(-1)?.errorCode, 'SUPABASE_AUTH_ERROR')
+})
+
+Deno.test('invite uses viewer role when omitted', async () => {
+  const deps = fakeDeps()
+  const response = await createAdminUsersHandler(deps)(request({
+    action: 'invite_user', email: 'new@example.com',
+  }))
+  const body: any = await response.json()
+  assertEquals(response.status, 200)
+  assertEquals(body.user.role, 'viewer')
+})
+
+Deno.test('invite rejects invalid roles and duplicate emails before Auth mutation', async () => {
+  const invalid = fakeDeps()
+  let response = await createAdminUsersHandler(invalid)(request({
+    action: 'invite_user', email: 'new@example.com', role: 'owner',
+  }))
+  assertEquals(response.status, 400)
+  assertEquals(invalid.calls.insertAudit, 0)
+
+  const duplicate = fakeDeps()
+  duplicate.users = [authUser('existing', 'new@example.com', 'viewer')]
+  response = await createAdminUsersHandler(duplicate)(request({
+    action: 'invite_user', email: ' NEW@example.com ', role: 'viewer',
+  }))
+  assertEquals(response.status, 409)
+  assertEquals(duplicate.calls.inviteUser, 0)
+  assertEquals(duplicate.completedAudits.at(-1)?.errorCode, 'USER_EXISTS')
+})
+
+Deno.test('allows changing another admin while two admins remain', async () => {
+  const deps = fakeDeps({ actorRole: 'admin' })
+  deps.users = [authUser('actor', 'actor@example.com', 'admin'), authUser('last', 'last@example.com', 'admin')]
+  const response = await createAdminUsersHandler(deps)(request({
+    action: 'update_role', userId: 'last', role: 'viewer',
+  }))
+  assertEquals(response.status, 200)
+})
+
+Deno.test('failed role updates complete their pending audit with the fixed Auth error code', async () => {
+  const deps = fakeDeps({ updateError: true })
+  deps.users = [authUser('target', 'target@example.com', 'viewer')]
+  const response = await createAdminUsersHandler(deps)(request({
+    action: 'update_role', userId: 'target', role: 'editor',
+  }))
+  assertEquals(response.status, 502)
+  assertEquals(deps.completedAudits.at(-1), {
+    id: 'audit-1', status: 'failure', errorCode: 'SUPABASE_AUTH_ERROR',
+  })
+})
+
+Deno.test('rejects self role and delete mutations and audits both attempts', async () => {
+  const deps = fakeDeps({ actorRole: 'admin' })
+  deps.users = [authUser('actor', 'actor@example.com', 'admin')]
+  for (const body of [
+    { action: 'update_role', userId: 'actor', role: 'viewer' },
+    { action: 'delete_user', userId: 'actor', confirmEmail: 'actor@example.com' },
+  ]) {
+    const response = await createAdminUsersHandler(deps)(request(body))
+    assertEquals(response.status, 409)
+    assertEquals(deps.completedAudits.at(-1)?.status, 'failure')
+    assertEquals(deps.completedAudits.at(-1)?.errorCode, 'SELF_MUTATION_FORBIDDEN')
+  }
+})
+
+Deno.test('update role rejects unknown user and preserves the last admin', async () => {
+  const unknown = fakeDeps()
+  let response = await createAdminUsersHandler(unknown)(request({
+    action: 'update_role', userId: 'missing', role: 'viewer',
+  }))
+  assertEquals(response.status, 404)
+  assertEquals(unknown.calls.insertAudit, 0)
+
+  const lastAdmin = fakeDeps()
+  lastAdmin.users = [authUser('actor', 'actor@example.com', 'admin'), authUser('last', 'last@example.com', 'admin')]
+  lastAdmin.users.shift()
+  lastAdmin.actor = authUser('actor', 'actor@example.com', 'admin')
+  response = await createAdminUsersHandler(lastAdmin)(request({
+    action: 'update_role', userId: 'last', role: 'viewer',
+  }))
+  assertEquals(response.status, 409)
+  assertEquals(lastAdmin.completedAudits.at(-1)?.errorCode, 'LAST_ADMIN_PROTECTED')
+})
+
+Deno.test('delete requires exact normalized email and preserves audit snapshot', async () => {
+  const deps = fakeDeps({ actorRole: 'admin' })
+  deps.users = [
+    authUser('actor', 'actor@example.com', 'admin'),
+    authUser('other-admin', 'other@example.com', 'admin'),
+    authUser('target', 'target@example.com', 'editor'),
+  ]
+  const response = await createAdminUsersHandler(deps)(request({
+    action: 'delete_user', userId: 'target', confirmEmail: ' TARGET@example.com ',
+  }))
+  assertEquals(response.status, 200)
+  assertEquals(deps.insertedAudits.at(-1)?.target_email, 'target@example.com')
+  assertEquals(deps.completedAudits.at(-1)?.status, 'success')
+})
+
+Deno.test('delete rejects mismatched emails and records failed deletion', async () => {
+  const mismatch = fakeDeps()
+  mismatch.users = [authUser('target', 'target@example.com', 'viewer')]
+  let response = await createAdminUsersHandler(mismatch)(request({
+    action: 'delete_user', userId: 'target', confirmEmail: 'wrong@example.com',
+  }))
+  assertEquals(response.status, 400)
+  assertEquals(mismatch.completedAudits.at(-1)?.errorCode, 'EMAIL_CONFIRMATION_MISMATCH')
+
+  const failed = fakeDeps({ deleteError: true })
+  failed.users = [authUser('target', 'target@example.com', 'viewer')]
+  response = await createAdminUsersHandler(failed)(request({
+    action: 'delete_user', userId: 'target', confirmEmail: 'target@example.com',
+  }))
+  assertEquals(response.status, 502)
+  assertEquals(failed.completedAudits.at(-1)?.status, 'failure')
+  assertEquals(failed.completedAudits.at(-1)?.errorCode, 'SUPABASE_AUTH_ERROR')
+})
+
+Deno.test('resends invites and sends password resets with completed audits', async () => {
+  const deps = fakeDeps()
+  deps.users = [authUser('target', 'target@example.com', 'viewer')]
+  for (const action of ['resend_invite', 'send_password_reset']) {
+    const response = await createAdminUsersHandler(deps)(request({ action, userId: 'target' }))
+    assertEquals(response.status, 200)
+    assertEquals(deps.completedAudits.at(-1)?.status, 'success')
+  }
+  assertEquals(deps.calls.resendInvite, 1)
+  assertEquals(deps.calls.sendPasswordReset, 1)
+})
+
+Deno.test('failed resend and password reset attempts complete their pending audits', async () => {
+  for (const [action, options] of [
+    ['resend_invite', { resendError: true }],
+    ['send_password_reset', { resetError: true }],
+  ] as const) {
+    const deps = fakeDeps(options)
+    deps.users = [authUser('target', 'target@example.com', 'viewer')]
+    const response = await createAdminUsersHandler(deps)(request({ action, userId: 'target' }))
+    assertEquals(response.status, 502)
+    assertEquals(deps.completedAudits.at(-1), {
+      id: 'audit-1', status: 'failure', errorCode: 'SUPABASE_AUTH_ERROR',
+    })
+  }
+})
+
+Deno.test('audit write failures hide underlying errors and prevent Auth mutation', async () => {
+  const insertFailure = fakeDeps({ insertAuditError: true })
+  insertFailure.users = [authUser('target', 'target@example.com', 'viewer')]
+  let response = await createAdminUsersHandler(insertFailure)(request({
+    action: 'resend_invite', userId: 'target',
+  }))
+  assertEquals(response.status, 500)
+  assertEquals(insertFailure.calls.resendInvite, 0)
+
+  const completionFailure = fakeDeps({ completeAuditError: true })
+  completionFailure.users = [authUser('target', 'target@example.com', 'viewer')]
+  response = await createAdminUsersHandler(completionFailure)(request({
+    action: 'send_password_reset', userId: 'target',
+  }))
+  assertEquals(response.status, 500)
+  assertEquals(completionFailure.calls.sendPasswordReset, 1)
+  assertEquals(completionFailure.completedAudits.length, 0)
 })

@@ -3,6 +3,10 @@ import {
   ERROR_STATUS,
   assertActionBody,
   assertAdminActor,
+  assertTargetMutationAllowed,
+  normalizeEmail,
+  normalizeRole,
+  requireRole,
   summarizeUser,
 } from './domain.ts'
 
@@ -42,6 +46,40 @@ async function requestBody(request: Request): Promise<unknown> {
   }
 }
 
+const adminCount = (users: any[]) =>
+  users.filter(user => normalizeRole(user.app_metadata?.app_role) === 'admin').length
+
+const findTarget = (users: any[], userId: unknown) => {
+  if (typeof userId !== 'string' || !userId) throw new ApiError('INVALID_INPUT')
+  const target = users.find(user => user.id === userId)
+  if (!target) throw new ApiError('USER_NOT_FOUND')
+  return target
+}
+
+const errorCode = (caught: unknown) =>
+  caught instanceof ApiError ? caught.code : 'SUPABASE_AUTH_ERROR'
+
+async function startAudit(deps: HandlerDeps, row: Record<string, unknown>) {
+  try {
+    return await deps.insertAudit(row)
+  } catch {
+    throw new ApiError('AUDIT_WRITE_ERROR')
+  }
+}
+
+async function completeAudit(
+  deps: HandlerDeps,
+  id: string,
+  status: 'success' | 'failure',
+  code?: keyof typeof ERROR_STATUS,
+) {
+  try {
+    await deps.completeAudit(id, status, code)
+  } catch {
+    throw new ApiError('AUDIT_WRITE_ERROR')
+  }
+}
+
 export function createAdminUsersHandler(deps: HandlerDeps) {
   return async (request: Request) => {
     try {
@@ -75,12 +113,115 @@ async function handleMutation(
   body: Record<string, unknown>,
 ): Promise<Response> {
   switch (action) {
-    case 'invite_user':
-    case 'update_role':
+    case 'invite_user': {
+      const email = normalizeEmail(body.email)
+      const role = requireRole(body.role ?? 'viewer')
+      const audit = await startAudit(deps, {
+        actor_user_id: actor.id, actor_email: actor.email, action,
+        target_email: email, new_role: role, status: 'pending',
+      })
+      let invited: any
+      try {
+        const users = await deps.listUsers()
+        if (users.some(user => normalizeEmail(user.email) === email)) {
+          throw new ApiError('USER_EXISTS')
+        }
+        invited = await deps.inviteUser(email)
+        await deps.updateUser(invited.id, {
+          app_metadata: { ...invited.app_metadata, app_role: role },
+        })
+        await completeAudit(deps, audit.id, 'success')
+        return json(200, {
+          user: summarizeUser({
+            ...invited,
+            app_metadata: { ...invited.app_metadata, app_role: role },
+          }),
+        })
+      } catch (caught) {
+        if (invited?.id) {
+          try { await deps.deleteUser(invited.id) } catch { /* preserve original failure */ }
+        }
+        const code = errorCode(caught)
+        await completeAudit(deps, audit.id, 'failure', code)
+        throw new ApiError(code)
+      }
+    }
+
+    case 'update_role': {
+      const role = requireRole(body.role)
+      const users = await deps.listUsers()
+      const target = findTarget(users, body.userId)
+      const targetRole = normalizeRole(target.app_metadata?.app_role)
+      const audit = await startAudit(deps, {
+        actor_user_id: actor.id, actor_email: actor.email, action,
+        target_user_id: target.id, target_email: target.email,
+        old_role: targetRole, new_role: role, status: 'pending',
+      })
+      try {
+        assertTargetMutationAllowed({
+          actorId: actor.id, targetId: target.id, targetRole,
+          nextRole: role, adminCount: adminCount(users),
+        })
+        const updated = await deps.updateUser(target.id, {
+          app_metadata: { ...target.app_metadata, app_role: role },
+        })
+        await completeAudit(deps, audit.id, 'success')
+        return json(200, { user: summarizeUser(updated), requiresRelogin: true })
+      } catch (caught) {
+        const code = errorCode(caught)
+        await completeAudit(deps, audit.id, 'failure', code)
+        throw new ApiError(code)
+      }
+    }
+
+    case 'delete_user': {
+      const users = await deps.listUsers()
+      const target = findTarget(users, body.userId)
+      const targetRole = normalizeRole(target.app_metadata?.app_role)
+      const audit = await startAudit(deps, {
+        actor_user_id: actor.id, actor_email: actor.email, action,
+        target_user_id: target.id, target_email: target.email,
+        old_role: targetRole, status: 'pending',
+      })
+      try {
+        if (normalizeEmail(body.confirmEmail) !== normalizeEmail(target.email)) {
+          throw new ApiError('EMAIL_CONFIRMATION_MISMATCH')
+        }
+        assertTargetMutationAllowed({
+          actorId: actor.id, targetId: target.id, targetRole,
+          nextRole: undefined, adminCount: adminCount(users),
+        })
+        await deps.deleteUser(target.id)
+        await completeAudit(deps, audit.id, 'success')
+        return json(200, { deletedUserId: target.id })
+      } catch (caught) {
+        const code = errorCode(caught)
+        await completeAudit(deps, audit.id, 'failure', code)
+        throw new ApiError(code)
+      }
+    }
+
     case 'resend_invite':
-    case 'send_password_reset':
-    case 'delete_user':
-      throw new ApiError('INVALID_INPUT')
+    case 'send_password_reset': {
+      const users = await deps.listUsers()
+      const target = findTarget(users, body.userId)
+      const email = normalizeEmail(target.email)
+      const audit = await startAudit(deps, {
+        actor_user_id: actor.id, actor_email: actor.email, action,
+        target_user_id: target.id, target_email: email, status: 'pending',
+      })
+      try {
+        if (action === 'resend_invite') await deps.resendInvite(email)
+        else await deps.sendPasswordReset(email)
+        await completeAudit(deps, audit.id, 'success')
+        return json(200, { sent: true })
+      } catch (caught) {
+        const code = errorCode(caught)
+        await completeAudit(deps, audit.id, 'failure', code)
+        throw new ApiError(code)
+      }
+    }
+
     default:
       throw new ApiError('INVALID_INPUT')
   }
