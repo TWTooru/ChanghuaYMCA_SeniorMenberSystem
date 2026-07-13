@@ -6,10 +6,14 @@ import { supabase } from '../../lib/supabaseClient'
 import StudentEditForm from './StudentEditForm'
 import StudentInfoView from './StudentInfoView'
 import { getEnrollmentsForStudent } from '../../domain/studentRelations'
+import { useAuth } from '../../contexts/AuthContext'
+import usePermissions from '../../hooks/usePermissions'
 
 const SEASONS_ORDER = ['第一季', '第二季', '第三季', '第四季', '第五季', '第六季', '第七季', '第八季', '第九季', '第十期', '第十一期', '第十二期', '第十三期', '第十四期', '第十五期']
 
 export default function StudentDetailModal({ student, enrollments, onClose, onAddEnrollment, onRefresh }) {
+  const { role } = useAuth()
+  const permissions = usePermissions(role)
   const [isEditing, setIsEditing] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showDeleteEnrollConfirm, setShowDeleteEnrollConfirm] = useState(null)
@@ -56,13 +60,19 @@ export default function StudentDetailModal({ student, enrollments, onClose, onAd
         <div className="modal-header">
           <div className="modal-title-group"><span className="modal-id-badge">{student.student_id}</span><h2 className="modal-name">{student.name} ({student.gender || '未知'})</h2></div>
           <div className="modal-header-actions">
-            {!isEditing && <><button type="button" className="btn-edit" onClick={() => setIsEditing(true)}><Edit2 size={14} /> 編輯</button><button type="button" className="btn-delete" onClick={() => setShowDeleteConfirm(true)}><Trash2 size={14} /> 刪除</button></>}
+            {!isEditing && <>{permissions.canEditStudent && <button type="button" className="btn-edit" onClick={() => setIsEditing(true)}><Edit2 size={14} /> 編輯</button>}{permissions.canDeleteStudent && <button type="button" className="btn-delete" onClick={() => setShowDeleteConfirm(true)}><Trash2 size={14} /> 刪除</button>}</>}
             <button type="button" className="btn-close" onClick={onClose} id="btn-close-modal"><X size={20} /></button>
           </div>
         </div>
         <div className="modal-body">
           {isEditing ? <StudentEditForm student={student} onSave={() => { setIsEditing(false); if (onRefresh) onRefresh() }} onCancel={() => setIsEditing(false)} /> : <StudentInfoView student={student} />}
-          <EnrollmentTimeline timeline={studentTimeline} onDelete={setShowDeleteEnrollConfirm} onAddEnrollment={onAddEnrollment} onRefresh={onRefresh} />
+          <EnrollmentTimeline
+            timeline={studentTimeline}
+            onDelete={permissions.canDeleteEnrollment ? setShowDeleteEnrollConfirm : null}
+            onAddEnrollment={permissions.canAddEnrollment ? onAddEnrollment : null}
+            onEditEnrollment={permissions.canEditEnrollment}
+            onRefresh={onRefresh}
+          />
         </div>
       </div>
       <ConfirmDialog isOpen={showDeleteConfirm} title="刪除學員" message={`確定要刪除學員「${student.name}」（${student.student_id}）嗎？此操作無法復原，該學員的所有選課紀錄也會一併刪除。`} onConfirm={handleDeleteStudent} onCancel={() => setShowDeleteConfirm(false)} />

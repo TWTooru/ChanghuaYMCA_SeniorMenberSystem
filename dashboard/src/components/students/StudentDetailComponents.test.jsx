@@ -4,6 +4,12 @@ import StudentInfoView from './StudentInfoView'
 import EnrollmentTimeline from '../enrollment/EnrollmentTimeline'
 import StudentDetailModal from './StudentDetailModal'
 
+const authState = vi.hoisted(() => ({ role: 'viewer' }))
+
+vi.mock('../../contexts/AuthContext', () => ({
+  useAuth: () => authState,
+}))
+
 const student = {
   student_id: 'S-001',
   name: '王小明',
@@ -56,5 +62,38 @@ describe('Student detail components', () => {
     expect(screen.getByText('手機課')).not.toBeNull()
     expect(screen.queryByText('第十四期')).toBeNull()
     expect(screen.queryByText('電腦課')).toBeNull()
+  })
+
+  it('hides student and enrollment mutation controls from viewers', () => {
+    authState.role = 'viewer'
+    const { container } = render(
+      <StudentDetailModal
+        student={student}
+        enrollments={[{ enrollment_id: 1, student_id: student.student_id, season: 'Season A', courses: [] }]}
+        onClose={vi.fn()}
+        onAddEnrollment={vi.fn()}
+        onRefresh={vi.fn()}
+      />
+    )
+
+    expect(container.querySelector('.btn-edit')).toBeNull()
+    expect(container.querySelector('.btn-delete')).toBeNull()
+    expect(container.querySelector('#btn-add-enrollment-modal')).toBeNull()
+    expect(container.querySelector('.timeline-action-btn')).toBeNull()
+  })
+
+  it('hides disabled enrollment controls while preserving permitted edit controls', () => {
+    const { container } = render(
+      <EnrollmentTimeline
+        timeline={[{ enrollment_id: 1, season: 'Season A', courses: [] }]}
+        onAddEnrollment={null}
+        onDelete={null}
+        onEditEnrollment={true}
+      />
+    )
+
+    expect(container.querySelector('#btn-add-enrollment-modal')).toBeNull()
+    expect(container.querySelector('.timeline-action-btn')).not.toBeNull()
+    expect(container.querySelector('.timeline-action-btn.danger')).toBeNull()
   })
 })

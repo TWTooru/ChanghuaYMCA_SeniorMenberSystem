@@ -2,7 +2,7 @@ import { Activity, Edit2, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import EnrollmentEditForm from './EnrollmentEditForm'
 
-export default function EnrollmentTimeline({ timeline, onDelete, onAddEnrollment, onRefresh }) {
+export default function EnrollmentTimeline({ timeline, onDelete, onAddEnrollment, onEditEnrollment = true, onRefresh }) {
   const [editingEnrollId, setEditingEnrollId] = useState(null)
 
   const handleSave = () => {
@@ -14,7 +14,7 @@ export default function EnrollmentTimeline({ timeline, onDelete, onAddEnrollment
     <div className="timeline-section">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
         <h3 className="timeline-title" style={{ margin: 0 }}><Activity size={16} />歷年參修歷程 ({timeline.length} 期)</h3>
-        <button type="button" className="btn-primary" style={{ padding: '6px 12px', fontSize: '13px' }} onClick={onAddEnrollment} id="btn-add-enrollment-modal"><span>+ 新增選課紀錄</span></button>
+        {onAddEnrollment && <button type="button" className="btn-primary" style={{ padding: '6px 12px', fontSize: '13px' }} onClick={onAddEnrollment} id="btn-add-enrollment-modal"><span>+ 新增選課紀錄</span></button>}
       </div>
       {timeline.length > 0 ? (
         <div className="timeline-container">
@@ -28,7 +28,7 @@ export default function EnrollmentTimeline({ timeline, onDelete, onAddEnrollment
                     {item.reg_type && <span className="timeline-reg-type">{item.reg_type === '新' ? '新生' : '續生'}</span>}
                     {item.refunded && <span className="badge danger" style={{ padding: '1px 6px', fontSize: '10px' }}>已退費</span>}
                   </div>
-                  <div className="timeline-actions"><button type="button" className="timeline-action-btn" onClick={() => setEditingEnrollId(item.enrollment_id)}><Edit2 size={14} /></button><button type="button" className="timeline-action-btn danger" onClick={() => onDelete(item.enrollment_id)}><Trash2 size={14} /></button></div>
+                  <div className="timeline-actions">{onEditEnrollment && <button type="button" className="timeline-action-btn" onClick={() => setEditingEnrollId(item.enrollment_id)}><Edit2 size={14} /></button>}{onDelete && <button type="button" className="timeline-action-btn danger" onClick={() => onDelete(item.enrollment_id)}><Trash2 size={14} /></button>}</div>
                 </div>
                 {editingEnrollId === item.enrollment_id ? <EnrollmentEditForm enrollment={item} onSave={handleSave} onCancel={() => setEditingEnrollId(null)} /> : <>
                   {(item.pre_test || item.post_test) && <div className="timeline-scores">{item.pre_test && <div className="score-item"><span>前測:</span><span className="score-val">{item.pre_test}</span></div>}{item.post_test && <div className="score-item"><span>後測:</span><span className="score-val">{item.post_test}</span></div>}</div>}
