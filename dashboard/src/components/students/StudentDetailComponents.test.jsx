@@ -20,7 +20,10 @@ const student = {
 }
 
 describe('Student detail components', () => {
-  afterEach(cleanup)
+  afterEach(() => {
+    authState.role = 'viewer'
+    cleanup()
+  })
   it('renders the student contact details', () => {
     render(<StudentInfoView student={student} />)
 
@@ -95,5 +98,67 @@ describe('Student detail components', () => {
     expect(container.querySelector('#btn-add-enrollment-modal')).toBeNull()
     expect(container.querySelector('.timeline-action-btn')).not.toBeNull()
     expect(container.querySelector('.timeline-action-btn.danger')).toBeNull()
+  })
+
+  it('closes a student edit form when the current role loses edit permission', () => {
+    authState.role = 'admin'
+    const props = {
+      student,
+      enrollments: [],
+      onClose: vi.fn(),
+      onAddEnrollment: vi.fn(),
+      onRefresh: vi.fn(),
+    }
+    const { container, rerender } = render(<StudentDetailModal {...props} />)
+
+    fireEvent.click(container.querySelector('.btn-edit'))
+    expect(container.querySelector('input[name="name"]')).not.toBeNull()
+
+    authState.role = 'viewer'
+    rerender(<StudentDetailModal {...props} />)
+
+    expect(container.querySelector('input[name="name"]')).toBeNull()
+  })
+
+  it('closes open student and enrollment deletion confirmations when delete permission is removed', () => {
+    authState.role = 'admin'
+    const props = {
+      student,
+      enrollments: [{ enrollment_id: 1, student_id: student.student_id, season: 'Season A', courses: [] }],
+      onClose: vi.fn(),
+      onAddEnrollment: vi.fn(),
+      onRefresh: vi.fn(),
+    }
+    const { container, rerender } = render(<StudentDetailModal {...props} />)
+
+    fireEvent.click(container.querySelector('.btn-delete'))
+    expect(container.querySelector('.modal-overlay-center')).not.toBeNull()
+
+    authState.role = 'editor'
+    rerender(<StudentDetailModal {...props} />)
+    expect(container.querySelector('.modal-overlay-center')).toBeNull()
+
+    authState.role = 'admin'
+    rerender(<StudentDetailModal {...props} />)
+    expect(container.querySelector('.modal-overlay-center')).toBeNull()
+    fireEvent.click(container.querySelector('.timeline-action-btn.danger'))
+    expect(container.querySelector('.modal-overlay-center')).not.toBeNull()
+
+    authState.role = 'editor'
+    rerender(<StudentDetailModal {...props} />)
+    expect(container.querySelector('.modal-overlay-center')).toBeNull()
+  })
+
+  it('closes an enrollment edit form when edit permission is removed', () => {
+    const timeline = [{ enrollment_id: 1, season: 'Season A', courses: [] }]
+    const { container, rerender } = render(
+      <EnrollmentTimeline timeline={timeline} onEditEnrollment={true} />
+    )
+
+    fireEvent.click(container.querySelector('.timeline-action-btn'))
+    expect(container.querySelector('.enrollment-edit-form')).not.toBeNull()
+
+    rerender(<EnrollmentTimeline timeline={timeline} onEditEnrollment={false} />)
+    expect(container.querySelector('.enrollment-edit-form')).toBeNull()
   })
 })

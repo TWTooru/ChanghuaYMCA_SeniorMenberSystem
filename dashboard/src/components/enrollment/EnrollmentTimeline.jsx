@@ -1,9 +1,13 @@
 import { Activity, Edit2, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import EnrollmentEditForm from './EnrollmentEditForm'
 
 export default function EnrollmentTimeline({ timeline, onDelete, onAddEnrollment, onEditEnrollment = true, onRefresh }) {
   const [editingEnrollId, setEditingEnrollId] = useState(null)
+
+  useEffect(() => {
+    if (!onEditEnrollment) setEditingEnrollId(null)
+  }, [onEditEnrollment])
 
   const handleSave = () => {
     setEditingEnrollId(null)
@@ -28,9 +32,9 @@ export default function EnrollmentTimeline({ timeline, onDelete, onAddEnrollment
                     {item.reg_type && <span className="timeline-reg-type">{item.reg_type === '新' ? '新生' : '續生'}</span>}
                     {item.refunded && <span className="badge danger" style={{ padding: '1px 6px', fontSize: '10px' }}>已退費</span>}
                   </div>
-                  <div className="timeline-actions">{onEditEnrollment && <button type="button" className="timeline-action-btn" onClick={() => setEditingEnrollId(item.enrollment_id)}><Edit2 size={14} /></button>}{onDelete && <button type="button" className="timeline-action-btn danger" onClick={() => onDelete(item.enrollment_id)}><Trash2 size={14} /></button>}</div>
+                  <div className="timeline-actions">{onEditEnrollment && <button type="button" className="timeline-action-btn" onClick={() => { if (onEditEnrollment) setEditingEnrollId(item.enrollment_id) }}><Edit2 size={14} /></button>}{onDelete && <button type="button" className="timeline-action-btn danger" onClick={() => onDelete(item.enrollment_id)}><Trash2 size={14} /></button>}</div>
                 </div>
-                {editingEnrollId === item.enrollment_id ? <EnrollmentEditForm enrollment={item} onSave={handleSave} onCancel={() => setEditingEnrollId(null)} /> : <>
+                {onEditEnrollment && editingEnrollId === item.enrollment_id ? <EnrollmentEditForm enrollment={item} onSave={handleSave} onCancel={() => setEditingEnrollId(null)} /> : <>
                   {(item.pre_test || item.post_test) && <div className="timeline-scores">{item.pre_test && <div className="score-item"><span>前測:</span><span className="score-val">{item.pre_test}</span></div>}{item.post_test && <div className="score-item"><span>後測:</span><span className="score-val">{item.post_test}</span></div>}</div>}
                   <div className="timeline-courses">{item.courses && item.courses.length > 0 ? item.courses.map(course => <span className="course-tag" key={course}>{course}</span>) : <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>無選課紀錄/僅進行測驗</span>}</div>
                 </>}

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Edit2, Trash2, X } from 'lucide-react'
 import ConfirmDialog from '../common/ConfirmDialog'
 import EnrollmentTimeline from '../enrollment/EnrollmentTimeline'
@@ -15,8 +15,16 @@ export default function StudentDetailModal({ student, enrollments, onClose, onAd
   const { role } = useAuth()
   const permissions = usePermissions(role)
   const [isEditing, setIsEditing] = useState(false)
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  const [showDeleteEnrollConfirm, setShowDeleteEnrollConfirm] = useState(null)
+  const [isStudentDeleteConfirmOpen, setShowDeleteConfirm] = useState(false)
+  const [pendingDeleteEnrollmentId, setShowDeleteEnrollConfirm] = useState(null)
+  const showDeleteConfirm = isStudentDeleteConfirmOpen && permissions.canDeleteStudent
+  const showDeleteEnrollConfirm = permissions.canDeleteEnrollment ? pendingDeleteEnrollmentId : null
+
+  useEffect(() => {
+    if (!permissions.canEditStudent) setIsEditing(false)
+    if (!permissions.canDeleteStudent) setShowDeleteConfirm(false)
+    if (!permissions.canDeleteEnrollment) setShowDeleteEnrollConfirm(null)
+  }, [permissions.canDeleteEnrollment, permissions.canDeleteStudent, permissions.canEditStudent])
 
   const studentTimeline = useMemo(() => {
     if (!student || !enrollments) return []
@@ -27,6 +35,11 @@ export default function StudentDetailModal({ student, enrollments, onClose, onAd
   if (!student) return null
 
   const handleDeleteStudent = async () => {
+    if (!permissions.canDeleteStudent) {
+      setShowDeleteConfirm(false)
+      return
+    }
+
     try {
       const { data: enrolls } = await supabase.from('enrollments').select('enrollment_id').eq('student_id', student.student_id)
       if (enrolls && enrolls.length > 0) await supabase.from('courses').delete().in('enrollment_id', enrolls.map(enrollment => enrollment.enrollment_id))
@@ -42,6 +55,11 @@ export default function StudentDetailModal({ student, enrollments, onClose, onAd
   }
 
   const handleDeleteEnrollment = async (enrollmentId) => {
+    if (!permissions.canDeleteEnrollment) {
+      setShowDeleteEnrollConfirm(null)
+      return
+    }
+
     try {
       await supabase.from('courses').delete().eq('enrollment_id', enrollmentId)
       const { error } = await supabase.from('enrollments').delete().eq('enrollment_id', enrollmentId)
@@ -65,7 +83,7 @@ export default function StudentDetailModal({ student, enrollments, onClose, onAd
           </div>
         </div>
         <div className="modal-body">
-          {isEditing ? <StudentEditForm student={student} onSave={() => { setIsEditing(false); if (onRefresh) onRefresh() }} onCancel={() => setIsEditing(false)} /> : <StudentInfoView student={student} />}
+          {isEditing && permissions.canEditStudent ? <StudentEditForm student={student} onSave={() => { setIsEditing(false); if (onRefresh) onRefresh() }} onCancel={() => setIsEditing(false)} /> : <StudentInfoView student={student} />}
           <EnrollmentTimeline
             timeline={studentTimeline}
             onDelete={permissions.canDeleteEnrollment ? setShowDeleteEnrollConfirm : null}
