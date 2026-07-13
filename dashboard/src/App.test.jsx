@@ -1,0 +1,63 @@
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import App from './App'
+
+const signOut = vi.fn()
+const authState = {
+  session: { access_token: 'test-token' },
+  user: { email: 'viewer@example.com' },
+  role: 'viewer',
+  signOut,
+}
+
+vi.mock('./contexts/AuthContext', () => ({
+  useAuth: () => authState,
+}))
+
+vi.mock('./hooks/useApiData', () => ({
+  default: () => ({
+    dbData: { students: [], enrollments: [] },
+    dbStatus: 'connected',
+    dbError: null,
+  }),
+}))
+
+vi.mock('./components/overview/OverviewTab', () => ({ default: () => null }))
+vi.mock('./components/students/StudentListTab', () => ({ default: () => null }))
+vi.mock('./components/enrollment/EnrollmentTab', () => ({ default: () => null }))
+vi.mock('./components/students/StudentDetailModal', () => ({ default: () => null }))
+vi.mock('./components/students/AddStudentModal', () => ({ default: () => null }))
+vi.mock('./components/enrollment/AddEnrollModal', () => ({ default: () => null }))
+vi.mock('./components/sync/ExcelSync', () => ({ default: () => <div data-testid="excel-sync" /> }))
+vi.mock('./components/auth/Login', () => ({ default: () => null }))
+vi.mock('./lib/excelExport', () => ({ exportToExcel: vi.fn() }))
+
+describe('App header access controls', () => {
+  afterEach(cleanup)
+
+  beforeEach(() => {
+    authState.role = 'viewer'
+    signOut.mockClear()
+  })
+
+  it('shows the signed-in user email and role badge', () => {
+    render(<App />)
+
+    expect(screen.getByText('viewer@example.com')).toBeTruthy()
+    expect(document.querySelector('.header-role-badge')).toBeTruthy()
+  })
+
+  it('signs out when the logout button is pressed', () => {
+    render(<App />)
+
+    fireEvent.click(screen.getByTitle('登出'))
+    expect(signOut).toHaveBeenCalledOnce()
+  })
+
+  it('hides Excel sync and refresh controls from viewers', () => {
+    render(<App />)
+
+    expect(screen.queryAllByTestId('excel-sync')).toHaveLength(0)
+    expect(document.querySelector('.btn-secondary')).toBeNull()
+  })
+})

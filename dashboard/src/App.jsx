@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import './App.css'
-import { FileSpreadsheet, RefreshCw, Download, Activity, Users, Calendar, AlertCircle } from 'lucide-react'
+import { FileSpreadsheet, RefreshCw, Download, Activity, Users, Calendar, AlertCircle, LogOut } from 'lucide-react'
 
 import useApiData from './hooks/useApiData'
 import OverviewTab from './components/overview/OverviewTab'
@@ -12,11 +12,15 @@ import AddEnrollModal from './components/enrollment/AddEnrollModal'
 import ExcelSync from './components/sync/ExcelSync'
 import Login from './components/auth/Login'
 import { useAuth } from './contexts/AuthContext'
+import usePermissions from './hooks/usePermissions'
 import { exportToExcel } from './lib/excelExport'
 import { normalizeEducation } from './domain/studentFields'
 
 function App() {
-  const { session } = useAuth()
+  const { session, user, role, signOut } = useAuth()
+  const permissions = usePermissions(role)
+  const ROLE_LABELS = { admin: '管理員', editor: '編輯者', viewer: '檢視者' }
+  const ROLE_COLORS = { admin: '#ef4444', editor: '#3b82f6', viewer: '#6b7280' }
   const [activeTab, setActiveTab] = useState('overview')
   const [selectedStudent, setSelectedStudent] = useState(null)
   const [showAddStudentModal, setShowAddStudentModal] = useState(false)
@@ -105,8 +109,8 @@ function App() {
             </div>
           </div>
           <div className="header-actions">
-            <ExcelSync onSyncComplete={handleRefresh} />
-            {dbStatus === 'connected' && (
+            {permissions.canSyncExcel && <ExcelSync onSyncComplete={handleRefresh} />}
+            {permissions.canRefreshSync && dbStatus === 'connected' && (
               <button 
                 type="button"
                 className="btn-secondary" 
@@ -130,6 +134,15 @@ function App() {
               <Download size={18} />
               <span>下載整理版 Excel</span>
             </button>
+            <div className="header-user-info">
+              <span className="header-user-email">{user?.email}</span>
+              <span className="header-role-badge" style={{ backgroundColor: ROLE_COLORS[role] || '#6b7280' }}>
+                {ROLE_LABELS[role] || '檢視者'}
+              </span>
+              <button type="button" className="btn-logout" onClick={signOut} title="登出">
+                <LogOut size={16} />
+              </button>
+            </div>
           </div>
         </div>
       </header>
