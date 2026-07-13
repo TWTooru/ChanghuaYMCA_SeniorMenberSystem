@@ -1,7 +1,11 @@
 import { useState, useMemo } from 'react'
 import { Search, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
+import { useAuth } from '../../contexts/AuthContext'
+import usePermissions from '../../hooks/usePermissions'
 
 export default function StudentListTab({ students, enrollments, onSelectStudent, onShowAddStudent }) {
+  const { role } = useAuth()
+  const permissions = usePermissions(role)
   const [studentSearch, setStudentSearch] = useState('')
   const [studentGenderFilter, setStudentGenderFilter] = useState('')
   const [studentAgeFilter, setStudentAgeFilter] = useState('')
@@ -64,7 +68,8 @@ export default function StudentListTab({ students, enrollments, onSelectStudent,
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+      {permissions.canAddStudent && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
         <button 
           type="button"
           className="btn-primary"
@@ -73,7 +78,8 @@ export default function StudentListTab({ students, enrollments, onSelectStudent,
         >
           <span>+ 新增學員資料</span>
         </button>
-      </div>
+        </div>
+      )}
       {/* Filters panel */}
       <div className="filters-panel">
         <div className="filter-group">
