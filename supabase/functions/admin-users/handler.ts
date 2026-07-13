@@ -29,7 +29,7 @@ function json(status: number, body: unknown) {
 function bearer(request: Request) {
   const value = request.headers.get('Authorization')
   if (!value?.startsWith('Bearer ')) throw new ApiError('UNAUTHENTICATED')
-  const token = value.slice(7)
+  const token = value.slice(7).trim()
   if (!token) throw new ApiError('UNAUTHENTICATED')
   return token
 }
