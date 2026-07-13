@@ -44,7 +44,7 @@ describe('App header access controls', () => {
     render(<App />)
 
     expect(screen.getByText('viewer@example.com')).toBeTruthy()
-    expect(document.querySelector('.header-role-badge')).toBeTruthy()
+    expect(document.querySelector('.header-role-badge')?.textContent).toBe('檢視者')
   })
 
   it('signs out when the logout button is pressed', () => {
@@ -57,6 +57,26 @@ describe('App header access controls', () => {
   it('hides Excel sync and refresh controls from viewers', () => {
     render(<App />)
 
+    expect(screen.queryAllByTestId('excel-sync')).toHaveLength(0)
+    expect(document.querySelector('.btn-secondary')).toBeNull()
+  })
+
+  it.each(['editor', 'admin'])('%s can see Excel sync and refresh controls', (role) => {
+    authState.role = role
+    render(<App />)
+
+    expect(screen.queryAllByTestId('excel-sync')).toHaveLength(1)
+    expect(document.querySelector('.btn-secondary')).toBeTruthy()
+  })
+
+  it.each([
+    ['a missing role', undefined],
+    ['an unknown role', 'unknown-role'],
+  ])('defaults %s to viewer UI', (_description, role) => {
+    authState.role = role
+    render(<App />)
+
+    expect(document.querySelector('.header-role-badge')?.textContent).toBe('檢視者')
     expect(screen.queryAllByTestId('excel-sync')).toHaveLength(0)
     expect(document.querySelector('.btn-secondary')).toBeNull()
   })
