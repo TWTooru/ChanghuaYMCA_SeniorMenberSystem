@@ -118,6 +118,18 @@ Deno.test('rejects a request without a bearer token', async () => {
   assertEquals(deps.calls.getActor, 0)
 })
 
+Deno.test('rejects an empty bearer token before actor or user reads', async () => {
+  const deps = fakeDeps()
+  const response = await createAdminUsersHandler(deps)(new Request('http://localhost/admin-users', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'list_users' }),
+  }))
+  assertEquals(response.status, 401)
+  assertEquals(deps.calls.getActor, 0)
+  assertEquals(deps.calls.listUsers, 0)
+})
+
 Deno.test('rejects malformed JSON', async () => {
   const deps = fakeDeps()
   const response = await createAdminUsersHandler(deps)(new Request('http://localhost/admin-users', {
