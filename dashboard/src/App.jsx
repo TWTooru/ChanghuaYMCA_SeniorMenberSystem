@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import './App.css'
-import { FileSpreadsheet, RefreshCw, Download, Activity, Users, Calendar, AlertCircle, LogOut } from 'lucide-react'
+import { FileSpreadsheet, RefreshCw, Download, Activity, Users, Calendar, AlertCircle, LogOut, ShieldCheck } from 'lucide-react'
 
 import useApiData from './hooks/useApiData'
 import OverviewTab from './components/overview/OverviewTab'
@@ -12,6 +12,7 @@ import AddEnrollModal from './components/enrollment/AddEnrollModal'
 import ExcelSync from './components/sync/ExcelSync'
 import Login from './components/auth/Login'
 import PasswordSetup from './components/auth/PasswordSetup'
+import AdminAccountPage from './components/admin/AdminAccountPage'
 import { useAuth } from './contexts/AuthContext'
 import usePermissions from './hooks/usePermissions'
 import { exportToExcel } from './lib/excelExport'
@@ -27,6 +28,10 @@ function AuthenticatedDashboard() {
   const [showAddStudentModal, setShowAddStudentModal] = useState(false)
   const [showAddEnrollModal, setShowAddEnrollModal] = useState(false)
   const [refreshCount, setRefreshCount] = useState(0)
+
+  useEffect(() => {
+    if (role !== 'admin' && activeTab === 'admin') setActiveTab('overview')
+  }, [role, activeTab])
 
   const { dbData, dbStatus, dbError } = useApiData(session, refreshCount)
   const { students, enrollments } = dbData
@@ -166,6 +171,11 @@ function AuthenticatedDashboard() {
           <button className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')} id="tab-history">
             <Calendar size={18} /><span>歷年選課歷程</span>
           </button>
+          {role === 'admin' && (
+            <button className={`tab-btn ${activeTab === 'admin' ? 'active' : ''}`} onClick={() => setActiveTab('admin')} id="tab-admin">
+              <ShieldCheck size={18} /><span>帳號管理</span>
+            </button>
+          )}
         </div>
       </nav>
 
@@ -186,6 +196,7 @@ function AuthenticatedDashboard() {
             onSelectStudent={setSelectedStudent} 
           />
         )}
+        {activeTab === 'admin' && role === 'admin' && <AdminAccountPage />}
       </main>
 
       <footer className="app-footer">

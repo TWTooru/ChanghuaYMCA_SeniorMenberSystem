@@ -35,6 +35,7 @@ vi.mock('./components/enrollment/AddEnrollModal', () => ({ default: () => null }
 vi.mock('./components/sync/ExcelSync', () => ({ default: () => <div data-testid="excel-sync" /> }))
 vi.mock('./components/auth/Login', () => ({ default: () => null }))
 vi.mock('./components/auth/PasswordSetup', () => ({ default: () => <div data-testid="password-setup" /> }))
+vi.mock('./components/admin/AdminAccountPage', () => ({ default: () => <div data-testid="admin-account-page" /> }))
 vi.mock('./lib/excelExport', () => ({ exportToExcel: vi.fn() }))
 
 describe('App header access controls', () => {
@@ -74,6 +75,31 @@ describe('App header access controls', () => {
 
     expect(screen.queryAllByTestId('excel-sync')).toHaveLength(1)
     expect(document.querySelector('.btn-secondary')).toBeTruthy()
+  })
+
+  it('shows account management navigation only to admins', () => {
+    const { rerender } = render(<App />)
+
+    expect(document.querySelector('#tab-admin')).toBeNull()
+
+    authState.role = 'admin'
+    rerender(<App />)
+
+    expect(document.querySelector('#tab-admin')).toBeTruthy()
+  })
+
+  it('leaves account management immediately after role downgrade', () => {
+    authState.role = 'admin'
+    const { rerender } = render(<App />)
+
+    fireEvent.click(document.querySelector('#tab-admin'))
+    expect(screen.getByTestId('admin-account-page')).toBeTruthy()
+
+    authState.role = 'viewer'
+    rerender(<App />)
+
+    expect(screen.queryByTestId('admin-account-page')).toBeNull()
+    expect(document.querySelector('#tab-overview')?.classList.contains('active')).toBe(true)
   })
 
   it.each([
