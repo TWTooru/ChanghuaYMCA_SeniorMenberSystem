@@ -287,4 +287,33 @@ describe('useAdminUsers', () => {
     expect(result.current.auditLogs).toEqual([{ id: 'a1' }])
     expect(result.current.loading).toBe(false)
   })
+
+  it('clears sensitive data when the current refresh becomes forbidden while a mutation is pending', async () => {
+    listUsers.mockResolvedValueOnce({ users: [{ id: 'initial' }] })
+    listAuditLogs.mockResolvedValueOnce({ auditLogs: [{ id: 'initial-log' }] })
+    const { result } = renderHook(() => useAdminUsers())
+    await waitFor(() => expect(result.current.users).toEqual([{ id: 'initial' }]))
+
+    let rejectRefresh
+    let completeRoleChange
+    listUsers.mockReturnValueOnce(new Promise((_, reject) => { rejectRefresh = reject }))
+    listAuditLogs.mockReturnValueOnce(new Promise(() => {}))
+    updateRole.mockReturnValueOnce(new Promise(resolve => { completeRoleChange = resolve }))
+
+    let refresh
+    let mutation
+    await act(async () => { refresh = result.current.refresh() })
+    await act(async () => { mutation = result.current.changeRole('u1', 'editor') })
+    await act(async () => {
+      rejectRefresh(new AdminUserError('FORBIDDEN'))
+      await refresh
+    })
+
+    expect(result.current.users).toEqual([])
+    expect(result.current.auditLogs).toEqual([])
+    expect(result.current.errorCode).toBe('FORBIDDEN')
+
+    await act(async () => { completeRoleChange({}) })
+    await act(async () => { await mutation })
+  })
 })

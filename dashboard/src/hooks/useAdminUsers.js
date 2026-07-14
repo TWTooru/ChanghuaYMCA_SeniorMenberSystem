@@ -63,7 +63,7 @@ export default function useAdminUsers() {
 
   const runMutation = useCallback(async (key, action) => {
     const operationId = ++mutationId.current
-    const operationGeneration = ++authorizationGeneration.current
+    const operationGeneration = authorizationGeneration.current
     activeMutations.current.set(operationId, key)
     setMutation(key)
     setErrorCode(null)
@@ -71,7 +71,7 @@ export default function useAdminUsers() {
       await action()
       await refresh()
     } catch (error) {
-      if (operationGeneration !== authorizationGeneration.current) return
+      if (operationId !== mutationId.current || operationGeneration !== authorizationGeneration.current) return
       if (SENSITIVE_ERROR_CODES.has(getErrorCode(error))) refreshId.current += 1
       handleError(error)
     } finally {
