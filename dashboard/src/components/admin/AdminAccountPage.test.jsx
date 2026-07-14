@@ -76,7 +76,7 @@ describe('AdminAccountPage', () => {
   it('explains invited accounts begin as viewers and sends only their email', () => {
     render(<AdminAccountPage />)
     fireEvent.click(screen.getByRole('button', { name: '邀請帳號' }))
-    expect(screen.getByText('Invited accounts start as viewers. You can promote them after they first sign in.')).toBeTruthy()
+    expect(screen.getByText('邀請的帳號預設為訪客，你可以後續自行調整權限。')).toBeTruthy()
     expect(screen.queryByLabelText('角色')).toBeNull()
     expect(screen.getByRole('button', { name: '送出邀請' }).disabled).toBe(true)
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'new@example.com' } })

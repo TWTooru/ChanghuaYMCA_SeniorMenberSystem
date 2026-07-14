@@ -20,7 +20,7 @@ export default function InviteUserModal({ open, busy, onCancel, onSubmit }) {
           <label className="form-group">Email
             <input className="form-input" type="email" value={email} onChange={event => setEmail(event.target.value)} />
           </label>
-          <p>Invited accounts start as viewers. You can promote them after they first sign in.</p>
+          <p>邀請的帳號預設為訪客，你可以後續自行調整權限。</p>
         </div>
         <div className="form-footer">
           <button type="button" className="btn-secondary" onClick={onCancel}>取消</button>
