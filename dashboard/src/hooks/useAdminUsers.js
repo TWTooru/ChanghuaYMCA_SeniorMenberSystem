@@ -22,13 +22,13 @@ export default function useAdminUsers() {
   const [mutation, setMutation] = useState(null)
   const [errorCode, setErrorCode] = useState(null)
   const refreshId = useRef(0)
+  const authorizationGeneration = useRef(0)
   const mutationId = useRef(0)
   const activeMutations = useRef(new Map())
 
   const handleError = useCallback(error => {
     const code = getErrorCode(error)
     if (SENSITIVE_ERROR_CODES.has(code)) {
-      refreshId.current += 1
       setUsers([])
       setAuditLogs([])
     }
@@ -37,20 +37,23 @@ export default function useAdminUsers() {
 
   const refresh = useCallback(async () => {
     const requestId = ++refreshId.current
+    const requestGeneration = ++authorizationGeneration.current
     setLoading(true)
     setErrorCode(null)
-    let sensitiveError = false
+    let handledError = false
     try {
       const [usersResult, auditLogsResult] = await Promise.all([listUsers(), listAuditLogs()])
-      if (requestId !== refreshId.current) return
+      if (requestId !== refreshId.current || requestGeneration !== authorizationGeneration.current) return
       setUsers(usersResult.users || [])
       setAuditLogs(auditLogsResult.auditLogs || [])
     } catch (error) {
+      if (requestId !== refreshId.current || requestGeneration !== authorizationGeneration.current) return
       const code = getErrorCode(error)
-      sensitiveError = SENSITIVE_ERROR_CODES.has(code)
-      if (sensitiveError || requestId === refreshId.current) handleError(error)
+      if (SENSITIVE_ERROR_CODES.has(code)) refreshId.current += 1
+      handleError(error)
+      handledError = true
     } finally {
-      if (sensitiveError || requestId === refreshId.current) setLoading(false)
+      if (handledError || (requestId === refreshId.current && requestGeneration === authorizationGeneration.current)) setLoading(false)
     }
   }, [handleError])
 
@@ -60,6 +63,7 @@ export default function useAdminUsers() {
 
   const runMutation = useCallback(async (key, action) => {
     const operationId = ++mutationId.current
+    const operationGeneration = ++authorizationGeneration.current
     activeMutations.current.set(operationId, key)
     setMutation(key)
     setErrorCode(null)
@@ -67,6 +71,8 @@ export default function useAdminUsers() {
       await action()
       await refresh()
     } catch (error) {
+      if (operationGeneration !== authorizationGeneration.current) return
+      if (SENSITIVE_ERROR_CODES.has(getErrorCode(error))) refreshId.current += 1
       handleError(error)
     } finally {
       activeMutations.current.delete(operationId)

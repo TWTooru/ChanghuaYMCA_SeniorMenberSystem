@@ -131,6 +131,39 @@ describe('useAdminUsers', () => {
     expect(result.current.auditLogs).toEqual([])
   })
 
+  it('ignores a forbidden error from an older refresh after a newer refresh succeeds', async () => {
+    listUsers
+      .mockResolvedValueOnce({ users: [{ id: 'initial' }] })
+    listAuditLogs
+      .mockResolvedValueOnce({ auditLogs: [{ id: 'initial-log' }] })
+    const { result } = renderHook(() => useAdminUsers())
+    await waitFor(() => expect(result.current.users).toEqual([{ id: 'initial' }]))
+
+    let rejectOlderUsers
+    let resolveOlderAuditLogs
+    listUsers
+      .mockReturnValueOnce(new Promise((_, reject) => { rejectOlderUsers = reject }))
+      .mockResolvedValueOnce({ users: [{ id: 'newer' }] })
+    listAuditLogs
+      .mockReturnValueOnce(new Promise(resolve => { resolveOlderAuditLogs = resolve }))
+      .mockResolvedValueOnce({ auditLogs: [{ id: 'newer-log' }] })
+
+    let olderRefresh
+    await act(async () => { olderRefresh = result.current.refresh() })
+    await act(async () => { await result.current.refresh() })
+
+    await act(async () => {
+      rejectOlderUsers(new AdminUserError('FORBIDDEN'))
+      resolveOlderAuditLogs({ auditLogs: [] })
+      await olderRefresh
+    })
+
+    expect(result.current.users).toEqual([{ id: 'newer' }])
+    expect(result.current.auditLogs).toEqual([{ id: 'newer-log' }])
+    expect(result.current.errorCode).toBeNull()
+    expect(result.current.loading).toBe(false)
+  })
+
   it.each([
     ['changeRole', 'role:u1', updateRole, ['u1', 'editor']],
     ['resend', 'resend:u1', resendInvite, ['u1']],
@@ -204,5 +237,31 @@ describe('useAdminUsers', () => {
     await act(async () => { completeRoleChange({}) })
     await act(async () => { await roleChange })
     expect(result.current.mutation).toBeNull()
+  })
+
+  it('ignores a forbidden error from an older mutation after a newer refresh succeeds', async () => {
+    listUsers.mockResolvedValueOnce({ users: [{ id: 'initial' }] })
+    listAuditLogs.mockResolvedValueOnce({ auditLogs: [{ id: 'initial-log' }] })
+    let rejectRoleChange
+    updateRole.mockReturnValueOnce(new Promise((_, reject) => { rejectRoleChange = reject }))
+
+    const { result } = renderHook(() => useAdminUsers())
+    await waitFor(() => expect(result.current.users).toEqual([{ id: 'initial' }]))
+
+    let olderMutation
+    await act(async () => { olderMutation = result.current.changeRole('u1', 'editor') })
+    listUsers.mockResolvedValueOnce({ users: [{ id: 'newer' }] })
+    listAuditLogs.mockResolvedValueOnce({ auditLogs: [{ id: 'newer-log' }] })
+    await act(async () => { await result.current.refresh() })
+
+    await act(async () => {
+      rejectRoleChange(new AdminUserError('UNAUTHENTICATED'))
+      await olderMutation
+    })
+
+    expect(result.current.users).toEqual([{ id: 'newer' }])
+    expect(result.current.auditLogs).toEqual([{ id: 'newer-log' }])
+    expect(result.current.errorCode).toBeNull()
+    expect(result.current.loading).toBe(false)
   })
 })
