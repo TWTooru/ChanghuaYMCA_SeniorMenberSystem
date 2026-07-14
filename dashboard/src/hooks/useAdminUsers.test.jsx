@@ -89,6 +89,20 @@ describe('useAdminUsers', () => {
     expect(result.current.mutation).toBeNull()
   })
 
+  it('returns false when a mutation fails after recording its stable error code', async () => {
+    listUsers.mockResolvedValue({ users: [] })
+    listAuditLogs.mockResolvedValue({ auditLogs: [] })
+    inviteUser.mockRejectedValueOnce(new AdminUserError('USER_EXISTS'))
+
+    const { result } = renderHook(() => useAdminUsers())
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    await act(async () => {
+      await expect(result.current.invite('exists@example.com', 'viewer')).resolves.toBe(false)
+    })
+    expect(result.current.errorCode).toBe('USER_EXISTS')
+  })
+
   it('clears sensitive data when refresh becomes forbidden', async () => {
     listUsers.mockResolvedValueOnce({ users: [{ id: 'u1' }] })
     listAuditLogs.mockResolvedValueOnce({ auditLogs: [{ id: 'a1' }] })

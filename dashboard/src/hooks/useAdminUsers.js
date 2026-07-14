@@ -70,10 +70,12 @@ export default function useAdminUsers() {
     try {
       await action()
       await refresh()
+      return true
     } catch (error) {
-      if (operationGeneration !== authorizationGeneration.current) return
+      if (operationGeneration !== authorizationGeneration.current) return false
       if (SENSITIVE_ERROR_CODES.has(getErrorCode(error))) refreshId.current += 1
       handleError(error)
+      return false
     } finally {
       activeMutations.current.delete(operationId)
       const activeKeys = Array.from(activeMutations.current.values())

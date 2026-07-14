@@ -31,11 +31,15 @@ function AuthorizedAdminAccountPage() {
   const invitedCount = users.filter(user => user.status === 'invited').length
   const deleteBusy = mutation === `delete:${deleteTarget?.id}`
 
-  const submitInvite = async (email, role) => { await invite(email, role); setInviteOpen(false) }
-  const submitDelete = async email => { await remove(deleteTarget.id, email); setDeleteTarget(null) }
-  const selectRole = (target, role) => {
+  const submitInvite = async (email, role) => {
+    if (await invite(email, role)) setInviteOpen(false)
+  }
+  const submitDelete = async email => {
+    if (await remove(deleteTarget.id, email)) setDeleteTarget(null)
+  }
+  const selectRole = async (target, role) => {
     if (target.id === currentUser?.id || (target.role === 'admin' && adminCount <= 1)) return
-    setReloginNotice(true); changeRole(target.id, role)
+    if (await changeRole(target.id, role)) setReloginNotice(true)
   }
 
   return (

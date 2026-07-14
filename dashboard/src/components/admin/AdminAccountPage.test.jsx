@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import AdminAccountPage from './AdminAccountPage'
 import { useAuth } from '../../contexts/AuthContext'
@@ -40,6 +40,11 @@ describe('AdminAccountPage', () => {
     adminState.loading = false
     adminState.mutation = null
     adminState.errorCode = null
+    adminState.invite.mockResolvedValue(true)
+    adminState.changeRole.mockResolvedValue(true)
+    adminState.resend.mockResolvedValue(true)
+    adminState.resetPassword.mockResolvedValue(true)
+    adminState.remove.mockResolvedValue(true)
     useAuth.mockImplementation(() => authState)
     useAdminUsers.mockImplementation(() => adminState)
   })
@@ -84,11 +89,41 @@ describe('AdminAccountPage', () => {
     expect(screen.getByRole('button', { name: '寄送密碼重設 member@example.com' })).toBeTruthy()
   })
 
-  it('shows a relogin notice after requesting a role change', () => {
+  it('shows a relogin notice after requesting a role change', async () => {
     render(<AdminAccountPage />)
     fireEvent.change(screen.getByLabelText('變更 member@example.com 的角色'), { target: { value: 'viewer' } })
     expect(adminState.changeRole).toHaveBeenCalledWith('u3', 'viewer')
-    expect(screen.getByText('角色變更後，該使用者需要重新登入。')).toBeTruthy()
+    await waitFor(() => expect(screen.getByText('角色變更後，該使用者需要重新登入。')).toBeTruthy())
+  })
+
+  it('keeps the invite dialog and entered email open when inviting fails', async () => {
+    adminState.invite.mockResolvedValueOnce(false)
+    render(<AdminAccountPage />)
+    fireEvent.click(screen.getByRole('button', { name: '邀請帳號' }))
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'failed@example.com' } })
+    fireEvent.click(screen.getByRole('button', { name: '送出邀請' }))
+    await waitFor(() => expect(adminState.invite).toHaveBeenCalledWith('failed@example.com', 'viewer'))
+    expect(screen.getByRole('dialog', { name: '邀請帳號' })).toBeTruthy()
+    expect(screen.getByLabelText('Email').value).toBe('failed@example.com')
+  })
+
+  it('keeps the delete dialog open when deletion fails', async () => {
+    adminState.remove.mockResolvedValueOnce(false)
+    render(<AdminAccountPage />)
+    fireEvent.click(screen.getByLabelText('刪除 member@example.com'))
+    fireEvent.change(screen.getByLabelText('輸入確認 Email'), { target: { value: 'member@example.com' } })
+    fireEvent.click(screen.getByRole('button', { name: '永久刪除' }))
+    await waitFor(() => expect(adminState.remove).toHaveBeenCalledWith('u3', 'member@example.com'))
+    expect(screen.getByRole('dialog', { name: '永久刪除帳號' })).toBeTruthy()
+    expect(screen.getByLabelText('輸入確認 Email').value).toBe('member@example.com')
+  })
+
+  it('does not show the relogin notice when a role change fails', async () => {
+    adminState.changeRole.mockResolvedValueOnce(false)
+    render(<AdminAccountPage />)
+    fireEvent.change(screen.getByLabelText('變更 member@example.com 的角色'), { target: { value: 'viewer' } })
+    await waitFor(() => expect(adminState.changeRole).toHaveBeenCalledWith('u3', 'viewer'))
+    expect(screen.queryByText('角色變更後，該使用者需要重新登入。')).toBeNull()
   })
 
   it('renders summary counts and audit snapshots', () => {
