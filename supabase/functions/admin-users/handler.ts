@@ -153,6 +153,7 @@ async function handleMutation(
           actorId: actor.id, targetId: target.id, targetRole,
           nextRole: role, adminCount: adminCount(users),
         })
+        if (!target.last_sign_in_at) throw new ApiError('FIRST_LOGIN_REQUIRED')
         updated = await deps.updateUser(target.id, {
           app_metadata: { ...target.app_metadata, app_role: role },
         })

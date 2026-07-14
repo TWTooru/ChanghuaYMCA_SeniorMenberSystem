@@ -7,6 +7,7 @@ import InviteUserModal from './InviteUserModal'
 
 const ROLE_LABELS = { admin: '管理員', editor: '編輯者', viewer: '瀏覽者' }
 const ERROR_MESSAGES = {
+  FIRST_LOGIN_REQUIRED: '受邀帳號必須先完成首次登入，之後才能變更角色。',
   UNAUTHENTICATED: '登入已逾期，請重新登入後再試。',
   FORBIDDEN: '您沒有執行帳號管理操作的權限。',
   INVALID_INPUT: '輸入資料格式不正確。', USER_EXISTS: '此 Email 已有帳號。',
@@ -38,7 +39,7 @@ function AuthorizedAdminAccountPage() {
     if (await remove(deleteTarget.id, email)) setDeleteTarget(null)
   }
   const selectRole = async (target, role) => {
-    if (target.id === currentUser?.id || (target.role === 'admin' && adminCount <= 1)) return
+    if (!target.lastSignInAt || target.id === currentUser?.id || (target.role === 'admin' && adminCount <= 1)) return
     if (await changeRole(target.id, role)) setReloginNotice(true)
   }
 
@@ -55,7 +56,8 @@ function AuthorizedAdminAccountPage() {
       {loading ? <p>載入帳號資料中…</p> : <div className="admin-user-table"><table className="data-table"><thead><tr><th>Email</th><th>角色</th><th>狀態</th><th>操作</th></tr></thead><tbody>
         {users.map(target => {
           const protectedUser = target.id === currentUser?.id || (target.role === 'admin' && adminCount <= 1)
-          return <tr key={target.id}><td>{target.email}</td><td><select aria-label={`變更 ${target.email} 的角色`} value={target.role} disabled={protectedUser || mutation === `role:${target.id}`} onChange={event => selectRole(target, event.target.value)}>{Object.entries(ROLE_LABELS).map(([role, label]) => <option key={role} value={role}>{label}</option>)}</select></td><td><span className={`admin-status-badge ${target.status}`}>{target.status === 'active' ? '啟用中' : '已邀請'}</span></td><td className="admin-actions">{target.status === 'invited' ? <button className="btn-secondary" type="button" disabled={mutation === `resend:${target.id}`} onClick={() => resend(target.id)} aria-label={`重新寄送邀請 ${target.email}`}>重新寄送邀請</button> : <button className="btn-secondary" type="button" disabled={mutation === `reset:${target.id}`} onClick={() => resetPassword(target.id)} aria-label={`寄送密碼重設 ${target.email}`}>寄送密碼重設</button>}<button className="btn-delete" type="button" disabled={protectedUser} onClick={() => setDeleteTarget(target)} aria-label={`刪除 ${target.email}`}>刪除</button></td></tr>
+          const firstLoginRequired = !target.lastSignInAt
+          return <tr key={target.id}><td>{target.email}</td><td><select aria-label={`變更 ${target.email} 的角色`} value={target.role} disabled={firstLoginRequired || protectedUser || mutation === `role:${target.id}`} onChange={event => selectRole(target, event.target.value)}>{Object.entries(ROLE_LABELS).map(([role, label]) => <option key={role} value={role}>{label}</option>)}</select></td><td><span className={`admin-status-badge ${target.status}`}>{target.status === 'active' ? '啟用中' : '已邀請'}</span></td><td className="admin-actions">{target.status === 'invited' ? <button className="btn-secondary" type="button" disabled={mutation === `resend:${target.id}`} onClick={() => resend(target.id)} aria-label={`重新寄送邀請 ${target.email}`}>重新寄送邀請</button> : <button className="btn-secondary" type="button" disabled={mutation === `reset:${target.id}`} onClick={() => resetPassword(target.id)} aria-label={`寄送密碼重設 ${target.email}`}>寄送密碼重設</button>}<button className="btn-delete" type="button" disabled={protectedUser} onClick={() => setDeleteTarget(target)} aria-label={`刪除 ${target.email}`}>刪除</button></td></tr>
         })}
       </tbody></table></div>}
       <AdminAuditLog auditLogs={auditLogs} />

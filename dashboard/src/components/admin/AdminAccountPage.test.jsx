@@ -10,9 +10,9 @@ vi.mock('../../hooks/useAdminUsers', () => ({ default: vi.fn() }))
 const authState = { role: 'admin', user: { id: 'admin-1', email: 'admin@example.com' } }
 const adminState = {
   users: [
-    { id: 'admin-1', email: 'admin@example.com', role: 'admin', status: 'active' },
+    { id: 'admin-1', email: 'admin@example.com', role: 'admin', status: 'active', lastSignInAt: '2026-07-14T00:00:00.000Z' },
     { id: 'u2', email: 'invitee@example.com', role: 'viewer', status: 'invited' },
-    { id: 'u3', email: 'member@example.com', role: 'editor', status: 'active' },
+    { id: 'u3', email: 'member@example.com', role: 'editor', status: 'active', lastSignInAt: '2026-07-14T00:00:00.000Z' },
   ],
   auditLogs: [{ id: 'audit-1', action: 'invite_user', status: 'success', actorEmail: 'admin@example.com', targetEmail: 'old@example.com', oldRole: null, newRole: 'viewer', createdAt: '2026-07-14T00:00:00.000Z' }],
   loading: false,
@@ -32,9 +32,9 @@ describe('AdminAccountPage', () => {
     authState.role = 'admin'
     authState.user = { id: 'admin-1', email: 'admin@example.com' }
     adminState.users = [
-      { id: 'admin-1', email: 'admin@example.com', role: 'admin', status: 'active' },
+      { id: 'admin-1', email: 'admin@example.com', role: 'admin', status: 'active', lastSignInAt: '2026-07-14T00:00:00.000Z' },
       { id: 'u2', email: 'invitee@example.com', role: 'viewer', status: 'invited' },
-      { id: 'u3', email: 'member@example.com', role: 'editor', status: 'active' },
+      { id: 'u3', email: 'member@example.com', role: 'editor', status: 'active', lastSignInAt: '2026-07-14T00:00:00.000Z' },
     ]
     adminState.auditLogs = [{ id: 'audit-1', action: 'invite_user', status: 'success', actorEmail: 'admin@example.com', targetEmail: 'old@example.com', oldRole: null, newRole: 'viewer', createdAt: '2026-07-14T00:00:00.000Z' }]
     adminState.loading = false
@@ -88,6 +88,21 @@ describe('AdminAccountPage', () => {
     render(<AdminAccountPage />)
     expect(screen.getByRole('button', { name: '重新寄送邀請 invitee@example.com' })).toBeTruthy()
     expect(screen.getByRole('button', { name: '寄送密碼重設 member@example.com' })).toBeTruthy()
+  })
+
+  it('locks role changes for accounts that have not completed their first sign-in', () => {
+    adminState.users[1] = {
+      ...adminState.users[1],
+      lastSignInAt: null,
+    }
+    render(<AdminAccountPage />)
+
+    const roleSelector = screen.getByRole('combobox', { name: /invitee@example\.com/ })
+    expect(roleSelector.disabled).toBe(true)
+    fireEvent.change(roleSelector, { target: { value: 'editor' } })
+    expect(adminState.changeRole).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: '重新寄送邀請 invitee@example.com' }).disabled).toBe(false)
+    expect(screen.getByLabelText('刪除 invitee@example.com').disabled).toBe(false)
   })
 
   it('shows a relogin notice after requesting a role change', async () => {

@@ -35,6 +35,10 @@ function authUser(id: string, email: string, role: string) {
   }
 }
 
+function signedInUser(id: string, email: string, role: string) {
+  return { ...authUser(id, email, role), last_sign_in_at: '2026-07-14T00:00:00.000Z' }
+}
+
 function request(body: unknown) {
   return new Request('http://localhost/admin-users', {
     method: 'POST',
@@ -288,16 +292,31 @@ Deno.test('invite ignores arbitrary supplied roles but rejects duplicate emails 
 
 Deno.test('allows changing another admin while two admins remain', async () => {
   const deps = fakeDeps({ actorRole: 'admin' })
-  deps.users = [authUser('actor', 'actor@example.com', 'admin'), authUser('last', 'last@example.com', 'admin')]
+  deps.users = [authUser('actor', 'actor@example.com', 'admin'), signedInUser('last', 'last@example.com', 'admin')]
   const response = await createAdminUsersHandler(deps)(request({
     action: 'update_role', userId: 'last', role: 'viewer',
   }))
   assertEquals(response.status, 200)
 })
 
+Deno.test('rejects a forged role update before an invited account first signs in', async () => {
+  const deps = fakeDeps({ actorRole: 'admin' })
+  deps.users = [authUser('target', 'invited@example.com', 'viewer')]
+  const response = await createAdminUsersHandler(deps)(request({
+    action: 'update_role', userId: 'target', role: 'editor',
+  }))
+  const body: any = await response.json()
+  assertEquals(response.status, 409)
+  assertEquals(body.error.code, 'FIRST_LOGIN_REQUIRED')
+  assertEquals(deps.calls.updateUser, 0)
+  assertEquals(deps.completedAudits.at(-1), {
+    id: 'audit-1', status: 'failure', errorCode: 'FIRST_LOGIN_REQUIRED',
+  })
+})
+
 Deno.test('failed role updates complete their pending audit with the fixed Auth error code', async () => {
   const deps = fakeDeps({ updateError: true })
-  deps.users = [authUser('target', 'target@example.com', 'viewer')]
+  deps.users = [signedInUser('target', 'target@example.com', 'viewer')]
   const response = await createAdminUsersHandler(deps)(request({
     action: 'update_role', userId: 'target', role: 'editor',
   }))
@@ -309,7 +328,7 @@ Deno.test('failed role updates complete their pending audit with the fixed Auth 
 
 Deno.test('a concurrent last-admin database rejection is surfaced safely after the early guard', async () => {
   const deps = fakeDeps({ updateError: true })
-  deps.users = [authUser('actor', 'actor@example.com', 'admin'), authUser('target', 'target@example.com', 'admin')]
+  deps.users = [authUser('actor', 'actor@example.com', 'admin'), signedInUser('target', 'target@example.com', 'admin')]
   const response = await createAdminUsersHandler(deps)(request({
     action: 'update_role', userId: 'target', role: 'viewer',
   }))
@@ -342,7 +361,7 @@ Deno.test('update role rejects unknown user and preserves the last admin', async
   assertEquals(unknown.calls.insertAudit, 0)
 
   const lastAdmin = fakeDeps()
-  lastAdmin.users = [authUser('actor', 'actor@example.com', 'admin'), authUser('last', 'last@example.com', 'admin')]
+  lastAdmin.users = [authUser('actor', 'actor@example.com', 'admin'), signedInUser('last', 'last@example.com', 'admin')]
   lastAdmin.users.shift()
   lastAdmin.actor = authUser('actor', 'actor@example.com', 'admin')
   response = await createAdminUsersHandler(lastAdmin)(request({
