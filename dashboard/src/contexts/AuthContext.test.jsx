@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { extractRole } from './AuthContext'
+import { detectPasswordFlow, extractRole } from './AuthContext'
 
 describe('extractRole', () => {
   it('extracts role from session app_metadata', () => {
@@ -24,5 +24,23 @@ describe('extractRole', () => {
   it('defaults to viewer when app_role is empty string', () => {
     const session = { user: { app_metadata: { app_role: '' } } }
     expect(extractRole(session)).toBe('viewer')
+  })
+})
+
+describe('detectPasswordFlow', () => {
+  it('recognizes invite setup links', () => {
+    expect(detectPasswordFlow({ pathname: '/set-password', search: '?flow=invite' })).toBe('invite')
+  })
+
+  it('recognizes recovery setup links', () => {
+    expect(detectPasswordFlow({ pathname: '/set-password', search: '?flow=recovery' })).toBe('recovery')
+  })
+
+  it('ignores normal application URLs', () => {
+    expect(detectPasswordFlow({ pathname: '/', search: '' })).toBeNull()
+  })
+
+  it('ignores unknown password flows', () => {
+    expect(detectPasswordFlow({ pathname: '/set-password', search: '?flow=unknown' })).toBeNull()
   })
 })

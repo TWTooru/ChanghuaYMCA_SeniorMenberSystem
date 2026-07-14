@@ -7,15 +7,24 @@ const AuthContext = createContext({
     role: 'viewer',
     loading: true,
     signOut: async () => {},
+    passwordFlow: null,
+    completePasswordFlow: () => {},
 });
 
 export function extractRole(session) {
     return session?.user?.app_metadata?.app_role || 'viewer';
 }
 
+export function detectPasswordFlow(locationLike) {
+    if (locationLike?.pathname !== '/set-password') return null;
+    const flow = new URLSearchParams(locationLike.search).get('flow');
+    return flow === 'invite' || flow === 'recovery' ? flow : null;
+}
+
 export const AuthProvider = ({ children }) => {
     const [session, setSession] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [passwordFlow, setPasswordFlow] = useState(() => detectPasswordFlow(window.location));
 
     useEffect(() => {
         supabase.auth.getSession().then(({ data: { session } }) => {
@@ -23,8 +32,9 @@ export const AuthProvider = ({ children }) => {
             setLoading(false);
         });
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
             setSession(session);
+            if (event === 'PASSWORD_RECOVERY') setPasswordFlow('recovery');
         });
 
         return () => subscription.unsubscribe();
@@ -37,8 +47,13 @@ export const AuthProvider = ({ children }) => {
         await supabase.auth.signOut();
     };
 
+    const completePasswordFlow = () => {
+        window.history.replaceState({}, document.title, '/');
+        setPasswordFlow(null);
+    };
+
     return (
-        <AuthContext.Provider value={{ session, user, role, loading, signOut }}>
+        <AuthContext.Provider value={{ session, user, role, loading, signOut, passwordFlow, completePasswordFlow }}>
             {!loading && children}
         </AuthContext.Provider>
     );

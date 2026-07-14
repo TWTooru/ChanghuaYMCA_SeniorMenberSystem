@@ -11,12 +11,13 @@ import AddStudentModal from './components/students/AddStudentModal'
 import AddEnrollModal from './components/enrollment/AddEnrollModal'
 import ExcelSync from './components/sync/ExcelSync'
 import Login from './components/auth/Login'
+import PasswordSetup from './components/auth/PasswordSetup'
 import { useAuth } from './contexts/AuthContext'
 import usePermissions from './hooks/usePermissions'
 import { exportToExcel } from './lib/excelExport'
 import { normalizeEducation } from './domain/studentFields'
 
-function App() {
+function AuthenticatedDashboard() {
   const { session, user, role, signOut } = useAuth()
   const permissions = usePermissions(role)
   const ROLE_LABELS = { admin: '管理員', editor: '編輯者', viewer: '檢視者' }
@@ -218,6 +219,20 @@ function App() {
       )}
     </div>
   )
+}
+
+function App() {
+  const { session, passwordFlow, completePasswordFlow } = useAuth()
+
+  if (passwordFlow) {
+    return <PasswordSetup session={session} flow={passwordFlow} onComplete={completePasswordFlow} />
+  }
+
+  if (!session) {
+    return <Login />
+  }
+
+  return <AuthenticatedDashboard />
 }
 
 export default App

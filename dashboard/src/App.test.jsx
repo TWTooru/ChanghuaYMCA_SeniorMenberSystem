@@ -2,11 +2,19 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 
+const apiDataSpy = vi.fn(() => ({
+  dbData: { students: [], enrollments: [] },
+  dbStatus: 'connected',
+  dbError: null,
+}))
+
 const signOut = vi.fn()
 const authState = {
   session: { access_token: 'test-token' },
   user: { email: 'viewer@example.com' },
   role: 'viewer',
+  passwordFlow: null,
+  completePasswordFlow: vi.fn(),
   signOut,
 }
 
@@ -15,11 +23,7 @@ vi.mock('./contexts/AuthContext', () => ({
 }))
 
 vi.mock('./hooks/useApiData', () => ({
-  default: () => ({
-    dbData: { students: [], enrollments: [] },
-    dbStatus: 'connected',
-    dbError: null,
-  }),
+  default: (...args) => apiDataSpy(...args),
 }))
 
 vi.mock('./components/overview/OverviewTab', () => ({ default: () => null }))
@@ -30,6 +34,7 @@ vi.mock('./components/students/AddStudentModal', () => ({ default: () => null })
 vi.mock('./components/enrollment/AddEnrollModal', () => ({ default: () => null }))
 vi.mock('./components/sync/ExcelSync', () => ({ default: () => <div data-testid="excel-sync" /> }))
 vi.mock('./components/auth/Login', () => ({ default: () => null }))
+vi.mock('./components/auth/PasswordSetup', () => ({ default: () => <div data-testid="password-setup" /> }))
 vi.mock('./lib/excelExport', () => ({ exportToExcel: vi.fn() }))
 
 describe('App header access controls', () => {
@@ -37,7 +42,9 @@ describe('App header access controls', () => {
 
   beforeEach(() => {
     authState.role = 'viewer'
+    authState.passwordFlow = null
     signOut.mockClear()
+    apiDataSpy.mockClear()
   })
 
   it('shows the signed-in user email and role badge', () => {
@@ -79,5 +86,14 @@ describe('App header access controls', () => {
     expect(document.querySelector('.header-role-badge')?.textContent).toBe('檢視者')
     expect(screen.queryAllByTestId('excel-sync')).toHaveLength(0)
     expect(document.querySelector('.btn-secondary')).toBeNull()
+  })
+
+  it('renders password setup before mounting authenticated dashboard data', () => {
+    authState.passwordFlow = 'invite'
+
+    render(<App />)
+
+    expect(screen.getByTestId('password-setup')).toBeTruthy()
+    expect(apiDataSpy).not.toHaveBeenCalled()
   })
 })
