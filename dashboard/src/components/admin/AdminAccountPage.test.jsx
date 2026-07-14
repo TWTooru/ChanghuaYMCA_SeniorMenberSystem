@@ -90,6 +90,14 @@ describe('AdminAccountPage', () => {
     expect(screen.getByRole('button', { name: '寄送密碼重設 member@example.com' })).toBeTruthy()
   })
 
+  it('assigns each user role selector its role color class', () => {
+    render(<AdminAccountPage />)
+
+    expect(screen.getByRole('combobox', { name: /admin@example\.com/ }).className).toContain('admin-role-select--admin')
+    expect(screen.getByRole('combobox', { name: /invitee@example\.com/ }).className).toContain('admin-role-select--viewer')
+    expect(screen.getByRole('combobox', { name: /member@example\.com/ }).className).toContain('admin-role-select--editor')
+  })
+
   it('locks role changes for accounts that have not completed their first sign-in', () => {
     adminState.users[1] = {
       ...adminState.users[1],

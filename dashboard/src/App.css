@@ -1266,6 +1266,10 @@
 .admin-user-table { overflow-x: auto; border: 1px solid var(--border-color); border-radius: 12px; margin-bottom: 24px; }
 .admin-user-table table { min-width: 760px; }
 .admin-role-badge, .admin-status-badge { display: inline-flex; padding: 3px 8px; border-radius: 999px; font-size: 12px; background: var(--color-accent-glow); color: #c7d2fe; }
+.admin-role-select { border: 1px solid; font-weight: 600; }
+.admin-role-select--admin { background: rgba(239, 68, 68, .15); border-color: rgba(248, 113, 113, .5); color: #fca5a5; }
+.admin-role-select--editor { background: rgba(245, 158, 11, .15); border-color: rgba(251, 191, 36, .5); color: #fcd34d; }
+.admin-role-select--viewer { background: rgba(59, 130, 246, .15); border-color: rgba(96, 165, 250, .5); color: #93c5fd; }
 .admin-status-badge.active, .admin-status-badge.success { background: var(--color-success-glow); color: #6ee7b7; }
 .admin-status-badge.invited, .admin-status-badge.pending { background: rgba(245, 158, 11, .15); color: #fbbf24; }
 .admin-status-badge.failure { background: var(--color-danger-glow); color: #fca5a5; }
