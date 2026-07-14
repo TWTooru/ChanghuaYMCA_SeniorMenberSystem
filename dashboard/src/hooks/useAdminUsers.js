@@ -43,7 +43,7 @@ export default function useAdminUsers() {
     let handledError = false
     try {
       const [usersResult, auditLogsResult] = await Promise.all([listUsers(), listAuditLogs()])
-      if (requestId !== refreshId.current || requestGeneration !== authorizationGeneration.current) return
+      if (requestId !== refreshId.current) return
       setUsers(usersResult.users || [])
       setAuditLogs(auditLogsResult.auditLogs || [])
     } catch (error) {
@@ -53,7 +53,7 @@ export default function useAdminUsers() {
       handleError(error)
       handledError = true
     } finally {
-      if (handledError || (requestId === refreshId.current && requestGeneration === authorizationGeneration.current)) setLoading(false)
+      if (handledError || requestId === refreshId.current) setLoading(false)
     }
   }, [handleError])
 

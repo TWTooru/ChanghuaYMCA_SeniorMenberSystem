@@ -264,4 +264,27 @@ describe('useAdminUsers', () => {
     expect(result.current.errorCode).toBeNull()
     expect(result.current.loading).toBe(false)
   })
+
+  it('keeps an in-flight refresh when a mutation fails with a non-auth error', async () => {
+    let resolveUsers
+    let resolveAuditLogs
+    listUsers.mockReturnValueOnce(new Promise(resolve => { resolveUsers = resolve }))
+    listAuditLogs.mockReturnValueOnce(new Promise(resolve => { resolveAuditLogs = resolve }))
+    updateRole.mockRejectedValueOnce(new AdminUserError('INVALID_ROLE'))
+
+    const { result } = renderHook(() => useAdminUsers())
+    await waitFor(() => expect(listUsers).toHaveBeenCalledOnce())
+
+    await act(async () => { await result.current.changeRole('u1', 'editor') })
+    expect(result.current.loading).toBe(true)
+
+    await act(async () => {
+      resolveUsers({ users: [{ id: 'u1' }] })
+      resolveAuditLogs({ auditLogs: [{ id: 'a1' }] })
+    })
+
+    expect(result.current.users).toEqual([{ id: 'u1' }])
+    expect(result.current.auditLogs).toEqual([{ id: 'a1' }])
+    expect(result.current.loading).toBe(false)
+  })
 })
