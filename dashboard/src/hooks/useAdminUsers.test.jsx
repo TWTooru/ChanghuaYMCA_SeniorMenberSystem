@@ -316,4 +316,34 @@ describe('useAdminUsers', () => {
     await act(async () => { completeRoleChange({}) })
     await act(async () => { await mutation })
   })
+
+  it('clears sensitive data when an earlier pending mutation becomes forbidden while a newer mutation is pending', async () => {
+    listUsers.mockResolvedValueOnce({ users: [{ id: 'initial' }] })
+    listAuditLogs.mockResolvedValueOnce({ auditLogs: [{ id: 'initial-log' }] })
+    const { result } = renderHook(() => useAdminUsers())
+    await waitFor(() => expect(result.current.users).toEqual([{ id: 'initial' }]))
+
+    let rejectFirstMutation
+    let rejectSecondMutation
+    updateRole.mockReturnValueOnce(new Promise((_, reject) => { rejectFirstMutation = reject }))
+    resendInvite.mockReturnValueOnce(new Promise((_, reject) => { rejectSecondMutation = reject }))
+
+    let firstMutation
+    let secondMutation
+    await act(async () => { firstMutation = result.current.changeRole('u1', 'editor') })
+    await act(async () => { secondMutation = result.current.resend('u2') })
+    await act(async () => {
+      rejectFirstMutation(new AdminUserError('FORBIDDEN'))
+      await firstMutation
+    })
+
+    expect(result.current.users).toEqual([])
+    expect(result.current.auditLogs).toEqual([])
+    expect(result.current.errorCode).toBe('FORBIDDEN')
+
+    await act(async () => {
+      rejectSecondMutation(new AdminUserError('INVALID_ROLE'))
+      await secondMutation
+    })
+  })
 })
