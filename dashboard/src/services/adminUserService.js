@@ -29,8 +29,8 @@ async function invoke(action, payload = {}) {
 
 export const listUsers = () => invoke('list_users')
 export const listAuditLogs = () => invoke('list_audit_logs')
-export const inviteUser = (email, role = 'viewer') =>
-  invoke('invite_user', { email: email.trim().toLowerCase(), role })
+export const inviteUser = email =>
+  invoke('invite_user', { email: email.trim().toLowerCase() })
 export const updateRole = (userId, role) => invoke('update_role', { userId, role })
 export const resendInvite = userId => invoke('resend_invite', { userId })
 export const sendPasswordReset = userId => invoke('send_password_reset', { userId })

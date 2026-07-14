@@ -1,6 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.110.0'
 import { createCorsHeaders } from '../_shared/cors.ts'
-import { ApiError, type AppRole } from './domain.ts'
+import { ApiError } from './domain.ts'
 import { createAdminUsersHandler, type HandlerDeps } from './handler.ts'
 
 type Environment = Record<string, string | undefined>
@@ -55,8 +55,7 @@ function mapAuditLog(row: Record<string, any>) {
 }
 
 export function createSupabaseDeps(client: SupabaseClientLike, env: Environment): HandlerDeps {
-  const inviteOptions = (role: AppRole) => ({
-    data: { app_role: role },
+  const inviteOptions = () => ({
     ...(env.INVITE_REDIRECT_URL ? { redirectTo: env.INVITE_REDIRECT_URL } : {}),
   })
   const redirectOptions = (url: string | undefined) => url ? { redirectTo: url } : {}
@@ -72,8 +71,8 @@ export function createSupabaseDeps(client: SupabaseClientLike, env: Environment)
     async listUsers() {
       return unwrap<any>(await client.auth.admin.listUsers({ page: 1, perPage: 100 })).users
     },
-    async inviteUser(email, role) {
-      return unwrap<any>(await client.auth.admin.inviteUserByEmail(email, inviteOptions(role))).user
+    async inviteUser(email) {
+      return unwrap<any>(await client.auth.admin.inviteUserByEmail(email, inviteOptions())).user
     },
     async updateUser(id, attributes) {
       return unwrap<any>(await client.auth.admin.updateUserById(id, attributes)).user

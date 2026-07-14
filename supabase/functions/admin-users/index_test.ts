@@ -45,7 +45,7 @@ Deno.test('adapter maps the database last-admin sentinel to a stable API error',
   await assertRejects(() => deps.deleteUser('user-1'), Error, 'LAST_ADMIN_PROTECTED')
 })
 
-Deno.test('adapter assigns the requested role in its single invitation call', async () => {
+Deno.test('adapter sends invite without app role metadata', async () => {
   let call: unknown
   const deps = createSupabaseDeps({
     auth: { getUser: async () => ({ data: { user: null }, error: null }), admin: {
@@ -55,6 +55,6 @@ Deno.test('adapter assigns the requested role in its single invitation call', as
     }, resetPasswordForEmail: async () => ({ data: {}, error: null }) },
     from: () => ({ insert: () => ({ select: () => ({ single: async () => ({ data: null, error: null }) }) }), update: () => ({ eq: async () => ({ error: null }) }), select: () => ({ order: () => ({ limit: async () => ({ data: [], error: null }) }) }) }),
   } as any, { INVITE_REDIRECT_URL: 'https://dashboard.example.com/invite' })
-  await deps.inviteUser('person@example.com', 'editor')
-  assertEquals(call, ['person@example.com', { data: { app_role: 'editor' }, redirectTo: 'https://dashboard.example.com/invite' }])
+  await deps.inviteUser('person@example.com')
+  assertEquals(call, ['person@example.com', { redirectTo: 'https://dashboard.example.com/invite' }])
 })

@@ -83,7 +83,7 @@ export default function useAdminUsers() {
     }
   }, [handleError, refresh])
 
-  const invite = useCallback((email, role) => runMutation('invite', () => inviteUser(email, role)), [runMutation])
+  const invite = useCallback(email => runMutation('invite', () => inviteUser(email)), [runMutation])
   const changeRole = useCallback((userId, role) => runMutation(`role:${userId}`, () => updateRole(userId, role)), [runMutation])
   const resend = useCallback(userId => runMutation(`resend:${userId}`, () => resendInvite(userId)), [runMutation])
   const resetPassword = useCallback(userId => runMutation(`reset:${userId}`, () => sendPasswordReset(userId)), [runMutation])

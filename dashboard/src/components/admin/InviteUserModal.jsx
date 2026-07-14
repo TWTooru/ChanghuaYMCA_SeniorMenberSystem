@@ -4,13 +4,12 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export default function InviteUserModal({ open, busy, onCancel, onSubmit }) {
   const [email, setEmail] = useState('')
-  const [role, setRole] = useState('viewer')
   if (!open) return null
 
   const validEmail = EMAIL_PATTERN.test(email.trim())
   const submit = event => {
     event.preventDefault()
-    if (validEmail && !busy) onSubmit(email.trim(), role)
+    if (validEmail && !busy) onSubmit(email.trim())
   }
 
   return (
@@ -21,11 +20,7 @@ export default function InviteUserModal({ open, busy, onCancel, onSubmit }) {
           <label className="form-group">Email
             <input className="form-input" type="email" value={email} onChange={event => setEmail(event.target.value)} />
           </label>
-          <label className="form-group">角色
-            <select className="form-select" value={role} onChange={event => setRole(event.target.value)}>
-              <option value="viewer">瀏覽者</option><option value="editor">編輯者</option><option value="admin">管理員</option>
-            </select>
-          </label>
+          <p>Invited accounts start as viewers. You can promote them after they first sign in.</p>
         </div>
         <div className="form-footer">
           <button type="button" className="btn-secondary" onClick={onCancel}>取消</button>

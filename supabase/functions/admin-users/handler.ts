@@ -14,7 +14,7 @@ import {
 export type HandlerDeps = {
   getActor(token: string): Promise<any>
   listUsers(): Promise<any[]>
-  inviteUser(email: string, role: AppRole): Promise<any>
+  inviteUser(email: string): Promise<any>
   updateUser(id: string, attributes: Record<string, unknown>): Promise<any>
   deleteUser(id: string): Promise<void>
   resendInvite(email: string): Promise<void>
@@ -116,7 +116,7 @@ async function handleMutation(
   switch (action) {
     case 'invite_user': {
       const email = normalizeEmail(body.email)
-      const role = requireRole(body.role ?? 'viewer')
+      const role: AppRole = 'viewer'
       const audit = await startAudit(deps, {
         actor_user_id: actor.id, actor_email: actor.email, action,
         target_email: email, new_role: role, status: 'pending',
@@ -127,7 +127,7 @@ async function handleMutation(
         if (users.some(user => normalizeEmail(user.email) === email)) {
           throw new ApiError('USER_EXISTS')
         }
-        invited = await deps.inviteUser(email, role)
+        invited = await deps.inviteUser(email)
       } catch (caught) {
         const code = errorCode(caught)
         await completeAudit(deps, audit.id, 'failure', code)

@@ -10,7 +10,7 @@ type FakeDeps = HandlerDeps & {
   calls: Calls
   insertedAudits: Record<string, unknown>[]
   completedAudits: Array<{ id: string; status: 'success' | 'failure'; errorCode?: string }>
-  inviteRequests: Array<{ email: string; role: string }>
+  inviteRequests: string[]
 }
 
 type FakeOptions = {
@@ -86,11 +86,11 @@ function fakeDeps({
       calls.listUsers++
       return deps.users
     },
-    async inviteUser(email, role) {
+    async inviteUser(email) {
       calls.inviteUser++
-      deps.inviteRequests.push({ email, role })
+      deps.inviteRequests.push(email)
       if (inviteError) throw new Error('invite failed')
-      return authUser('invited', email, role)
+      return authUser('invited', email, 'viewer')
     },
     async updateUser(id, attributes) {
       calls.updateUser++
@@ -240,17 +240,18 @@ Deno.test('returns only adapter-shaped audit log snapshots', async () => {
   assertEquals('actor_user_id' in body.auditLogs[0], false)
 })
 
-Deno.test('invite assigns its role atomically without update or rollback', async () => {
+Deno.test('invite always creates a viewer despite a client-supplied role', async () => {
   const deps = fakeDeps({ actorRole: 'admin', updateError: true })
   const response = await createAdminUsersHandler(deps)(request({
     action: 'invite_user', email: 'new@example.com', role: 'editor',
   }))
   const body: any = await response.json()
   assertEquals(response.status, 200)
-  assertEquals(deps.inviteRequests, [{ email: 'new@example.com', role: 'editor' }])
+  assertEquals(deps.inviteRequests, ['new@example.com'])
   assertEquals(deps.calls.updateUser, 0)
   assertEquals(deps.calls.deleteUser, 0)
-  assertEquals(body.user.role, 'editor')
+  assertEquals(body.user.role, 'viewer')
+  assertEquals(deps.insertedAudits.at(-1)?.new_role, 'viewer')
 })
 
 Deno.test('invite uses viewer role when omitted', async () => {
@@ -263,20 +264,24 @@ Deno.test('invite uses viewer role when omitted', async () => {
   assertEquals(body.user.role, 'viewer')
 })
 
-Deno.test('invite rejects invalid roles and duplicate emails before Auth mutation', async () => {
+Deno.test('invite ignores arbitrary supplied roles but rejects duplicate emails before Auth mutation', async () => {
   const invalid = fakeDeps()
   let response = await createAdminUsersHandler(invalid)(request({
     action: 'invite_user', email: 'new@example.com', role: 'owner',
   }))
-  assertEquals(response.status, 400)
-  assertEquals(invalid.calls.insertAudit, 0)
+  let body: any = await response.json()
+  assertEquals(response.status, 200)
+  assertEquals(body.user.role, 'viewer')
+  assertEquals(invalid.insertedAudits.at(-1)?.new_role, 'viewer')
 
   const duplicate = fakeDeps()
   duplicate.users = [authUser('existing', 'new@example.com', 'viewer')]
   response = await createAdminUsersHandler(duplicate)(request({
     action: 'invite_user', email: ' NEW@example.com ', role: 'viewer',
   }))
+  body = await response.json()
   assertEquals(response.status, 409)
+  assertEquals(body.error.code, 'USER_EXISTS')
   assertEquals(duplicate.calls.inviteUser, 0)
   assertEquals(duplicate.completedAudits.at(-1)?.errorCode, 'USER_EXISTS')
 })

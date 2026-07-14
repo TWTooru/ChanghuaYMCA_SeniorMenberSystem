@@ -73,14 +73,15 @@ describe('AdminAccountPage', () => {
     expect(screen.getByLabelText('刪除 self@example.com').disabled).toBe(true)
   })
 
-  it('defaults an invite to viewer and only enables valid email submission', () => {
+  it('explains invited accounts begin as viewers and sends only their email', () => {
     render(<AdminAccountPage />)
     fireEvent.click(screen.getByRole('button', { name: '邀請帳號' }))
-    expect(screen.getByLabelText('角色').value).toBe('viewer')
+    expect(screen.getByText('Invited accounts start as viewers. You can promote them after they first sign in.')).toBeTruthy()
+    expect(screen.queryByLabelText('角色')).toBeNull()
     expect(screen.getByRole('button', { name: '送出邀請' }).disabled).toBe(true)
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'new@example.com' } })
     fireEvent.click(screen.getByRole('button', { name: '送出邀請' }))
-    expect(adminState.invite).toHaveBeenCalledWith('new@example.com', 'viewer')
+    expect(adminState.invite).toHaveBeenCalledWith('new@example.com')
   })
 
   it('shows the appropriate mail action for active and invited users', () => {
@@ -102,7 +103,7 @@ describe('AdminAccountPage', () => {
     fireEvent.click(screen.getByRole('button', { name: '邀請帳號' }))
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'failed@example.com' } })
     fireEvent.click(screen.getByRole('button', { name: '送出邀請' }))
-    await waitFor(() => expect(adminState.invite).toHaveBeenCalledWith('failed@example.com', 'viewer'))
+    await waitFor(() => expect(adminState.invite).toHaveBeenCalledWith('failed@example.com'))
     expect(screen.getByRole('dialog', { name: '邀請帳號' })).toBeTruthy()
     expect(screen.getByLabelText('Email').value).toBe('failed@example.com')
   })

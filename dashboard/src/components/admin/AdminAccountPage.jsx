@@ -31,8 +31,8 @@ function AuthorizedAdminAccountPage() {
   const invitedCount = users.filter(user => user.status === 'invited').length
   const deleteBusy = mutation === `delete:${deleteTarget?.id}`
 
-  const submitInvite = async (email, role) => {
-    if (await invite(email, role)) setInviteOpen(false)
+  const submitInvite = async email => {
+    if (await invite(email)) setInviteOpen(false)
   }
   const submitDelete = async email => {
     if (await remove(deleteTarget.id, email)) setDeleteTarget(null)

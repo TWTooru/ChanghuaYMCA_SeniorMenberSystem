@@ -43,13 +43,13 @@ describe('adminUserService', () => {
     })
   })
 
-  it('invites with normalized email and selected role', async () => {
+  it('invites with normalized email and no client-selected role', async () => {
     invoke.mockResolvedValue({ data: { user: { id: 'u1' } }, error: null })
 
-    await inviteUser(' New@Example.com ', 'editor')
+    await inviteUser(' New@Example.com ')
 
     expect(invoke).toHaveBeenCalledWith('admin-users', {
-      body: { action: 'invite_user', email: 'new@example.com', role: 'editor' },
+      body: { action: 'invite_user', email: 'new@example.com' },
     })
   })
 

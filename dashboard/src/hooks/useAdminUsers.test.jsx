@@ -82,9 +82,9 @@ describe('useAdminUsers', () => {
     const { result } = renderHook(() => useAdminUsers())
     await waitFor(() => expect(result.current.loading).toBe(false))
 
-    await act(async () => { await result.current.invite('new@example.com', 'editor') })
+    await act(async () => { await result.current.invite('new@example.com') })
 
-    expect(inviteUser).toHaveBeenCalledWith('new@example.com', 'editor')
+    expect(inviteUser).toHaveBeenCalledWith('new@example.com')
     expect(result.current.users).toEqual([{ id: 'u1', email: 'new@example.com' }])
     expect(result.current.mutation).toBeNull()
   })
@@ -98,7 +98,7 @@ describe('useAdminUsers', () => {
     await waitFor(() => expect(result.current.loading).toBe(false))
 
     await act(async () => {
-      await expect(result.current.invite('exists@example.com', 'viewer')).resolves.toBe(false)
+      await expect(result.current.invite('exists@example.com')).resolves.toBe(false)
     })
     expect(result.current.errorCode).toBe('USER_EXISTS')
   })
