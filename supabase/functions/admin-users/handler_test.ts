@@ -10,6 +10,7 @@ type FakeDeps = HandlerDeps & {
   calls: Calls
   insertedAudits: Record<string, unknown>[]
   completedAudits: Array<{ id: string; status: 'success' | 'failure'; errorCode?: string }>
+  inviteRequests: Array<{ email: string; role: string }>
 }
 
 type FakeOptions = {
@@ -21,6 +22,7 @@ type FakeOptions = {
   resetError?: boolean
   insertAuditError?: boolean
   completeAuditError?: boolean
+  completeAuditFailures?: number
 }
 
 function authUser(id: string, email: string, role: string) {
@@ -53,7 +55,9 @@ function fakeDeps({
   resetError = false,
   insertAuditError = false,
   completeAuditError = false,
+  completeAuditFailures = 0,
 }: FakeOptions = {}): FakeDeps {
+  let remainingCompletionFailures = completeAuditError ? Infinity : completeAuditFailures
   const calls: Calls = {
     getActor: 0,
     listUsers: 0,
@@ -73,6 +77,7 @@ function fakeDeps({
     calls,
     insertedAudits: [],
     completedAudits: [],
+    inviteRequests: [],
     async getActor() {
       calls.getActor++
       return deps.actor
@@ -81,10 +86,11 @@ function fakeDeps({
       calls.listUsers++
       return deps.users
     },
-    async inviteUser(email) {
+    async inviteUser(email, role) {
       calls.inviteUser++
+      deps.inviteRequests.push({ email, role })
       if (inviteError) throw new Error('invite failed')
-      return authUser('invited', email, 'viewer')
+      return authUser('invited', email, role)
     },
     async updateUser(id, attributes) {
       calls.updateUser++
@@ -111,7 +117,10 @@ function fakeDeps({
     },
     async completeAudit(id, status, errorCode) {
       calls.completeAudit++
-      if (completeAuditError) throw new Error('complete audit failed')
+      if (remainingCompletionFailures > 0) {
+        remainingCompletionFailures--
+        throw new Error('complete audit failed')
+      }
       deps.completedAudits.push({ id, status, errorCode })
     },
     async listAuditLogs() {
@@ -231,15 +240,17 @@ Deno.test('returns only adapter-shaped audit log snapshots', async () => {
   assertEquals('actor_user_id' in body.auditLogs[0], false)
 })
 
-Deno.test('invite defaults to viewer and rolls back when metadata update fails', async () => {
+Deno.test('invite assigns its role atomically without update or rollback', async () => {
   const deps = fakeDeps({ actorRole: 'admin', updateError: true })
   const response = await createAdminUsersHandler(deps)(request({
-    action: 'invite_user', email: 'new@example.com', role: 'viewer',
+    action: 'invite_user', email: 'new@example.com', role: 'editor',
   }))
-  assertEquals(response.status, 502)
-  assertEquals(deps.calls.deleteUser, 1)
-  assertEquals(deps.completedAudits.at(-1)?.status, 'failure')
-  assertEquals(deps.completedAudits.at(-1)?.errorCode, 'SUPABASE_AUTH_ERROR')
+  const body: any = await response.json()
+  assertEquals(response.status, 200)
+  assertEquals(deps.inviteRequests, [{ email: 'new@example.com', role: 'editor' }])
+  assertEquals(deps.calls.updateUser, 0)
+  assertEquals(deps.calls.deleteUser, 0)
+  assertEquals(body.user.role, 'editor')
 })
 
 Deno.test('invite uses viewer role when omitted', async () => {
@@ -284,6 +295,18 @@ Deno.test('failed role updates complete their pending audit with the fixed Auth 
   deps.users = [authUser('target', 'target@example.com', 'viewer')]
   const response = await createAdminUsersHandler(deps)(request({
     action: 'update_role', userId: 'target', role: 'editor',
+  }))
+  assertEquals(response.status, 502)
+  assertEquals(deps.completedAudits.at(-1), {
+    id: 'audit-1', status: 'failure', errorCode: 'SUPABASE_AUTH_ERROR',
+  })
+})
+
+Deno.test('a concurrent last-admin database rejection is surfaced safely after the early guard', async () => {
+  const deps = fakeDeps({ updateError: true })
+  deps.users = [authUser('actor', 'actor@example.com', 'admin'), authUser('target', 'target@example.com', 'admin')]
+  const response = await createAdminUsersHandler(deps)(request({
+    action: 'update_role', userId: 'target', role: 'viewer',
   }))
   assertEquals(response.status, 502)
   assertEquals(deps.completedAudits.at(-1), {
@@ -385,7 +408,7 @@ Deno.test('failed resend and password reset attempts complete their pending audi
   }
 })
 
-Deno.test('audit write failures hide underlying errors and prevent Auth mutation', async () => {
+Deno.test('audit insertion failures hide underlying errors and prevent Auth mutation', async () => {
   const insertFailure = fakeDeps({ insertAuditError: true })
   insertFailure.users = [authUser('target', 'target@example.com', 'viewer')]
   let response = await createAdminUsersHandler(insertFailure)(request({
@@ -393,13 +416,16 @@ Deno.test('audit write failures hide underlying errors and prevent Auth mutation
   }))
   assertEquals(response.status, 500)
   assertEquals(insertFailure.calls.resendInvite, 0)
+})
 
-  const completionFailure = fakeDeps({ completeAuditError: true })
+Deno.test('a successful mutation leaves its audit pending when completion transiently fails', async () => {
+  const completionFailure = fakeDeps({ completeAuditFailures: 1 })
   completionFailure.users = [authUser('target', 'target@example.com', 'viewer')]
-  response = await createAdminUsersHandler(completionFailure)(request({
+  const response = await createAdminUsersHandler(completionFailure)(request({
     action: 'send_password_reset', userId: 'target',
   }))
   assertEquals(response.status, 500)
   assertEquals(completionFailure.calls.sendPasswordReset, 1)
+  assertEquals(completionFailure.calls.completeAudit, 1)
   assertEquals(completionFailure.completedAudits.length, 0)
 })

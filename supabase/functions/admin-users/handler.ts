@@ -8,12 +8,13 @@ import {
   normalizeRole,
   requireRole,
   summarizeUser,
+  type AppRole,
 } from './domain.ts'
 
 export type HandlerDeps = {
   getActor(token: string): Promise<any>
   listUsers(): Promise<any[]>
-  inviteUser(email: string): Promise<any>
+  inviteUser(email: string, role: AppRole): Promise<any>
   updateUser(id: string, attributes: Record<string, unknown>): Promise<any>
   deleteUser(id: string): Promise<void>
   resendInvite(email: string): Promise<void>
@@ -126,25 +127,14 @@ async function handleMutation(
         if (users.some(user => normalizeEmail(user.email) === email)) {
           throw new ApiError('USER_EXISTS')
         }
-        invited = await deps.inviteUser(email)
-        await deps.updateUser(invited.id, {
-          app_metadata: { ...invited.app_metadata, app_role: role },
-        })
-        await completeAudit(deps, audit.id, 'success')
-        return json(200, {
-          user: summarizeUser({
-            ...invited,
-            app_metadata: { ...invited.app_metadata, app_role: role },
-          }),
-        })
+        invited = await deps.inviteUser(email, role)
       } catch (caught) {
-        if (invited?.id) {
-          try { await deps.deleteUser(invited.id) } catch { /* preserve original failure */ }
-        }
         const code = errorCode(caught)
         await completeAudit(deps, audit.id, 'failure', code)
         throw new ApiError(code)
       }
+      await completeAudit(deps, audit.id, 'success')
+      return json(200, { user: summarizeUser(invited) })
     }
 
     case 'update_role': {
@@ -157,21 +147,22 @@ async function handleMutation(
         target_user_id: target.id, target_email: target.email,
         old_role: targetRole, new_role: role, status: 'pending',
       })
+      let updated: any
       try {
         assertTargetMutationAllowed({
           actorId: actor.id, targetId: target.id, targetRole,
           nextRole: role, adminCount: adminCount(users),
         })
-        const updated = await deps.updateUser(target.id, {
+        updated = await deps.updateUser(target.id, {
           app_metadata: { ...target.app_metadata, app_role: role },
         })
-        await completeAudit(deps, audit.id, 'success')
-        return json(200, { user: summarizeUser(updated), requiresRelogin: true })
       } catch (caught) {
         const code = errorCode(caught)
         await completeAudit(deps, audit.id, 'failure', code)
         throw new ApiError(code)
       }
+      await completeAudit(deps, audit.id, 'success')
+      return json(200, { user: summarizeUser(updated), requiresRelogin: true })
     }
 
     case 'delete_user': {
@@ -192,13 +183,13 @@ async function handleMutation(
           nextRole: undefined, adminCount: adminCount(users),
         })
         await deps.deleteUser(target.id)
-        await completeAudit(deps, audit.id, 'success')
-        return json(200, { deletedUserId: target.id })
       } catch (caught) {
         const code = errorCode(caught)
         await completeAudit(deps, audit.id, 'failure', code)
         throw new ApiError(code)
       }
+      await completeAudit(deps, audit.id, 'success')
+      return json(200, { deletedUserId: target.id })
     }
 
     case 'resend_invite':
@@ -213,13 +204,13 @@ async function handleMutation(
       try {
         if (action === 'resend_invite') await deps.resendInvite(email)
         else await deps.sendPasswordReset(email)
-        await completeAudit(deps, audit.id, 'success')
-        return json(200, { sent: true })
       } catch (caught) {
         const code = errorCode(caught)
         await completeAudit(deps, audit.id, 'failure', code)
         throw new ApiError(code)
       }
+      await completeAudit(deps, audit.id, 'success')
+      return json(200, { sent: true })
     }
 
     default:
