@@ -72,8 +72,11 @@ export function parseQuarterCsvRows(rows, { headers = [], today = new Date() } =
 
   const seenIds = new Set()
   const newRows = []
-  const parsedRows = rows.map((row, index) => {
+  const parsedRows = rows.map((sourceRowData, index) => {
     const sourceRow = index + 2
+    const row = Object.fromEntries(
+      Object.entries(sourceRowData).map(([header, value]) => [String(header).trim(), value])
+    )
     const providedStudentId = cleanStr(row['學員編號'])
     const student = Object.fromEntries(Object.entries(FIXED_COLUMNS).map(([header, key]) => [key, cleanStr(row[header])]))
     const birthRaw = cleanStr(row['出生日期'])

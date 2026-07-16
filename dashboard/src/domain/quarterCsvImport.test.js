@@ -8,6 +8,26 @@ const fixedHeaders = [
 const headers = [...fixedHeaders, '第16季前測', '第16季後測', '第16季(新、續)', '課程1', '課程2', '課程3', '備註欄']
 
 describe('quarter CSV import parser', () => {
+  it('retains values when header cells include surrounding whitespace', () => {
+    const paddedHeaders = headers.map(header => ` ${header} `)
+    const row = Object.fromEntries(paddedHeaders.map(header => [header, '']))
+    row[` ${fixedHeaders[1]} `] = 'Padded student'
+    row[` ${fixedHeaders[3]} `] = '1960/7/17'
+    row[` ${headers.at(-7)} `] = '2026/03/05'
+    row[` ${headers.at(-6)} `] = '2026/03/06'
+    row[` ${headers.at(-4)} `] = 'Padded course'
+
+    const parsed = parseQuarterCsvRows([row], { headers: paddedHeaders, today: new Date('2026-07-16') })
+
+    expect(parsed.errors).toEqual([])
+    expect(parsed.rows[0].student).toMatchObject({ name: 'Padded student', birth_date: '1960/07/17' })
+    expect(parsed.rows[0].enrollments[0]).toMatchObject({
+      pre_test: '2026/03/05',
+      post_test: '2026/03/06',
+      courses: ['Padded course']
+    })
+  })
+
   it('normalizes real dates and recalculates age', () => {
     expect(normalizeCsvDate('2026-3-5')).toBeNull()
     expect(normalizeCsvDate('2026/3/5')).toBe('2026/03/05')
