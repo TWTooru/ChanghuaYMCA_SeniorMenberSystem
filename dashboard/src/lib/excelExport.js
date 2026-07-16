@@ -32,19 +32,26 @@ function formatExportData(data) {
   });
 }
 
-export function exportToExcel(studentsData, enrollmentsData, courseData, filename = 'export.xlsx') {
+export function exportToExcel(studentsData, enrollmentsData, courseData, filename = 'export.xlsx', options = {}) {
+  const {
+    includeStats = true,
+    includeStudents = true,
+    includeEnrollments = true,
+    includeCourses = true
+  } = options;
+
   const workbook = XLSX.utils.book_new();
 
-  // Create Statistics Data
-  const statisticsData = [
-    { Metric: 'Total Students', Value: studentsData ? studentsData.length : 0 },
-    { Metric: 'Total Enrollments', Value: enrollmentsData ? enrollmentsData.length : 0 },
-    { Metric: 'Total Courses', Value: courseData ? courseData.length : 0 }
-  ];
-
   // 1. Statistics Sheet
-  const statsSheet = XLSX.utils.json_to_sheet(statisticsData);
-  XLSX.utils.book_append_sheet(workbook, statsSheet, 'Statistics');
+  if (includeStats) {
+    const statisticsData = [
+      { Metric: 'Total Students', Value: studentsData ? studentsData.length : 0 },
+      { Metric: 'Total Enrollments', Value: enrollmentsData ? enrollmentsData.length : 0 },
+      { Metric: 'Total Courses', Value: courseData ? courseData.length : 0 }
+    ];
+    const statsSheet = XLSX.utils.json_to_sheet(statisticsData);
+    XLSX.utils.book_append_sheet(workbook, statsSheet, 'Statistics');
+  }
 
   // Format Data
   const formattedStudents = formatExportData(studentsData);
@@ -52,17 +59,24 @@ export function exportToExcel(studentsData, enrollmentsData, courseData, filenam
   const formattedCourses = formatExportData(courseData);
 
   // 2. Students Sheet
-  const studentsSheet = XLSX.utils.json_to_sheet(formattedStudents);
-  XLSX.utils.book_append_sheet(workbook, studentsSheet, 'Students');
+  if (includeStudents) {
+    const studentsSheet = XLSX.utils.json_to_sheet(formattedStudents);
+    XLSX.utils.book_append_sheet(workbook, studentsSheet, 'Students');
+  }
 
   // 3. Enrollments Sheet
-  const enrollmentsSheet = XLSX.utils.json_to_sheet(formattedEnrollments);
-  XLSX.utils.book_append_sheet(workbook, enrollmentsSheet, 'Enrollments');
+  if (includeEnrollments) {
+    const enrollmentsSheet = XLSX.utils.json_to_sheet(formattedEnrollments);
+    XLSX.utils.book_append_sheet(workbook, enrollmentsSheet, 'Enrollments');
+  }
 
   // 4. Course Data Sheet
-  const courseSheet = XLSX.utils.json_to_sheet(formattedCourses);
-  XLSX.utils.book_append_sheet(workbook, courseSheet, 'Course Data');
+  if (includeCourses) {
+    const courseSheet = XLSX.utils.json_to_sheet(formattedCourses);
+    XLSX.utils.book_append_sheet(workbook, courseSheet, 'Course Data');
+  }
 
   // Trigger download
   XLSX.writeFile(workbook, filename);
 }
+
