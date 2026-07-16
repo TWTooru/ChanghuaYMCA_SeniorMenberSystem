@@ -55,12 +55,15 @@ export default function ImportPreviewDialog({ preview, isImporting = false, onCo
           <section className="form-group full-width" aria-label="匯入摘要">
             <h3>本次匯入</h3>
             <ul>
+              <li>目標季度 {summary.targetSeason}</li>
               <li>檔案資料 {summary.fileRows} 列</li>
               <li>既有學生 {summary.oldStudents} 人</li>
               <li>新生 {summary.newStudents} 人</li>
               <li>新增報名 {summary.enrollmentsToInsert} 筆</li>
               <li>更新報名 {summary.enrollmentsToUpdate} 筆</li>
               <li>課程 {summary.courses} 筆</li>
+              <li>前測將清空 {summary.preTestsCleared} 筆</li>
+              <li>後測將清空 {summary.postTestsCleared} 筆</li>
             </ul>
           </section>
           <section className="form-group full-width" aria-label="目前資料庫筆數">

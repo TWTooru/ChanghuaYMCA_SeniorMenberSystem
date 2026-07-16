@@ -3,12 +3,15 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import ImportPreviewDialog from './ImportPreviewDialog'
 
 const summary = {
+  targetSeason: '第十六季',
   fileRows: 2,
   oldStudents: 1,
   newStudents: 1,
   enrollmentsToInsert: 1,
   enrollmentsToUpdate: 1,
   courses: 2,
+  preTestsCleared: 1,
+  postTestsCleared: 2,
   currentStudents: 8,
   currentEnrollments: 9,
   currentCourses: 10,
@@ -39,6 +42,20 @@ describe('ImportPreviewDialog', () => {
     expect(screen.getByText('目前課程 10 筆')).not.toBeNull()
     fireEvent.click(screen.getByRole('button', { name: '確認匯入' }))
     expect(onConfirm).toHaveBeenCalledOnce()
+  })
+
+  it('shows the target season and cleared pre- and post-test totals', () => {
+    render(
+      <ImportPreviewDialog
+        preview={{ summary, warnings: [], errors: [], hasBlockingErrors: false }}
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />
+    )
+
+    expect(screen.getByText('目標季度 第十六季')).not.toBeNull()
+    expect(screen.getByText('前測將清空 1 筆')).not.toBeNull()
+    expect(screen.getByText('後測將清空 2 筆')).not.toBeNull()
   })
 
   it('disables confirmation and shows row errors when blocked', () => {

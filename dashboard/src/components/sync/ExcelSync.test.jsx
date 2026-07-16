@@ -11,6 +11,21 @@ vi.mock('../../services/dataImportService', () => ({
   commitImport: vi.fn(),
 }))
 
+const summary = {
+  targetSeason: '第十六季',
+  fileRows: 2,
+  oldStudents: 1,
+  newStudents: 1,
+  enrollmentsToInsert: 1,
+  enrollmentsToUpdate: 1,
+  courses: 2,
+  preTestsCleared: 1,
+  postTestsCleared: 2,
+  currentStudents: 8,
+  currentEnrollments: 9,
+  currentCourses: 10,
+}
+
 describe('ExcelSync', () => {
   beforeEach(() => vi.clearAllMocks())
   afterEach(cleanup)
@@ -60,5 +75,18 @@ describe('ExcelSync', () => {
 
     expect(await screen.findByLabelText('本次指派的學員編號')).not.toBeNull()
     expect(screen.getByText('來源第 2 列：399')).not.toBeNull()
+  })
+  it('copies newly assigned student IDs and accepts CSV files only', async () => {
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: vi.fn().mockResolvedValue() } })
+    prepareImport.mockResolvedValueOnce({ summary, warnings: [], errors: [], hasBlockingErrors: false })
+    commitImport.mockResolvedValueOnce({ students_inserted: 1, enrollments_updated: 0, assigned_ids: [{ source_row: 2, student_id: '399' }] })
+    render(<ExcelSync />)
+
+    fireEvent.change(document.querySelector('input[type="file"]'), { target: { files: [new File(['data'], 'quarter.csv', { type: 'text/csv' })] } })
+    fireEvent.click(await screen.findByRole('button', { name: '確認匯入' }))
+    fireEvent.click(await screen.findByRole('button', { name: '複製新學員編號' }))
+
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('來源第 2 列：399')
+    expect(document.querySelector('input[type="file"]').accept).toBe('.csv')
   })
 })
