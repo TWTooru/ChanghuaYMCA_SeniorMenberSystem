@@ -1210,6 +1210,38 @@
   grid-column: span 2;
 }
 
+.student-edit-section-title {
+  grid-column: 1 / -1;
+  margin: 8px 0 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.student-edit-error {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--color-danger);
+  border-radius: 8px;
+  color: var(--color-danger);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.student-edit-actions {
+  position: sticky;
+  bottom: -24px;
+  z-index: 2;
+  flex-direction: row;
+  justify-content: flex-end;
+  gap: 12px;
+  margin: 12px -24px -24px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+}
+
 @media (max-width: 600px) {
   .form-group.full-width {
     grid-column: span 1;
