@@ -78,6 +78,47 @@ describe('Student detail components', () => {
     expect(document.activeElement).toBe(historyTab)
   })
 
+  it('guards tab changes when profile edits are unsaved', () => {
+    authState.role = 'admin'
+    render(<StudentDetailModal student={student} enrollments={[enrollment]} initialTab="profile" onClose={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: /編輯/ }))
+    fireEvent.change(screen.getByDisplayValue('王小明'), { target: { value: '王大明' } })
+    fireEvent.click(screen.getByRole('tab', { name: '歷年參修（1 期）' }))
+
+    expect(screen.getByText('尚有未儲存變更')).not.toBeNull()
+    expect(screen.getByDisplayValue('王大明')).not.toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: '繼續編輯' }))
+    expect(screen.getByDisplayValue('王大明')).not.toBeNull()
+  })
+
+  it('discards edits and performs the pending close', () => {
+    const onClose = vi.fn()
+    authState.role = 'admin'
+    const { container } = render(<StudentDetailModal student={student} enrollments={[]} initialTab="profile" onClose={onClose} />)
+    fireEvent.click(screen.getByRole('button', { name: /編輯/ }))
+    fireEvent.change(screen.getByDisplayValue('王小明'), { target: { value: '王大明' } })
+    fireEvent.click(container.querySelector('#btn-close-modal'))
+    fireEvent.click(screen.getByRole('button', { name: '放棄變更' }))
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+
+  it('guards overlay and Escape dismissal when profile edits are unsaved', () => {
+    const onClose = vi.fn()
+    authState.role = 'admin'
+    const { container } = render(<StudentDetailModal student={student} enrollments={[]} initialTab="profile" onClose={onClose} />)
+    fireEvent.click(screen.getByRole('button', { name: /編輯/ }))
+    fireEvent.change(screen.getByDisplayValue('王小明'), { target: { value: '王大明' } })
+
+    fireEvent.click(container.querySelector('#modal-overlay'))
+    expect(screen.getByText('尚有未儲存變更')).not.toBeNull()
+    expect(onClose).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: '繼續編輯' }))
+
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
+    expect(screen.getByText('尚有未儲存變更')).not.toBeNull()
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
   it('shows enrollment details and delegates adding an enrollment', () => {
     const onAddEnrollment = vi.fn()
     render(
