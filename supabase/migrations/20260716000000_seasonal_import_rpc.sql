@@ -90,7 +90,9 @@ begin
       insert into public.enrollments as current_enrollment (student_id, season, reg_type, pre_test, post_test, refunded, refund_info)
       values (v_student_id, v_enrollment ->> 'season', nullif(v_enrollment ->> 'reg_type', ''), nullif(v_enrollment ->> 'pre_test', ''), nullif(v_enrollment ->> 'post_test', ''), 0, null)
       on conflict (student_id, season) do update set
-        reg_type = excluded.reg_type, pre_test = excluded.pre_test, post_test = excluded.post_test
+        reg_type = coalesce(excluded.reg_type, current_enrollment.reg_type),
+        pre_test = coalesce(excluded.pre_test, current_enrollment.pre_test),
+        post_test = coalesce(excluded.post_test, current_enrollment.post_test)
       returning enrollment_id into v_enrollment_id;
       if v_exists then v_enrollments_updated := v_enrollments_updated + 1; else v_enrollments_inserted := v_enrollments_inserted + 1; end if;
 

@@ -1,5 +1,5 @@
 begin;
-select plan(13);
+select plan(18);
 truncate table public.students cascade;
 select set_config('request.jwt.claims', '{"app_metadata":{"app_role":"editor"}}', true);
 
@@ -19,11 +19,19 @@ select is((select count(*)::integer from public.enrollments), 2, 'one enrollment
 select is((select count(*)::integer from public.courses), 2, 'courses are deduplicated');
 
 select lives_ok(
-  $$select public.import_season_data('{"rows":[{"source_row":2,"provided_student_id":"399","student":{"name":"新學生"},"enrollments":[{"season":"第十六季","reg_type":"續","pre_test":"90","post_test":null,"courses":["陶笛"]}]}]}'::jsonb)$$,
+  $$select public.import_season_data('{"rows":[{"source_row":2,"provided_student_id":"399","student":{"name":"新學生"},"enrollments":[{"season":"第十六季","reg_type":"續","pre_test":"90","post_test":"95","courses":["陶笛"]}]}]}'::jsonb)$$,
   'same student and quarter can be reimported'
 );
 select is((select count(*)::integer from public.enrollments where student_id = '399' and season = '第十六季'), 1, 'reimport stays unique');
 select is((select string_agg(course_name, ',') from public.courses c join public.enrollments e using (enrollment_id) where e.student_id = '399'), '陶笛', 'courses are replaced');
+select lives_ok(
+  $$select public.import_season_data('{"rows":[{"source_row":2,"provided_student_id":"399","student":{"name":"新學生"},"enrollments":[{"season":"第十六季","reg_type":"","pre_test":"","post_test":"","courses":["瑜伽"]}]}]}'::jsonb)$$,
+  'blank enrollment fields can be reimported'
+);
+select is((select reg_type from public.enrollments where student_id = '399' and season = '第十六季'), '續', 'blank registration type preserves existing value');
+select is((select pre_test from public.enrollments where student_id = '399' and season = '第十六季'), '90', 'blank pre-test preserves existing value');
+select is((select post_test from public.enrollments where student_id = '399' and season = '第十六季'), '95', 'blank post-test preserves existing value');
+select is((select string_agg(course_name, ',') from public.courses c join public.enrollments e using (enrollment_id) where e.student_id = '399'), '瑜伽', 'blank-field reimport still replaces courses');
 
 select set_config('request.jwt.claims', '{"app_metadata":{"app_role":"viewer"}}', true);
 select throws_ok(
