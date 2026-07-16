@@ -33,6 +33,12 @@ function formatExportData(data) {
 }
 
 export function exportToExcel(studentsData, enrollmentsData, courseData, filename = 'export.xlsx', options = {}) {
+  // Option parameter robustness (swapping filename and options if needed)
+  if (typeof filename === 'object' && filename !== null) {
+    options = filename;
+    filename = 'export.xlsx';
+  }
+
   const {
     includeStats = true,
     includeStudents = true,
@@ -53,27 +59,31 @@ export function exportToExcel(studentsData, enrollmentsData, courseData, filenam
     XLSX.utils.book_append_sheet(workbook, statsSheet, 'Statistics');
   }
 
-  // Format Data
-  const formattedStudents = formatExportData(studentsData);
-  const formattedEnrollments = formatExportData(enrollmentsData);
-  const formattedCourses = formatExportData(courseData);
-
   // 2. Students Sheet
   if (includeStudents) {
+    const formattedStudents = formatExportData(studentsData);
     const studentsSheet = XLSX.utils.json_to_sheet(formattedStudents);
     XLSX.utils.book_append_sheet(workbook, studentsSheet, 'Students');
   }
 
   // 3. Enrollments Sheet
   if (includeEnrollments) {
+    const formattedEnrollments = formatExportData(enrollmentsData);
     const enrollmentsSheet = XLSX.utils.json_to_sheet(formattedEnrollments);
     XLSX.utils.book_append_sheet(workbook, enrollmentsSheet, 'Enrollments');
   }
 
   // 4. Course Data Sheet
   if (includeCourses) {
+    const formattedCourses = formatExportData(courseData);
     const courseSheet = XLSX.utils.json_to_sheet(formattedCourses);
     XLSX.utils.book_append_sheet(workbook, courseSheet, 'Course Data');
+  }
+
+  // Guard against empty workbook crash
+  if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+    console.warn('Workbook is empty. Export aborted.');
+    return;
   }
 
   // Trigger download
