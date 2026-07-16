@@ -37,6 +37,7 @@ vi.mock('./components/auth/Login', () => ({ default: () => null }))
 vi.mock('./components/auth/PasswordSetup', () => ({ default: () => <div data-testid="password-setup" /> }))
 vi.mock('./components/admin/AdminAccountPage', () => ({ default: () => <div data-testid="admin-account-page" /> }))
 vi.mock('./lib/excelExport', () => ({ exportToExcel: vi.fn() }))
+vi.mock('./components/sync/ExportOptionsDialog', () => ({ default: ({ onExport }) => <div data-testid="export-modal" onClick={() => onExport({ exportScope: 'all', selectedSeason: null, options: {} })} /> }))
 
 describe('App header access controls', () => {
   afterEach(cleanup)
@@ -121,5 +122,13 @@ describe('App header access controls', () => {
 
     expect(screen.getByTestId('password-setup')).toBeTruthy()
     expect(apiDataSpy).not.toHaveBeenCalled()
+  })
+
+  it('opens export options dialog when download Excel is clicked', () => {
+    authState.role = 'admin'
+    render(<App />)
+    expect(screen.queryByTestId('export-modal')).toBeNull()
+    fireEvent.click(screen.getByText('下載整理版 Excel'))
+    expect(screen.getByTestId('export-modal')).toBeTruthy()
   })
 })

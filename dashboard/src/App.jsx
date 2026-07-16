@@ -10,6 +10,7 @@ import StudentDetailModal from './components/students/StudentDetailModal'
 import AddStudentModal from './components/students/AddStudentModal'
 import AddEnrollModal from './components/enrollment/AddEnrollModal'
 import ExcelSync from './components/sync/ExcelSync'
+import ExportOptionsDialog from './components/sync/ExportOptionsDialog'
 import Login from './components/auth/Login'
 import PasswordSetup from './components/auth/PasswordSetup'
 import AdminAccountPage from './components/admin/AdminAccountPage'
@@ -27,6 +28,7 @@ function AuthenticatedDashboard() {
   const [selectedStudent, setSelectedStudent] = useState(null)
   const [showAddStudentModal, setShowAddStudentModal] = useState(false)
   const [showAddEnrollModal, setShowAddEnrollModal] = useState(false)
+  const [showExportModal, setShowExportModal] = useState(false)
   const [refreshCount, setRefreshCount] = useState(0)
 
   useEffect(() => {
@@ -129,12 +131,7 @@ function AuthenticatedDashboard() {
             <button 
               className="btn-primary" 
               id="btn-download-excel"
-              onClick={() => exportToExcel(
-                students, 
-                enrollments, 
-                stats && stats.popularCourses ? stats.popularCourses.map(({name, count}) => ({Course: name, Count: count})) : [], 
-                'export'
-              )}
+              onClick={() => setShowExportModal(true)}
             >
               <Download size={18} />
               <span>下載整理版 Excel</span>
@@ -225,6 +222,43 @@ function AuthenticatedDashboard() {
           student={selectedStudent} 
           onClose={() => setShowAddEnrollModal(false)} 
           onRefresh={handleRefresh} 
+        />
+      )}
+      
+      {showExportModal && (
+        <ExportOptionsDialog 
+          students={students}
+          enrollments={enrollments}
+          onCancel={() => setShowExportModal(false)}
+          onExport={({ exportScope, selectedSeason, options }) => {
+            setShowExportModal(false)
+            
+            let exportStudents = students
+            let exportEnrollments = enrollments
+            
+            if (exportScope === 'season') {
+              exportEnrollments = enrollments.filter(e => e.season === selectedSeason)
+              const enrolledIds = new Set(exportEnrollments.map(e => String(e.student_id)))
+              exportStudents = students.filter(s => enrolledIds.has(String(s.student_id)))
+            }
+            
+            // Recompute course counts for the exported selection
+            const courseCounts = {}
+            exportEnrollments.forEach(e => {
+              if (!e.refunded) {
+                e.courses.forEach(c => {
+                  courseCounts[c] = (courseCounts[c] || 0) + 1
+                })
+              }
+            })
+            const exportCourses = Object.entries(courseCounts)
+              .map(([name, count]) => ({ Course: name, Count: count }))
+              .sort((a, b) => b.Count - a.Count)
+            
+            const filename = exportScope === 'season' ? `YMCA_export_${selectedSeason}.xlsx` : 'YMCA_export_all.xlsx'
+            
+            exportToExcel(exportStudents, exportEnrollments, exportCourses, filename, options)
+          }}
         />
       )}
     </div>
