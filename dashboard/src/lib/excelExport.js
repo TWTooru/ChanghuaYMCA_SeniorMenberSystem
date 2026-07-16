@@ -1,60 +1,5 @@
 import * as XLSX from 'xlsx';
 
-function formatExportData(data) {
-  if (!data || !Array.isArray(data)) return [];
-  
-  const keyMap = {
-    // 學生個人資料
-    student_id: '學員編號',
-    original_id: '原始編號',
-    name: '姓名',
-    gender: '性別',
-    birth_date: '出生日期',
-    age: '目前年齡',
-    is_60_plus: '是否60歲以上',
-    address: '地址',
-    home_phone: '家裡電話',
-    mobile_phone: '手機電話',
-    emergency_contact: '主要聯絡人',
-    relationship: '關係',
-    emergency_contact_phone: '聯絡人電話',
-    education: '教育程度',
-    occupation: '職業',
-
-    // 報名紀錄
-    season: '報名季度',
-    reg_type: '新續狀況',
-    pre_test: '前測時間',
-    post_test: '後測時間',
-    courses: '報名課程',
-    refunded: '是否退費',
-    student_name: '姓名',
-
-    // 課程統計
-    Course: '課程名稱',
-    Count: '選修人數'
-  };
-
-  return data.map(item => {
-    const formattedItem = {};
-    for (const key in item) {
-      if (key === 'memo' || key === 'created_at') continue;
-      
-      const newKey = keyMap[key] || key;
-      let newValue = item[key];
-      
-      if (key === 'refunded') {
-        newValue = (newValue === 1 || newValue === true || newValue === '1' || String(newValue).toLowerCase() === 'true') ? '是' : '否';
-      } else if (key === 'courses' && Array.isArray(newValue)) {
-        newValue = newValue.join(', ');
-      }
-      
-      formattedItem[newKey] = newValue;
-    }
-    return formattedItem;
-  });
-}
-
 export function exportToExcel(studentsData, enrollmentsData, courseData, filename = 'export.xlsx', options = {}) {
   // Option parameter robustness (swapping filename and options if needed)
   if (typeof filename === 'object' && filename !== null) {
@@ -84,21 +29,62 @@ export function exportToExcel(studentsData, enrollmentsData, courseData, filenam
 
   // 2. Students Sheet
   if (includeStudents) {
-    const formattedStudents = formatExportData(studentsData);
+    const formattedStudents = (studentsData || []).map(s => {
+      const item = {
+        '學員編號': s.student_id,
+        '姓名': s.name,
+        '性別': s.gender,
+        '出生日期': s.birth_date,
+        '目前年齡': s.age,
+        '是否60歲以上': s.is_60_plus,
+        '地址': s.address,
+        '家裡電話': s.home_phone,
+        '手機電話': s.mobile_phone,
+        '主要聯絡人': s.emergency_contact,
+        '關係': s.relationship,
+        '聯絡人電話': s.emergency_contact_phone,
+        '教育程度': s.education,
+        '職業': s.occupation
+      };
+      Object.keys(item).forEach(key => {
+        if (item[key] === undefined) delete item[key];
+      });
+      return item;
+    });
     const studentsSheet = XLSX.utils.json_to_sheet(formattedStudents);
     XLSX.utils.book_append_sheet(workbook, studentsSheet, '學員個人資料');
   }
 
   // 3. Enrollments Sheet
   if (includeEnrollments) {
-    const formattedEnrollments = formatExportData(enrollmentsData);
+    const formattedEnrollments = (enrollmentsData || []).map(e => {
+      const item = {
+        '學員編號': e.enrollment_id, // enrollment_id 改成學員編號
+        '姓名': e.student_name || '未知', // 原本學員編號換成姓名
+        '報名季度': e.season,
+        '新續狀況': e.reg_type,
+        '前測時間': e.pre_test,
+        '後測時間': e.post_test,
+        '報名課程': Array.isArray(e.courses) ? e.courses.join(', ') : e.courses,
+        '是否退費': (e.refunded === 1 || e.refunded === true || e.refunded === '1' || String(e.refunded).toLowerCase() === 'true') ? '是' : '否'
+      };
+      Object.keys(item).forEach(key => {
+        if (item[key] === undefined) delete item[key];
+      });
+      return item;
+    });
     const enrollmentsSheet = XLSX.utils.json_to_sheet(formattedEnrollments);
     XLSX.utils.book_append_sheet(workbook, enrollmentsSheet, '報名明細紀錄');
   }
 
   // 4. Course Data Sheet
   if (includeCourses) {
-    const formattedCourses = formatExportData(courseData);
+    const formattedCourses = (courseData || []).map(c => {
+      return {
+        '課程名稱': c.Course,
+        '選修人數': c.Count
+      };
+    });
     const courseSheet = XLSX.utils.json_to_sheet(formattedCourses);
     XLSX.utils.book_append_sheet(workbook, courseSheet, '課程選修統計');
   }
