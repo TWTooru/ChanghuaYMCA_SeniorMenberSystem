@@ -9,6 +9,30 @@ const row = (id, name, birth, mobile = null) => ({
 })
 
 describe('classifyImport', () => {
+  it('matches historical text date separators and reports blank-test writes', () => {
+    const parsed = {
+      mode: 'single-season', seasons: ['第十六季'], warnings: [], errors: [],
+      rows: [row(null, '王小明', '1960/01/01')]
+    }
+    parsed.rows[0].enrollments[0] = { season: '第十六季', reg_type: null, pre_test: null, post_test: null, courses: [] }
+    const preview = classifyImport(parsed, {
+      students: [{ student_id: '12', name: '王小明', birth_date: '1960-01-01', mobile_phone: null }],
+      enrollments: [], tableCounts: { students: 1, enrollments: 0, courses: 0 }
+    })
+    expect(preview.hasBlockingErrors).toBe(true)
+    expect(preview.summary).toMatchObject({ targetSeason: '第十六季', preTestsCleared: 1, postTestsCleared: 1 })
+  })
+
+  it('uses neutral wording when a target season already contains data', () => {
+    const parsed = { mode: 'single-season', seasons: ['第十六季'], rows: [row('13', '王小華', '1961/01/01')], warnings: [], errors: [] }
+    const preview = classifyImport(parsed, {
+      students: [{ student_id: '13', name: '王小華', birth_date: '1961/01/01' }],
+      enrollments: [{ student_id: '12', season: '第十六季' }],
+      tableCounts: { students: 1, enrollments: 1, courses: 0 }
+    })
+    expect(preview.warnings).toContainEqual({ row: null, field: '報名', message: '目標季度已有資料，請確認新增、更新與課程取代筆數' })
+  })
+
   it('classifies old and new students plus enrollment inserts and updates', () => {
     const parsed = { rows: [row('12', '王小明', '1960-01-01'), row(null, '陳美麗', '1962-02-02')], warnings: [], errors: [] }
     const preview = classifyImport(parsed, {
@@ -64,7 +88,7 @@ describe('classifyImport', () => {
     })
 
     expect(preview.summary.enrollmentsToUpdate).toBe(0)
-    expect(preview.warnings).toContainEqual({ row: null, field: '報名', message: '目標季度已有資料，本次會更新並取代課程' })
+    expect(preview.warnings).toContainEqual({ row: null, field: '報名', message: '目標季度已有資料，請確認新增、更新與課程取代筆數' })
   })
 
   it('loads a read-only snapshot before classifying', async () => {
