@@ -39,14 +39,13 @@ function AuthenticatedDashboard() {
   const stats = useMemo(() => {
     if (!students || students.length === 0) {
       return {
-        totalStudents: 0, totalRegistrations: 0, activeS15: 0, totalRefunds: 0,
+        totalStudents: 0, totalRegistrations: 0, totalRefunds: 0,
         males: 0, females: 0, ageGroups: {}, eduCounts: {}, popularCourses: []
       }
     }
     const totalStudents = students.length
     const totalRegistrations = enrollments.length
     
-    const activeS15 = enrollments.filter(e => e.season === '第十五期' && !e.refunded).length
     const totalRefunds = enrollments.filter(e => e.refunded).length
     
     const males = students.filter(s => s.gender === '男').length
@@ -86,7 +85,7 @@ function AuthenticatedDashboard() {
       .slice(0, 6)
 
     return {
-      totalStudents, totalRegistrations, activeS15, totalRefunds,
+      totalStudents, totalRegistrations, totalRefunds,
       males, females, ageGroups, eduCounts, popularCourses
     }
   }, [students, enrollments])

@@ -18,7 +18,7 @@ describe('EnrollmentTab', () => {
             enrollment_id: 11,
             student_id: 2,
             student_name: '王小明',
-            season: '第十五期',
+            season: '第十五季',
             reg_type: '續',
             refunded: false,
             courses: ['手機課']
@@ -45,7 +45,7 @@ describe('EnrollmentTab', () => {
             enrollment_id: 12,
             student_id: '999',
             student_name: '王小明',
-            season: '第十五期',
+            season: '第十五季',
             reg_type: '續',
             refunded: false,
             courses: ['肌力課']

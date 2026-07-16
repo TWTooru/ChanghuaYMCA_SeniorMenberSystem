@@ -7,8 +7,8 @@ const students = [
 ]
 
 const enrollments = [
-  { enrollment_id: 10, student_id: '1', student_name: '王小明', season: '第十四期' },
-  { enrollment_id: 11, student_id: 2, student_name: '王小明', season: '第十五期' }
+  { enrollment_id: 10, student_id: '1', student_name: '王小明', season: '第十四季' },
+  { enrollment_id: 11, student_id: 2, student_name: '王小明', season: '第十五季' }
 ]
 
 describe('studentRelations', () => {

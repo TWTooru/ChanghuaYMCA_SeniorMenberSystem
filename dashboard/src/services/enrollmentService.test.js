@@ -32,7 +32,7 @@ describe('createEnrollmentWithCourses', () => {
 
     await expect(
       createEnrollmentWithCourses(client, '1', {
-        season: '第十五期',
+        season: '第十五季',
         reg_type: '續',
         pre_test: '2024-01-01',
         post_test: '2024-02-01',
@@ -47,7 +47,7 @@ describe('createEnrollmentWithCourses', () => {
         table: 'enrollments',
         operation: 'insert',
         rows: [{
-          season: '第十五期',
+          season: '第十五季',
           reg_type: '續',
           pre_test: '2024-01-01',
           post_test: '2024-02-01',
@@ -106,7 +106,7 @@ describe('createEnrollmentWithCourses', () => {
 
     await expect(
       createEnrollmentWithCourses(client, '1', {
-        season: '第十五期',
+        season: '第十五季',
         reg_type: '續',
         pre_test: '',
         post_test: '',
@@ -155,7 +155,7 @@ describe('createEnrollmentWithCourses', () => {
 
     await expect(
       createEnrollmentWithCourses(client, '1', {
-        season: '第十五期',
+        season: '第十五季',
         reg_type: '續',
         pre_test: '',
         post_test: '',

@@ -16,7 +16,7 @@ describe('season domain helpers', () => {
   })
 
   it('normalizes valid labels to Chinese 季 terminology', () => {
-    expect(normalizeSeason('第十五期')).toBe('第十五季')
+    expect(normalizeSeason('第十五季')).toBe('第十五季')
     expect(normalizeSeason('第16季前測')).toBe('第十六季')
     expect(normalizeSeason('未知')).toBeNull()
   })

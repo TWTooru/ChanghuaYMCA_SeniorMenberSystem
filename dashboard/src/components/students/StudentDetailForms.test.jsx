@@ -21,13 +21,13 @@ describe('Student detail edit forms', () => {
   it('prefills the enrollment edit form including its courses', () => {
     render(
       <EnrollmentEditForm
-        enrollment={{ enrollment_id: 1, season: '第十五期', reg_type: '新', refunded: 0, courses: ['電腦課', '手機課'] }}
+        enrollment={{ enrollment_id: 1, season: '第十五季', reg_type: '新', refunded: 0, courses: ['電腦課', '手機課'] }}
         onSave={vi.fn()}
         onCancel={vi.fn()}
       />
     )
 
-    expect(screen.getByDisplayValue('第十五期')).not.toBeNull()
+    expect(screen.getByDisplayValue('第十五季')).not.toBeNull()
     expect(screen.getByDisplayValue('電腦課, 手機課')).not.toBeNull()
   })
 })

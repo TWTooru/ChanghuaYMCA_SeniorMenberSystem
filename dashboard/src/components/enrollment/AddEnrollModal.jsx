@@ -2,20 +2,26 @@ import { useState } from 'react'
 import { X } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { createEnrollmentWithCourses } from '../../services/enrollmentService'
+import { normalizeSeason } from '../../domain/season'
 
-export default function AddEnrollModal({ student, onClose, onRefresh }) {
+export default function AddEnrollModal({ student, onClose, onRefresh, defaultSeason = '第十五季' }) {
   const [newEnroll, setNewEnroll] = useState({
-    season: '第十五期', reg_type: '續', pre_test: '', post_test: '',
+    season: defaultSeason, reg_type: '續', pre_test: '', post_test: '',
     refunded: false, refund_info: '', courses: ''
   });
 
   const handleAddEnrollSubmit = (e) => {
     e.preventDefault();
     if (!student) return;
+    const season = normalizeSeason(newEnroll.season)
+    if (!season) {
+      alert('請輸入有效的季度，例如：第十六季')
+      return
+    }
     
     const insertEnrollment = async () => {
       try {
-        await createEnrollmentWithCourses(supabase, student.student_id, newEnroll);
+        await createEnrollmentWithCourses(supabase, student.student_id, { ...newEnroll, season });
         alert("選課新增成功！");
         if (onRefresh) onRefresh();
         onClose();
@@ -64,14 +70,15 @@ export default function AddEnrollModal({ student, onClose, onRefresh }) {
             />
           </div>
           <div className="form-group">
-            <label className="form-label">修課期別 *</label>
+            <label className="form-label" htmlFor="enrollment-season">修課季度 *</label>
             <input 
+              id="enrollment-season"
               type="text" 
               className="form-input" 
               value={newEnroll.season} 
               onChange={e => setNewEnroll({...newEnroll, season: e.target.value})} 
               required
-              placeholder="例如: 第十五期"
+              placeholder="例如：第十六季"
             />
           </div>
           <div className="form-group">
@@ -106,8 +113,9 @@ export default function AddEnrollModal({ student, onClose, onRefresh }) {
             />
           </div>
           <div className="form-group full-width">
-            <label className="form-label">選修課程 * (多個請用英文逗號 , 或中文逗號 ， 隔開)</label>
+            <label className="form-label" htmlFor="enrollment-courses">選修課程 * (多個請用英文逗號 , 或中文逗號 ， 隔開)</label>
             <input 
+              id="enrollment-courses"
               type="text" 
               className="form-input" 
               value={newEnroll.courses} 

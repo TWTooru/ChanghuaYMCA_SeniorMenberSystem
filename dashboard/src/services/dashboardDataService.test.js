@@ -30,14 +30,14 @@ describe('fetchDashboardData', () => {
           {
             enrollment_id: 10,
             student_id: '1',
-            season: '第十五期',
+            season: '第十五季',
             refunded: 0,
             courses: [{ course_name: '肌力訓練' }, { course_name: '北歐健走' }]
           },
           {
             enrollment_id: 11,
             student_id: '3',
-            season: '第十五期',
+            season: '第十五季',
             refunded: 1,
             courses: []
           }
@@ -55,7 +55,7 @@ describe('fetchDashboardData', () => {
         {
           enrollment_id: 10,
           student_id: '1',
-          season: '第十五期',
+          season: '第十五季',
           refunded: false,
           student_name: '王小明',
           courses: ['肌力訓練', '北歐健走']
@@ -63,7 +63,7 @@ describe('fetchDashboardData', () => {
         {
           enrollment_id: 11,
           student_id: '3',
-          season: '第十五期',
+          season: '第十五季',
           refunded: true,
           student_name: '未知',
           courses: []

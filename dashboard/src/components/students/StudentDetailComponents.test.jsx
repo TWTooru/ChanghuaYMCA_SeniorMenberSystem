@@ -36,12 +36,12 @@ describe('Student detail components', () => {
     const onAddEnrollment = vi.fn()
     render(
       <EnrollmentTimeline
-        timeline={[{ enrollment_id: 1, season: '第十五期', reg_type: '新', courses: ['電腦課'] }]}
+        timeline={[{ enrollment_id: 1, season: '第十五季', reg_type: '新', courses: ['電腦課'] }]}
         onAddEnrollment={onAddEnrollment}
       />
     )
 
-    expect(screen.getByText('第十五期')).not.toBeNull()
+    expect(screen.getByText('第十五季')).not.toBeNull()
     expect(screen.getByText('電腦課')).not.toBeNull()
     fireEvent.click(screen.getByRole('button', { name: /新增選課紀錄/ }))
     expect(onAddEnrollment).toHaveBeenCalledOnce()
@@ -52,8 +52,8 @@ describe('Student detail components', () => {
       <StudentDetailModal
         student={{ ...student, student_id: 'S-002' }}
         enrollments={[
-          { enrollment_id: 1, student_id: 'S-001', student_name: '王小明', season: '第十四期', courses: ['電腦課'] },
-          { enrollment_id: 2, student_id: 'S-002', student_name: '王小明', season: '第十五期', courses: ['手機課'] }
+          { enrollment_id: 1, student_id: 'S-001', student_name: '王小明', season: '第十四季', courses: ['電腦課'] },
+          { enrollment_id: 2, student_id: 'S-002', student_name: '王小明', season: '第十五季', courses: ['手機課'] }
         ]}
         onClose={vi.fn()}
         onAddEnrollment={vi.fn()}
@@ -61,10 +61,27 @@ describe('Student detail components', () => {
       />
     )
 
-    expect(screen.getByText('第十五期')).not.toBeNull()
+    expect(screen.getByText('第十五季')).not.toBeNull()
     expect(screen.getByText('手機課')).not.toBeNull()
-    expect(screen.queryByText('第十四期')).toBeNull()
+    expect(screen.queryByText('第十四季')).toBeNull()
     expect(screen.queryByText('電腦課')).toBeNull()
+  })
+
+  it('sorts the timeline by numeric season order', () => {
+    const { container } = render(
+      <StudentDetailModal
+        student={student}
+        enrollments={[
+          { enrollment_id: 1, student_id: student.student_id, season: '第十六季', courses: ['較晚課程'] },
+          { enrollment_id: 2, student_id: student.student_id, season: '第十五季', courses: ['較早課程'] },
+        ]}
+        onClose={vi.fn()}
+        onAddEnrollment={vi.fn()}
+        onRefresh={vi.fn()}
+      />
+    )
+
+    expect(container.querySelector('.timeline-container').textContent.indexOf('第十五季')).toBeLessThan(container.querySelector('.timeline-container').textContent.indexOf('第十六季'))
   })
 
   it('hides student and enrollment mutation controls from viewers', () => {

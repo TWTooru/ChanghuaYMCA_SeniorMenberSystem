@@ -6,10 +6,9 @@ import { supabase } from '../../lib/supabaseClient'
 import StudentEditForm from './StudentEditForm'
 import StudentInfoView from './StudentInfoView'
 import { getEnrollmentsForStudent } from '../../domain/studentRelations'
+import { compareSeasons } from '../../domain/season'
 import { useAuth } from '../../contexts/AuthContext'
 import usePermissions from '../../hooks/usePermissions'
-
-const SEASONS_ORDER = ['第一季', '第二季', '第三季', '第四季', '第五季', '第六季', '第七季', '第八季', '第九季', '第十期', '第十一期', '第十二期', '第十三期', '第十四期', '第十五期']
 
 export default function StudentDetailModal({ student, enrollments, onClose, onAddEnrollment, onRefresh }) {
   const { role } = useAuth()
@@ -29,7 +28,7 @@ export default function StudentDetailModal({ student, enrollments, onClose, onAd
   const studentTimeline = useMemo(() => {
     if (!student || !enrollments) return []
     return getEnrollmentsForStudent(enrollments, student.student_id)
-      .sort((a, b) => SEASONS_ORDER.indexOf(a.season) - SEASONS_ORDER.indexOf(b.season))
+      .sort((a, b) => compareSeasons(a.season, b.season))
   }, [student, enrollments])
 
   if (!student) return null
