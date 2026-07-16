@@ -1,3 +1,5 @@
+export { seasonNumber as extractSeasonNum } from './season'
+
 export function cleanStr(value) {
   if (value === undefined || value === null) return null
   const cleaned = String(value).trim()
@@ -25,8 +27,10 @@ export function cleanDate(value) {
   if (cleaned.length >= 10 && cleaned[4] === '-' && cleaned[7] === '-') {
     return cleaned.substring(0, 10)
   }
-  if (cleaned.length >= 8 && cleaned.includes('/')) {
-    return cleaned.replace(/\//g, '-')
+  const slashDate = cleaned.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/)
+  if (slashDate) {
+    const [, yyyy, mm, dd] = slashDate
+    return `${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`
   }
   return cleaned || null
 }
@@ -56,38 +60,6 @@ export function cleanCourseName(value) {
     return null
   }
   return cleaned
-}
-
-const CHINESE_SEASON_NUMBERS = [
-  ['二十', 20],
-  ['十九', 19],
-  ['十八', 18],
-  ['十七', 17],
-  ['十六', 16],
-  ['十五', 15],
-  ['十四', 14],
-  ['十三', 13],
-  ['十二', 12],
-  ['十一', 11],
-  ['十', 10],
-  ['九', 9],
-  ['八', 8],
-  ['七', 7],
-  ['六', 6],
-  ['五', 5],
-  ['四', 4],
-  ['三', 3],
-  ['二', 2],
-  ['一', 1]
-]
-
-export function extractSeasonNum(value) {
-  const season = String(value || '')
-  const digitMatch = season.match(/\d+/)
-  if (digitMatch) return parseInt(digitMatch[0], 10)
-
-  const matched = CHINESE_SEASON_NUMBERS.find(([label]) => season.includes(label))
-  return matched ? matched[1] : -1
 }
 
 export const EXCEL_IMPORT_LIMITS = {

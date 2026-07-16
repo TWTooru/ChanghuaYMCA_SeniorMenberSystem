@@ -21,6 +21,7 @@ describe('excel import helpers', () => {
   it('converts Excel serial and slash dates to ISO-like dates', () => {
     expect(cleanDate(45292)).toBe('2024-01-01')
     expect(cleanDate('2024/02/03')).toBe('2024-02-03')
+    expect(cleanDate('2024/2/3')).toBe('2024-02-03')
     expect(cleanDate('2024-02-03 00:00:00')).toBe('2024-02-03')
   })
 
@@ -37,7 +38,8 @@ describe('excel import helpers', () => {
     expect(cleanCourseName('肌力訓練')).toBe('肌力訓練')
   })
 
-  it('extracts Chinese season numbers', () => {
+  it('extracts normalized Chinese season numbers', () => {
+    expect(extractSeasonNum('第十五季')).toBe(15)
     expect(extractSeasonNum('第十五期退費')).toBe(15)
     expect(extractSeasonNum('第3季')).toBe(3)
     expect(extractSeasonNum('未知')).toBe(-1)
