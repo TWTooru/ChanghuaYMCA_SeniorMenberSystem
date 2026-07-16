@@ -69,6 +69,7 @@ describe('classifyImport', () => {
 
   it('loads a read-only snapshot before classifying', async () => {
     const calls = []
+    const orders = []
     const results = {
       students: { data: [{ student_id: '12', name: '王小明', birth_date: '1960-01-01', mobile_phone: null }], error: null },
       enrollments: { data: [{ student_id: '12', season: '第十六季' }], error: null },
@@ -81,6 +82,10 @@ describe('classifyImport', () => {
             calls.push({ table, columns, options })
             if (options?.head) return Promise.resolve({ count: table === 'students' ? 1 : table === 'enrollments' ? 1 : 1, error: null })
             return {
+              order(column) {
+                orders.push({ table, column })
+                return this
+              },
               range(from, to) {
                 calls.push({ table, from, to })
                 return Promise.resolve(results[table])
@@ -96,15 +101,20 @@ describe('classifyImport', () => {
     expect(preview.summary).toMatchObject({ oldStudents: 1, enrollmentsToUpdate: 1, currentStudents: 1, currentEnrollments: 1, currentCourses: 1 })
     expect(calls).toEqual([
       { table: 'students', columns: '*', options: undefined }, { table: 'students', from: 0, to: 999 },
-      { table: 'enrollments', columns: 'student_id, season', options: undefined }, { table: 'enrollments', from: 0, to: 999 },
+      { table: 'enrollments', columns: 'enrollment_id, student_id, season', options: undefined }, { table: 'enrollments', from: 0, to: 999 },
       { table: 'students', columns: '*', options: { count: 'exact', head: true } },
       { table: 'enrollments', columns: '*', options: { count: 'exact', head: true } },
       { table: 'courses', columns: '*', options: { count: 'exact', head: true } }
+    ])
+    expect(orders).toEqual([
+      { table: 'students', column: 'student_id' },
+      { table: 'enrollments', column: 'enrollment_id' }
     ])
   })
 
   it('collects every student and enrollment page before classifying the import', async () => {
     const ranges = []
+    const orders = []
     const firstStudentPage = Array.from({ length: 1000 }, (_, index) => ({ student_id: String(index + 100), name: `既有學生${index}`, birth_date: null, mobile_phone: null }))
     firstStudentPage[0] = { student_id: '12', name: '王小明', birth_date: '1960-01-01', mobile_phone: null }
     const firstEnrollmentPage = Array.from({ length: 1000 }, (_, index) => ({ student_id: String(index + 100), season: '第十六季' }))
@@ -128,6 +138,10 @@ describe('classifyImport', () => {
               limit() {
                 return Promise.resolve({ data: pages[table][0], error: null })
               },
+              order(column) {
+                orders.push({ table, column })
+                return this
+              },
               range(from, to) {
                 ranges.push({ table, from, to })
                 return Promise.resolve({ data: pages[table][from], error: null })
@@ -148,6 +162,10 @@ describe('classifyImport', () => {
     expect(ranges).toEqual([
       { table: 'students', from: 0, to: 999 }, { table: 'enrollments', from: 0, to: 999 },
       { table: 'students', from: 1000, to: 1999 }, { table: 'enrollments', from: 1000, to: 1999 }
+    ])
+    expect(orders).toEqual([
+      { table: 'students', column: 'student_id' }, { table: 'enrollments', column: 'enrollment_id' },
+      { table: 'students', column: 'student_id' }, { table: 'enrollments', column: 'enrollment_id' }
     ])
   })
 })

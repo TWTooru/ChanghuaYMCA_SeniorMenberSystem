@@ -70,10 +70,10 @@ export function classifyImport(parsed, snapshot) {
   }
 }
 
-async function loadAllRows(client, table, columns) {
+async function loadAllRows(client, table, columns, orderColumn) {
   const rows = []
   for (let from = 0; ; from += SNAPSHOT_PAGE_SIZE) {
-    const { data, error } = await client.from(table).select(columns).range(from, from + SNAPSHOT_PAGE_SIZE - 1)
+    const { data, error } = await client.from(table).select(columns).order(orderColumn).range(from, from + SNAPSHOT_PAGE_SIZE - 1)
     if (error) throw error
     const page = data || []
     rows.push(...page)
@@ -83,8 +83,8 @@ async function loadAllRows(client, table, columns) {
 
 export async function loadImportPreview(client, parsed) {
   const [studentsResult, enrollmentsResult, studentCount, enrollmentCount, courseCount] = await Promise.all([
-    loadAllRows(client, 'students', '*'),
-    loadAllRows(client, 'enrollments', 'student_id, season'),
+    loadAllRows(client, 'students', '*', 'student_id'),
+    loadAllRows(client, 'enrollments', 'enrollment_id, student_id, season', 'enrollment_id'),
     client.from('students').select('*', { count: 'exact', head: true }),
     client.from('enrollments').select('*', { count: 'exact', head: true }),
     client.from('courses').select('*', { count: 'exact', head: true })
