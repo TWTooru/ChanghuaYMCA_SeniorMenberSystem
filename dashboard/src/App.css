@@ -1104,6 +1104,10 @@
   overflow: hidden;
 }
 
+.import-preview-modal-content {
+  max-height: calc(100dvh - 40px);
+}
+
 @keyframes fadeInCenter {
   from {
     opacity: 0;
@@ -1121,6 +1125,11 @@
   gap: 16px;
   padding: 20px 24px;
   overflow-y: auto;
+}
+
+.import-preview-modal-body {
+  flex: 1;
+  min-height: 0;
 }
 
 @media (max-width: 600px) {

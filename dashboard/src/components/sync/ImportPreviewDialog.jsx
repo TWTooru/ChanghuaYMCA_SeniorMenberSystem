@@ -47,11 +47,11 @@ export default function ImportPreviewDialog({ preview, isImporting = false, onCo
 
   return (
     <div className="modal-overlay-center" onClick={onCancel}>
-      <div className="form-modal-content" ref={dialogRef} role="dialog" tabIndex={-1} aria-modal="true" aria-labelledby="import-preview-title" onClick={event => event.stopPropagation()} onKeyDown={handleKeyDown}>
+      <div className="form-modal-content import-preview-modal-content" ref={dialogRef} role="dialog" tabIndex={-1} aria-modal="true" aria-labelledby="import-preview-title" onClick={event => event.stopPropagation()} onKeyDown={handleKeyDown}>
         <div className="modal-header-centered">
           <h2 id="import-preview-title">匯入預覽</h2>
         </div>
-        <div className="form-grid">
+        <div className="form-grid import-preview-modal-body">
           <section className="form-group full-width" aria-label="匯入摘要">
             <h3>本次匯入</h3>
             <ul>
