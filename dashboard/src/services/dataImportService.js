@@ -14,7 +14,7 @@ export async function prepareImport(file, client = supabase) {
     throw new Error('CSV 必須使用 UTF-8 編碼')
   }
 
-  const workbook = XLSX.read(csvText, { type: 'string' })
+  const workbook = XLSX.read(csvText, { type: 'string', raw: true })
   const sheet = workbook.Sheets[workbook.SheetNames[0]]
   const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null, raw: true, blankrows: false })
   const headers = (matrix[0] || []).map(value => String(value ?? '').trim())

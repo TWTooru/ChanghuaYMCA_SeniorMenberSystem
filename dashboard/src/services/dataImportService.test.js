@@ -41,12 +41,31 @@ describe('data import service', () => {
     loadImportPreview.mockResolvedValue({ hasBlockingErrors: false, payload: { mode: 'single-season', rows: [] } })
 
     await prepareImport(file, client)
-    expect(XLSX.read).toHaveBeenCalledWith('姓名,第16季前測', { type: 'string' })
+    expect(XLSX.read).toHaveBeenCalledWith('姓名,第16季前測', { type: 'string', raw: true })
     expect(parseQuarterCsvRows).toHaveBeenCalledWith(
       [{ 姓名: '王小明', 第16季前測: '2026/3/5' }],
       { headers: ['姓名', '第16季前測'] }
     )
     expect(client.rpc).not.toHaveBeenCalled()
+  })
+
+  it('reads CSV cells as raw text before parsing', async () => {
+    const file = {
+      name: 'quarter.csv',
+      size: 100,
+      arrayBuffer: vi.fn().mockResolvedValue(new TextEncoder().encode('name,date\nAda,2026-03-05').buffer)
+    }
+    const client = { rpc: vi.fn() }
+    XLSX.read.mockReturnValue({ SheetNames: ['data'], Sheets: { data: {} } })
+    XLSX.utils.sheet_to_json
+      .mockReturnValueOnce([['name', 'date']])
+      .mockReturnValueOnce([{ name: 'Ada', date: '2026-03-05' }])
+    parseQuarterCsvRows.mockReturnValue({ rows: [], warnings: [], errors: [] })
+    loadImportPreview.mockResolvedValue({ hasBlockingErrors: false, payload: { mode: 'single-season', rows: [] } })
+
+    await prepareImport(file, client)
+
+    expect(XLSX.read).toHaveBeenLastCalledWith(expect.any(String), { type: 'string', raw: true })
   })
 
   it('rejects malformed UTF-8', async () => {
