@@ -48,7 +48,9 @@ export function classifyImport(parsed, snapshot) {
   if (tableCounts.students || tableCounts.enrollments || tableCounts.courses) {
     warnings.push({ row: null, field: '資料庫', message: 'Supabase 目前不是空資料庫，請確認新增與更新筆數' })
   }
-  if (enrollmentsToUpdate) warnings.push({ row: null, field: '報名', message: '目標季度已有資料，本次會更新並取代課程' })
+  const importedSeasons = new Set(parsed.rows.flatMap(row => row.enrollments.map(enrollment => enrollment.season)))
+  const hasExistingTargetSeason = snapshot.enrollments.some(enrollment => importedSeasons.has(enrollment.season))
+  if (hasExistingTargetSeason) warnings.push({ row: null, field: '報名', message: '目標季度已有資料，本次會更新並取代課程' })
   return {
     ...parsed,
     payload: { mode: parsed.mode, rows: parsed.rows },

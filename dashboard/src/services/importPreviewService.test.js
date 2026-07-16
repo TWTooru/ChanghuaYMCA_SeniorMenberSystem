@@ -37,6 +37,18 @@ describe('classifyImport', () => {
     expect(preview.payload.mode).toBe('legacy-total')
   })
 
+  it('warns when the imported season already has an enrollment for another student', () => {
+    const parsed = { mode: 'single-season', rows: [row('13', '新季度學生', '1961-01-01')], warnings: [], errors: [] }
+    const preview = classifyImport(parsed, {
+      students: [{ student_id: '13', name: '新季度學生', birth_date: '1961-01-01', mobile_phone: null }],
+      enrollments: [{ student_id: '12', season: '第十六季' }],
+      tableCounts: { students: 1, enrollments: 1, courses: 0 }
+    })
+
+    expect(preview.summary.enrollmentsToUpdate).toBe(0)
+    expect(preview.warnings).toContainEqual({ row: null, field: '報名', message: '目標季度已有資料，本次會更新並取代課程' })
+  })
+
   it('loads a read-only snapshot before classifying', async () => {
     const calls = []
     const results = {
