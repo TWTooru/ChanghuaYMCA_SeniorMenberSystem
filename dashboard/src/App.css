@@ -1177,6 +1177,16 @@
   background: rgba(0, 0, 0, 0.1);
 }
 
+.form-footer.full-width {
+  grid-column: span 2;
+}
+
+@media (max-width: 600px) {
+  .form-footer.full-width {
+    grid-column: span 1;
+  }
+}
+
 .modal-header-centered {
   padding: 20px 24px;
   border-bottom: 1px solid var(--border-color);

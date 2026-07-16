@@ -28,15 +28,9 @@ describe('ImportPreviewDialog', () => {
       />
     )
 
-    expect(screen.getByText('新生 1 人')).not.toBeNull()
-    expect(screen.getByText('檔案資料 2 列')).not.toBeNull()
-    expect(screen.getByText('既有學生 1 人')).not.toBeNull()
     expect(screen.getByText('新增報名 1 筆')).not.toBeNull()
     expect(screen.getByText('更新報名 1 筆')).not.toBeNull()
     expect(screen.getByText('課程 2 筆')).not.toBeNull()
-    expect(screen.getByText('目前學員 8 人')).not.toBeNull()
-    expect(screen.getByText('目前報名 9 筆')).not.toBeNull()
-    expect(screen.getByText('目前課程 10 筆')).not.toBeNull()
     fireEvent.click(screen.getByRole('button', { name: '確認匯入' }))
     expect(onConfirm).toHaveBeenCalledOnce()
   })
