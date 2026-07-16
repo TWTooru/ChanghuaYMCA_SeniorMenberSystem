@@ -29,6 +29,24 @@ describe('classifyImport', () => {
     expect(preview.errors).toHaveLength(2)
   })
 
+  it('blocks suspected duplicate blank-ID students within the imported file', () => {
+    const parsed = {
+      rows: [
+        row(null, '新學生', '1962-02-02', '0933-000-000'),
+        { ...row(null, '新學生', '1962-02-02', '0933000000'), source_row: 3 }
+      ],
+      warnings: [], errors: []
+    }
+
+    const preview = classifyImport(parsed, {
+      students: [], enrollments: [], tableCounts: { students: 0, enrollments: 0, courses: 0 }
+    })
+
+    expect(preview.hasBlockingErrors).toBe(true)
+    expect(preview.errors).toHaveLength(1)
+    expect(preview.errors[0]).toMatchObject({ row: 3, field: '學員編號' })
+  })
+
   it('allows missing supplied IDs only for historical restoration', () => {
     const parsed = { mode: 'legacy-total', rows: [row('1', '歷史學生', '1960-01-01')], warnings: [], errors: [] }
     const preview = classifyImport(parsed, { students: [], enrollments: [], tableCounts: { students: 0, enrollments: 0, courses: 0 } })
@@ -63,8 +81,8 @@ describe('classifyImport', () => {
             calls.push({ table, columns, options })
             if (options?.head) return Promise.resolve({ count: table === 'students' ? 1 : table === 'enrollments' ? 1 : 1, error: null })
             return {
-              limit(limit) {
-                calls.push({ table, limit })
+              range(from, to) {
+                calls.push({ table, from, to })
                 return Promise.resolve(results[table])
               }
             }
@@ -77,11 +95,59 @@ describe('classifyImport', () => {
 
     expect(preview.summary).toMatchObject({ oldStudents: 1, enrollmentsToUpdate: 1, currentStudents: 1, currentEnrollments: 1, currentCourses: 1 })
     expect(calls).toEqual([
-      { table: 'students', columns: '*', options: undefined }, { table: 'students', limit: 9999 },
-      { table: 'enrollments', columns: 'student_id, season', options: undefined }, { table: 'enrollments', limit: 9999 },
+      { table: 'students', columns: '*', options: undefined }, { table: 'students', from: 0, to: 999 },
+      { table: 'enrollments', columns: 'student_id, season', options: undefined }, { table: 'enrollments', from: 0, to: 999 },
       { table: 'students', columns: '*', options: { count: 'exact', head: true } },
       { table: 'enrollments', columns: '*', options: { count: 'exact', head: true } },
       { table: 'courses', columns: '*', options: { count: 'exact', head: true } }
+    ])
+  })
+
+  it('collects every student and enrollment page before classifying the import', async () => {
+    const ranges = []
+    const firstStudentPage = Array.from({ length: 1000 }, (_, index) => ({ student_id: String(index + 100), name: `既有學生${index}`, birth_date: null, mobile_phone: null }))
+    firstStudentPage[0] = { student_id: '12', name: '王小明', birth_date: '1960-01-01', mobile_phone: null }
+    const firstEnrollmentPage = Array.from({ length: 1000 }, (_, index) => ({ student_id: String(index + 100), season: '第十六季' }))
+    firstEnrollmentPage[0] = { student_id: '12', season: '第十六季' }
+    const pages = {
+      students: {
+        0: firstStudentPage,
+        1000: [{ student_id: '13', name: '王小華', birth_date: '1961-01-01', mobile_phone: null }]
+      },
+      enrollments: {
+        0: firstEnrollmentPage,
+        1000: [{ student_id: '13', season: '第十六季' }]
+      }
+    }
+    const client = {
+      from(table) {
+        return {
+          select(columns, options) {
+            if (options?.head) return Promise.resolve({ count: table === 'courses' ? 0 : 2, error: null })
+            return {
+              limit() {
+                return Promise.resolve({ data: pages[table][0], error: null })
+              },
+              range(from, to) {
+                ranges.push({ table, from, to })
+                return Promise.resolve({ data: pages[table][from], error: null })
+              }
+            }
+          }
+        }
+      }
+    }
+
+    const preview = await loadImportPreview(client, {
+      mode: 'single-season',
+      rows: [row('12', '王小明', '1960-01-01'), { ...row('13', '王小華', '1961-01-01'), source_row: 3 }],
+      warnings: [], errors: []
+    })
+
+    expect(preview.summary).toMatchObject({ oldStudents: 2, enrollmentsToUpdate: 2, currentStudents: 2, currentEnrollments: 2 })
+    expect(ranges).toEqual([
+      { table: 'students', from: 0, to: 999 }, { table: 'enrollments', from: 0, to: 999 },
+      { table: 'students', from: 1000, to: 1999 }, { table: 'enrollments', from: 1000, to: 1999 }
     ])
   })
 })

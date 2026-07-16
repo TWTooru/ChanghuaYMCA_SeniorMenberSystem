@@ -1,6 +1,7 @@
 const normalizeName = value => String(value || '').trim().toLocaleLowerCase('zh-TW')
 const normalizePhone = value => String(value || '').replace(/\D/g, '')
 const enrollmentKey = value => `${String(value.student_id)}\u0000${value.season}`
+const SNAPSHOT_PAGE_SIZE = 1000
 
 function suspectedDuplicate(student, existing) {
   if (normalizeName(student.name) !== normalizeName(existing.name)) return false
@@ -16,6 +17,7 @@ export function classifyImport(parsed, snapshot) {
   const studentsById = new Map(snapshot.students.map(student => [String(student.student_id), student]))
   const existingEnrollmentKeys = new Set(snapshot.enrollments.map(enrollmentKey))
   const seenIds = new Set()
+  const blankIdStudents = []
   let oldStudents = 0
   let newStudents = 0
   let enrollmentsToInsert = 0
@@ -32,8 +34,11 @@ export function classifyImport(parsed, snapshot) {
       if (exists) oldStudents += 1
       else newStudents += 1
     } else {
-      const duplicate = snapshot.students.find(student => suspectedDuplicate(row.student, student))
-      if (duplicate) errors.push({ row: row.source_row, field: '學員編號', message: `疑似既有學生，請填入編號 ${duplicate.student_id}` })
+      const existingDuplicate = snapshot.students.find(student => suspectedDuplicate(row.student, student))
+      const importedDuplicate = blankIdStudents.find(previous => suspectedDuplicate(row.student, previous.student))
+      if (existingDuplicate) errors.push({ row: row.source_row, field: '學員編號', message: `疑似既有學生，請填入編號 ${existingDuplicate.student_id}` })
+      else if (importedDuplicate) errors.push({ row: row.source_row, field: '學員編號', message: `疑似重複學生，請先核對來源第 ${importedDuplicate.source_row} 列` })
+      blankIdStudents.push(row)
       newStudents += 1
     }
     for (const enrollment of row.enrollments) {
@@ -65,21 +70,32 @@ export function classifyImport(parsed, snapshot) {
   }
 }
 
+async function loadAllRows(client, table, columns) {
+  const rows = []
+  for (let from = 0; ; from += SNAPSHOT_PAGE_SIZE) {
+    const { data, error } = await client.from(table).select(columns).range(from, from + SNAPSHOT_PAGE_SIZE - 1)
+    if (error) throw error
+    const page = data || []
+    rows.push(...page)
+    if (page.length < SNAPSHOT_PAGE_SIZE) return rows
+  }
+}
+
 export async function loadImportPreview(client, parsed) {
   const [studentsResult, enrollmentsResult, studentCount, enrollmentCount, courseCount] = await Promise.all([
-    client.from('students').select('*').limit(9999),
-    client.from('enrollments').select('student_id, season').limit(9999),
+    loadAllRows(client, 'students', '*'),
+    loadAllRows(client, 'enrollments', 'student_id, season'),
     client.from('students').select('*', { count: 'exact', head: true }),
     client.from('enrollments').select('*', { count: 'exact', head: true }),
     client.from('courses').select('*', { count: 'exact', head: true })
   ])
 
-  const error = studentsResult.error || enrollmentsResult.error || studentCount.error || enrollmentCount.error || courseCount.error
+  const error = studentCount.error || enrollmentCount.error || courseCount.error
   if (error) throw error
 
   return classifyImport(parsed, {
-    students: studentsResult.data || [],
-    enrollments: enrollmentsResult.data || [],
+    students: studentsResult,
+    enrollments: enrollmentsResult,
     tableCounts: {
       students: studentCount.count || 0,
       enrollments: enrollmentCount.count || 0,

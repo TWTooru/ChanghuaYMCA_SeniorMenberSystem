@@ -12,11 +12,13 @@ export default function ExcelSync({ onSyncComplete }) {
   const [isReading, setIsReading] = useState(false)
   const [isImporting, setIsImporting] = useState(false)
   const [preview, setPreview] = useState(null)
+  const [assignedIds, setAssignedIds] = useState([])
 
   const handleFileChange = async (event) => {
     const file = event.target.files[0]
     if (!file) return
 
+    setAssignedIds([])
     setIsReading(true)
     try {
       setPreview(await prepareImport(file))
@@ -33,6 +35,7 @@ export default function ExcelSync({ onSyncComplete }) {
     try {
       const result = await commitImport(preview)
       await MySwal.fire({ icon: 'success', title: '匯入成功', text: `新增 ${result.students_inserted} 位學生，更新 ${result.enrollments_updated} 筆報名。` })
+      setAssignedIds(Array.isArray(result.assigned_ids) ? result.assigned_ids : [])
       setPreview(null)
       onSyncComplete?.()
     } catch (error) {
@@ -50,6 +53,14 @@ export default function ExcelSync({ onSyncComplete }) {
         <span>{isReading ? '讀取中...' : isImporting ? '匯入中...' : '匯入季度資料'}</span>
       </button>
       {preview && <ImportPreviewDialog preview={preview} isImporting={isImporting} onConfirm={handleConfirm} onCancel={() => setPreview(null)} />}
+      {assignedIds.length > 0 && (
+        <section className="form-group" aria-label="本次指派的學員編號">
+          <h3>本次指派的學員編號</h3>
+          <ul>
+            {assignedIds.map(({ source_row, student_id }) => <li key={`${source_row}-${student_id}`}>來源第 {source_row} 列：{student_id}</li>)}
+          </ul>
+        </section>
+      )}
     </div>
   )
 }

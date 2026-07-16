@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../../lib/supabaseClient'
+import { normalizeSeason } from '../../domain/season'
 
 export default function EnrollmentEditForm({ enrollment, onSave, onCancel }) {
   const [form, setForm] = useState({
@@ -15,8 +16,13 @@ export default function EnrollmentEditForm({ enrollment, onSave, onCancel }) {
   const handleSave = async () => {
     try {
       const { season, reg_type, pre_test, post_test, refunded, refund_info, courses } = form
+      const normalizedSeason = normalizeSeason(season)
+      if (!normalizedSeason) {
+        alert('請輸入有效的季度，例如：第十六季')
+        return
+      }
       const { error } = await supabase.from('enrollments')
-        .update({ season, reg_type, pre_test, post_test, refunded: refunded ? 1 : 0, refund_info })
+        .update({ season: normalizedSeason, reg_type, pre_test, post_test, refunded: refunded ? 1 : 0, refund_info })
         .eq('enrollment_id', enrollment.enrollment_id)
       if (error) throw error
 

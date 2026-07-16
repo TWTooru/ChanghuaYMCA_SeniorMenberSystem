@@ -45,4 +45,20 @@ describe('ExcelSync', () => {
     await waitFor(() => expect(commitImport).toHaveBeenCalledWith(preview))
     await waitFor(() => expect(onSyncComplete).toHaveBeenCalledOnce())
   })
+
+  it('displays the source-row-to-ID mapping returned for newly assigned students', async () => {
+    const preview = {
+      summary: { fileRows: 1, oldStudents: 0, newStudents: 1, enrollmentsToInsert: 1, enrollmentsToUpdate: 0, courses: 1, currentStudents: 0, currentEnrollments: 0, currentCourses: 0 },
+      warnings: [], errors: [], hasBlockingErrors: false,
+    }
+    prepareImport.mockResolvedValueOnce(preview)
+    commitImport.mockResolvedValueOnce({ students_inserted: 1, enrollments_updated: 0, assigned_ids: [{ source_row: 2, student_id: '399' }] })
+    render(<ExcelSync />)
+
+    fireEvent.change(document.querySelector('input[type="file"]'), { target: { files: [new File(['data'], 'season.csv', { type: 'text/csv' })] } })
+    fireEvent.click(await screen.findByRole('button', { name: '確認匯入' }))
+
+    expect(await screen.findByLabelText('本次指派的學員編號')).not.toBeNull()
+    expect(screen.getByText('來源第 2 列：399')).not.toBeNull()
+  })
 })
