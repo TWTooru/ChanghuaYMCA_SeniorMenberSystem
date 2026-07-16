@@ -15,8 +15,11 @@ export function cleanInt(value) {
 export function cleanDate(value) {
   if (!value) return null
 
-  if (typeof value === 'number' && value > 1000) {
-    const date = new Date(Math.round((value - 25569) * 86400 * 1000))
+  const serial = typeof value === 'number'
+    ? value
+    : /^\d+(\.\d+)?$/.test(String(value).trim()) ? Number(value) : null
+  if (serial !== null && serial > 1000) {
+    const date = new Date(Math.round((serial - 25569) * 86400 * 1000))
     const yyyy = date.getUTCFullYear()
     const mm = String(date.getUTCMonth() + 1).padStart(2, '0')
     const dd = String(date.getUTCDate()).padStart(2, '0')
@@ -24,6 +27,7 @@ export function cleanDate(value) {
   }
 
   const cleaned = String(value).trim().replace(' 00:00:00', '')
+  if (cleaned === '？') return null
   if (cleaned.length >= 10 && cleaned[4] === '-' && cleaned[7] === '-') {
     return cleaned.substring(0, 10)
   }

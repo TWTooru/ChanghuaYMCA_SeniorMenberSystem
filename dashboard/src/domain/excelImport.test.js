@@ -20,6 +20,8 @@ describe('excel import helpers', () => {
 
   it('converts Excel serial and slash dates to ISO-like dates', () => {
     expect(cleanDate(45292)).toBe('2024-01-01')
+    expect(cleanDate('19716')).toBe('1953-12-23')
+    expect(cleanDate('？')).toBeNull()
     expect(cleanDate('2024/02/03')).toBe('2024-02-03')
     expect(cleanDate('2024/2/3')).toBe('2024-02-03')
     expect(cleanDate('2024-02-03 00:00:00')).toBe('2024-02-03')

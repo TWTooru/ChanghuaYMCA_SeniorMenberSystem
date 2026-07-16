@@ -52,7 +52,7 @@ export function parseTabularRows(rows, { today = new Date() } = {}) {
     student.original_id = cleanStr(row['原始編號'])
     const rawBirthDate = cleanStr(row['出生日期'])
     const birthDate = cleanDate(rawBirthDate)
-    if (rawBirthDate && !isValidIsoDate(birthDate)) {
+    if (rawBirthDate && birthDate !== null && !isValidIsoDate(birthDate)) {
       errors.push({ row: sourceRow, field: '出生日期', message: '日期格式無法辨識' })
       student.birth_date = null
     } else student.birth_date = birthDate

@@ -29,4 +29,10 @@ describe('parseTabularRows', () => {
     const result = parseTabularRows([{ ...basic, 學員編號: '3', 第十五季前測: '2026/03/05' }])
     expect(result.rows[0].enrollments).toHaveLength(1)
   })
+
+  it('accepts the historical unknown birth-date marker', () => {
+    const result = parseTabularRows([{ ...basic, 出生日期: '？', 第六季前測: '80' }])
+    expect(result.errors).toEqual([])
+    expect(result.rows[0].student.birth_date).toBeNull()
+  })
 })
