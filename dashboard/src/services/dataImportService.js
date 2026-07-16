@@ -1,26 +1,28 @@
 import * as XLSX from 'xlsx'
-import { parseTabularRows } from '../domain/seasonImport'
-import { validateWorkbookForImport } from '../domain/excelImport'
+import { parseQuarterCsvRows } from '../domain/quarterCsvImport'
 import { supabase } from '../lib/supabaseClient'
 import { loadImportPreview } from './importPreviewService'
 
 export async function prepareImport(file, client = supabase) {
-  validateWorkbookForImport({ fileSize: file.size, workbook: { SheetNames: [], Sheets: {} } })
+  if (!file?.name?.toLowerCase().endsWith('.csv')) throw new Error('只接受 CSV 檔案')
+  if (file.size > 5 * 1024 * 1024) throw new Error('CSV 檔案不可超過 5 MiB')
 
-  const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array' })
-  validateWorkbookForImport({
-    fileSize: file.size,
-    workbook,
-    getRows: sheet => XLSX.utils.sheet_to_json(sheet, { defval: null })
-  })
+  let csvText
+  try {
+    csvText = new TextDecoder('utf-8', { fatal: true }).decode(await file.arrayBuffer()).replace(/^\uFEFF/, '')
+  } catch {
+    throw new Error('CSV 必須使用 UTF-8 編碼')
+  }
 
-  if (workbook.SheetNames.length !== 1) throw new Error('匯入檔案必須只有一個工作表')
-
+  const workbook = XLSX.read(csvText, { type: 'string' })
   const sheet = workbook.Sheets[workbook.SheetNames[0]]
-  const rows = XLSX.utils.sheet_to_json(sheet, { defval: null, raw: true })
-  if (rows.length === 0) throw new Error('匯入檔案沒有資料')
+  const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null, raw: true, blankrows: false })
+  const headers = (matrix[0] || []).map(value => String(value ?? '').trim())
+  const rows = XLSX.utils.sheet_to_json(sheet, { defval: null, raw: true, blankrows: false })
+  if (rows.length === 0) throw new Error('CSV 沒有資料')
+  if (rows.length > 10000) throw new Error('CSV 資料不可超過 10,000 列')
 
-  return loadImportPreview(client, parseTabularRows(rows))
+  return loadImportPreview(client, parseQuarterCsvRows(rows, { headers }))
 }
 
 export async function commitImport(preview, client = supabase) {
