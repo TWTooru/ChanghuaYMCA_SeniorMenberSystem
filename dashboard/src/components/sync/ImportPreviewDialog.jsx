@@ -98,10 +98,10 @@ export default function ImportPreviewDialog({ preview, isImporting = false, onCo
               </ul>
             </section>
           )}
-          <div className="form-footer full-width">
-            <button type="button" className="btn-secondary" onClick={onCancel} disabled={isImporting}>取消</button>
-            <button type="button" className="btn-primary" onClick={onConfirm} disabled={confirmationDisabled}>確認匯入</button>
-          </div>
+        </div>
+        <div className="form-footer">
+          <button type="button" className="btn-secondary" onClick={onCancel} disabled={isImporting}>取消</button>
+          <button type="button" className="btn-primary" onClick={onConfirm} disabled={confirmationDisabled}>確認匯入</button>
         </div>
       </div>
     </div>

@@ -57,7 +57,11 @@ describe('ImportPreviewDialog', () => {
     expect(screen.getByText('前測將清空 1 筆')).not.toBeNull()
     expect(screen.getByText('後測將清空 2 筆')).not.toBeNull()
     expect(container.querySelector('.import-preview-modal-content')).not.toBeNull()
-    expect(container.querySelector('.import-preview-modal-body')).not.toBeNull()
+    const body = container.querySelector('.import-preview-modal-body')
+    const footer = container.querySelector('.form-footer')
+    expect(body).not.toBeNull()
+    expect(footer).not.toBeNull()
+    expect(body.contains(footer)).toBe(false)
   })
 
   it('disables confirmation and shows row errors when blocked', () => {
