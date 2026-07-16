@@ -5,12 +5,11 @@ import ExportOptionsDialog from './ExportOptionsDialog'
 describe('ExportOptionsDialog', () => {
   afterEach(cleanup)
 
-  const students = [{ student_id: '1', name: '王小明' }]
   const enrollments = [{ student_id: '1', season: '115-4' }, { student_id: '1', season: '115-3' }]
 
   it('renders elements and triggers onExport with correct values', () => {
     const onExport = vi.fn()
-    render(<ExportOptionsDialog students={students} enrollments={enrollments} onExport={onExport} onCancel={vi.fn()} />)
+    render(<ExportOptionsDialog enrollments={enrollments} onExport={onExport} onCancel={vi.fn()} />)
 
     expect(screen.getByText('Excel 匯出設定')).not.toBeNull()
     fireEvent.click(screen.getByRole('button', { name: '確認下載' }))
@@ -28,7 +27,7 @@ describe('ExportOptionsDialog', () => {
 
   it('handles season selection and option toggling', () => {
     const onExport = vi.fn()
-    render(<ExportOptionsDialog students={students} enrollments={enrollments} onExport={onExport} onCancel={vi.fn()} />)
+    render(<ExportOptionsDialog enrollments={enrollments} onExport={onExport} onCancel={vi.fn()} />)
 
     fireEvent.click(screen.getByLabelText('依特定季度篩選'))
     fireEvent.click(screen.getByLabelText('統計摘要')) // uncheck
@@ -44,5 +43,32 @@ describe('ExportOptionsDialog', () => {
         includeCourses: true
       }
     })
+  })
+
+  it('traps keyboard focus when Tab key is pressed', () => {
+    render(
+      <ExportOptionsDialog enrollments={enrollments} onExport={vi.fn()} onCancel={vi.fn()} />
+    )
+
+    const inputs = document.body.querySelectorAll('.form-modal-content input, .form-modal-content button')
+    const firstInput = inputs[0]
+    const lastButton = inputs[inputs.length - 1]
+
+    // Initially focus moves to first element
+    expect(document.activeElement).toBe(firstInput)
+
+    // Shift + Tab on first element should wrap to last element
+    fireEvent.keyDown(document.querySelector('.form-modal-content'), {
+      key: 'Tab',
+      shiftKey: true
+    })
+    expect(document.activeElement).toBe(lastButton)
+
+    // Tab on last element should wrap to first element
+    fireEvent.keyDown(document.querySelector('.form-modal-content'), {
+      key: 'Tab',
+      shiftKey: false
+    })
+    expect(document.activeElement).toBe(firstInput)
   })
 })

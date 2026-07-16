@@ -1,8 +1,12 @@
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 
+function getFocusableElements(container) {
+  return Array.from(container.querySelectorAll('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'))
+    .filter(element => !element.hasAttribute('disabled'))
+}
+
 export default function ExportOptionsDialog({ 
-  students: _students, 
   enrollments, 
   onExport, 
   onCancel 
@@ -26,15 +30,38 @@ export default function ExportOptionsDialog({
   const [includeEnrollments, setIncludeEnrollments] = useState(true)
   const [includeCourses, setIncludeCourses] = useState(true)
 
-  // 3. Focus Trap
+  // 3. Focus Trap & Key handling
   useEffect(() => {
     previousFocusRef.current = document.activeElement
     const dialog = dialogRef.current
-    if (dialog) dialog.focus()
+    const [initialFocus] = getFocusableElements(dialog)
+    ;(initialFocus || dialog).focus()
     return () => {
       if (previousFocusRef.current?.isConnected) previousFocusRef.current.focus()
     }
   }, [])
+
+  const handleKeyDown = event => {
+    if (event.key !== 'Tab') return
+
+    const dialog = dialogRef.current
+    const focusableElements = getFocusableElements(dialog)
+    if (focusableElements.length === 0) {
+      event.preventDefault()
+      dialog.focus()
+      return
+    }
+
+    const first = focusableElements[0]
+    const last = focusableElements[focusableElements.length - 1]
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault()
+      last.focus()
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault()
+      first.focus()
+    }
+  }
 
   const canConfirm = includeStats || includeStudents || includeEnrollments || includeCourses
 
@@ -62,6 +89,7 @@ export default function ExportOptionsDialog({
         aria-modal="true" 
         aria-labelledby="export-options-title"
         onClick={e => e.stopPropagation()}
+        onKeyDown={handleKeyDown}
         style={{ maxWidth: '480px' }}
       >
         <div className="modal-header-centered">

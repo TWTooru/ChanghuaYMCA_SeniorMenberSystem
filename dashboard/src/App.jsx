@@ -227,7 +227,6 @@ function AuthenticatedDashboard() {
       
       {showExportModal && (
         <ExportOptionsDialog 
-          students={students}
           enrollments={enrollments}
           onCancel={() => setShowExportModal(false)}
           onExport={({ exportScope, selectedSeason, options }) => {

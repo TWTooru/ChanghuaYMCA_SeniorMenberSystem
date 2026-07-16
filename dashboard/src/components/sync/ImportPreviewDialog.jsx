@@ -63,7 +63,7 @@ export default function ImportPreviewDialog({ preview, isImporting = false, onCo
   })
 
   // If there's no database empty check warning, add the general reminder at the beginning
-  if (!warnings.some(w => w.message.includes('請確認新增與更新筆數'))) {
+  if (!warnings.some(w => (w.message || '').includes('請確認新增與更新筆數'))) {
     displayWarnings.unshift('請確認新增與更新筆數資料，一次僅能夠輸入一季報表，並確認檔案格式為.csv')
   }
 
