@@ -1,0 +1,64 @@
+# YMCA 學員資訊管理系統 - 系統架構與流程圖
+
+本文件包含本系統核心功能（學員詳情模態框與 Excel 匯出）的流程架構圖。
+
+```mermaid
+graph TD
+    %% 核心分頁導覽
+    App[App.jsx 核心狀態中心] --> |切換至| Tab1(數據概覽)
+    App --> |切換至| Tab2(學員清單與查詢 StudentListTab)
+    App --> |切換至| Tab3(歷年選課歷程 EnrollmentTab)
+
+    %% 學員清單分頁交互
+    Tab2 --> |點擊學員列| OpenTabbed[呼叫 openStudentDetail student, 'profile']
+    Tab2 --> |點擊查看歷程| OpenTabbedHistory[呼叫 openStudentDetail student, 'history']
+    
+    OpenTabbed --> |開啟| ModalT[StudentDetailModal <br/> isTabbed = true]
+    OpenTabbedHistory --> |開啟| ModalT
+
+    %% 歷年選課歷程分頁交互
+    Tab3 --> |點擊學員列| OpenStacked[呼叫 openStudentDetail student, null]
+    OpenStacked --> |開啟| ModalS[StudentDetailModal <br/> isTabbed = false]
+
+    %% 分頁模式詳情 (Tabbed Mode)
+    subgraph 分頁詳情模態框 (isTabbed = true)
+        ModalT --> TabList{選擇頁籤}
+        TabList --> |基本資料| ProfileTab[渲染 StudentInfoView / StudentEditForm]
+        TabList --> |歷年修課| HistoryTab[渲染 EnrollmentTimeline]
+        
+        ProfileTab --> |進行編輯| DirtyState[觸發變更: hasUnsavedChanges = true]
+        DirtyState --> |點擊關閉 / 切換分頁 / 按 Escape| Guard{編輯保護攔截}
+        Guard --> |放棄變更| Discard[關閉模態框 / 切換成功]
+        Guard --> |繼續編輯| EditForm[回到編輯狀態]
+    end
+
+    %% 堆疊模式詳情 (Stacked Mode)
+    subgraph 堆疊詳情模態框 (isTabbed = false)
+        ModalS --> StackedView[上下堆疊渲染]
+        StackedView --> StackedInfo[基本聯絡資料]
+        StackedView --> StackedTimeline[歷年修課歷程 Timeline]
+        ModalS --> |關閉 / 按 Escape| DirectClose[直接關閉]
+    end
+
+    %% Excel 自訂匯出流程
+    Tab2 -.-> |點擊 下載整理版 Excel| ExportDlg[開啟 ExportOptionsDialog]
+    ExportDlg --> |選擇修課期別| FilterSeason[期別篩選過濾]
+    ExportDlg --> |核取所選工作表| SelectSheets{統計摘要 / 學員個人資料 / 報名明細紀錄 / 課程選修統計}
+    SelectSheets --> |點擊匯出| ExcelExportLib[excelExport.js 處理]
+    ExcelExportLib --> |中文欄位對照與過濾| LocalizedMapping[中文化轉換與排除備註欄位]
+    LocalizedMapping --> |產生 Excel 檔案| DownloadExcel[下載 Excel 活頁簿]
+```
+
+## 功能架構說明：
+
+1. **學員清單與查詢 (StudentListTab)**：
+   * 點擊開啟學員時採用**分頁模式 (`isTabbed = true`)**，提供「基本資料」與「歷年修課」兩個標籤分開檢視。
+   * 內含**編輯保護**機制，若在基本資料編輯狀態下有未儲存的修改，關閉視窗、切換標籤頁或按下 Escape 鍵時，系統皆會跳出「尚有未儲存變更」確認對話框以防資料遺失。
+
+2. **歷年選課歷程 (EnrollmentTab)**：
+   * 呈現原始的歷史修課明細，包含前後測分數。
+   * 點擊開啟學員時採用**堆疊模式 (`isTabbed = false`)**，維持原生的上下堆疊檢視（基本資料與修課歷程 Timeline 同時呈現），不進行分頁，且可直接關閉。
+
+3. **Excel 自訂匯出**：
+   * 點擊匯出按鈕後，會開啟客製化的 `ExportOptionsDialog`。
+   * 支援**期別篩選**與**工作表多選**（可自由勾選要匯出哪些 Sheet），並將所有工作表與欄位中文化，同時排除 `memo` 與 `created_at` 等後台資料。
