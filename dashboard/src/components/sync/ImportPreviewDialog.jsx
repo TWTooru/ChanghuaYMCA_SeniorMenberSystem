@@ -66,13 +66,8 @@ export default function ImportPreviewDialog({ preview, isImporting = false, onCo
               <li>後測將清空 {summary.postTestsCleared} 筆</li>
             </ul>
           </section>
-          <section className="form-group full-width" aria-label="目前資料庫筆數">
-            <h3>目前資料庫</h3>
-            <ul>
-              <li>目前學員 {summary.currentStudents} 人</li>
-              <li>目前報名 {summary.currentEnrollments} 筆</li>
-              <li>目前課程 {summary.currentCourses} 筆</li>
-            </ul>
+          <section className="import-preview-notice" aria-label="CSV 匯入提醒">
+            注意 CSV 格式，一次只能匯入一個季度
           </section>
           {warnings.length > 0 && (
             <section className="form-group full-width" aria-label="提醒">
