@@ -13,6 +13,12 @@ export default function ExcelSync({ onSyncComplete }) {
   const [isImporting, setIsImporting] = useState(false)
   const [preview, setPreview] = useState(null)
   const [assignedIds, setAssignedIds] = useState([])
+  const assignedIdText = assignedIds.map(({ source_row, student_id }) => `來源第 ${source_row} 列：${student_id}`).join('\n')
+
+  const copyAssignedIds = async () => {
+    await navigator.clipboard.writeText(assignedIdText)
+    await MySwal.fire({ icon: 'success', title: '已複製新學員編號' })
+  }
 
   const handleFileChange = async (event) => {
     const file = event.target.files[0]
@@ -47,10 +53,10 @@ export default function ExcelSync({ onSyncComplete }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <input type="file" accept=".csv,.xlsx,.xls" style={{ display: 'none' }} ref={fileInputRef} onChange={handleFileChange} />
+      <input type="file" accept=".csv" style={{ display: 'none' }} ref={fileInputRef} onChange={handleFileChange} />
       <button type="button" className="btn-secondary w-max" style={{ display: 'flex', gap: '6px', alignItems: 'center' }} onClick={() => fileInputRef.current?.click()} disabled={isReading || isImporting}>
         <Upload size={14} className={isReading || isImporting ? 'spin' : ''} />
-        <span>{isReading ? '讀取中...' : isImporting ? '匯入中...' : '匯入季度資料'}</span>
+        <span>{isReading ? '讀取中...' : isImporting ? '匯入中...' : '匯入季度 CSV'}</span>
       </button>
       {preview && <ImportPreviewDialog preview={preview} isImporting={isImporting} onConfirm={handleConfirm} onCancel={() => setPreview(null)} />}
       {assignedIds.length > 0 && (
@@ -59,6 +65,7 @@ export default function ExcelSync({ onSyncComplete }) {
           <ul>
             {assignedIds.map(({ source_row, student_id }) => <li key={`${source_row}-${student_id}`}>來源第 {source_row} 列：{student_id}</li>)}
           </ul>
+          <button type="button" className="btn-secondary" onClick={copyAssignedIds} disabled={isImporting}>複製新學員編號</button>
         </section>
       )}
     </div>

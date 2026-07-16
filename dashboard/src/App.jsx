@@ -26,6 +26,7 @@ function AuthenticatedDashboard() {
   const ROLE_COLORS = { admin: '#ef4444', editor: '#3b82f6', viewer: '#6b7280' }
   const [activeTab, setActiveTab] = useState('overview')
   const [selectedStudent, setSelectedStudent] = useState(null)
+  const [studentDetailInitialTab, setStudentDetailInitialTab] = useState('history')
   const [showAddStudentModal, setShowAddStudentModal] = useState(false)
   const [showAddEnrollModal, setShowAddEnrollModal] = useState(false)
   const [showExportModal, setShowExportModal] = useState(false)
@@ -93,6 +94,18 @@ function AuthenticatedDashboard() {
   }, [students, enrollments])
 
   const handleRefresh = () => setRefreshCount(c => c + 1)
+
+  const openStudentDetail = (student, initialTab = 'history') => {
+    setStudentDetailInitialTab(initialTab)
+    setSelectedStudent(student)
+  }
+
+  useEffect(() => {
+    setSelectedStudent(current => {
+      if (!current) return current
+      return (students || []).find(candidate => String(candidate.student_id) === String(current.student_id)) || current
+    })
+  }, [students])
 
   if (!session) {
     return <Login />
@@ -181,7 +194,7 @@ function AuthenticatedDashboard() {
           <StudentListTab 
             students={students} 
             enrollments={enrollments} 
-            onSelectStudent={setSelectedStudent} 
+            onSelectStudent={openStudentDetail}
             onShowAddStudent={() => setShowAddStudentModal(true)} 
           />
         )}
@@ -189,7 +202,7 @@ function AuthenticatedDashboard() {
           <EnrollmentTab 
             students={students} 
             enrollments={enrollments} 
-            onSelectStudent={setSelectedStudent} 
+            onSelectStudent={openStudentDetail}
           />
         )}
         {activeTab === 'admin' && role === 'admin' && <AdminAccountPage />}
@@ -203,6 +216,7 @@ function AuthenticatedDashboard() {
         <StudentDetailModal 
           student={selectedStudent} 
           enrollments={enrollments} 
+          initialTab={studentDetailInitialTab}
           onClose={() => setSelectedStudent(null)} 
           onAddEnrollment={() => setShowAddEnrollModal(true)}
           onRefresh={handleRefresh}

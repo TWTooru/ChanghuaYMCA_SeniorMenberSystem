@@ -2,11 +2,13 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 
-const apiDataSpy = vi.fn(() => ({
+let apiData = {
   dbData: { students: [], enrollments: [] },
   dbStatus: 'connected',
   dbError: null,
-}))
+}
+const apiDataSpy = vi.fn(() => apiData)
+const studentDetailModalSpy = vi.hoisted(() => vi.fn())
 
 const signOut = vi.fn()
 const authState = {
@@ -27,9 +29,18 @@ vi.mock('./hooks/useApiData', () => ({
 }))
 
 vi.mock('./components/overview/OverviewTab', () => ({ default: () => null }))
-vi.mock('./components/students/StudentListTab', () => ({ default: () => null }))
+vi.mock('./components/students/StudentListTab', () => ({
+  default: ({ students, onSelectStudent }) => students[0]
+    ? <button type="button" onClick={() => onSelectStudent(students[0], 'profile')}>open first student</button>
+    : null,
+}))
 vi.mock('./components/enrollment/EnrollmentTab', () => ({ default: () => null }))
-vi.mock('./components/students/StudentDetailModal', () => ({ default: () => null }))
+vi.mock('./components/students/StudentDetailModal', () => ({
+  default: ({ student }) => {
+    studentDetailModalSpy(student)
+    return <div data-testid="student-detail-modal">{student.name}</div>
+  },
+}))
 vi.mock('./components/students/AddStudentModal', () => ({ default: () => null }))
 vi.mock('./components/enrollment/AddEnrollModal', () => ({ default: () => null }))
 vi.mock('./components/sync/ExcelSync', () => ({ default: () => <div data-testid="excel-sync" /> }))
@@ -47,6 +58,12 @@ describe('App header access controls', () => {
     authState.passwordFlow = null
     signOut.mockClear()
     apiDataSpy.mockClear()
+    studentDetailModalSpy.mockClear()
+    apiData = {
+      dbData: { students: [], enrollments: [] },
+      dbStatus: 'connected',
+      dbError: null,
+    }
   })
 
   it('shows the signed-in user email and role badge', () => {
@@ -130,5 +147,22 @@ describe('App header access controls', () => {
     expect(screen.queryByTestId('export-modal')).toBeNull()
     fireEvent.click(screen.getByText('下載整理版 Excel'))
     expect(screen.getByTestId('export-modal')).toBeTruthy()
+  })
+
+  it('keeps an open student detail synchronized after refreshed data replaces that student', () => {
+    const selectedStudent = { student_id: 'S-001', name: '王小明' }
+    const refreshedStudent = { student_id: 'S-001', name: '王大明' }
+    apiData = { dbData: { students: [selectedStudent], enrollments: [] }, dbStatus: 'connected', dbError: null }
+    const { rerender } = render(<App />)
+
+    fireEvent.click(document.querySelector('#tab-students'))
+    fireEvent.click(screen.getByRole('button', { name: 'open first student' }))
+    expect(screen.getByTestId('student-detail-modal').textContent).toBe('王小明')
+
+    apiData = { dbData: { students: [refreshedStudent], enrollments: [] }, dbStatus: 'connected', dbError: null }
+    rerender(<App />)
+
+    expect(screen.getByTestId('student-detail-modal').textContent).toBe('王大明')
+    expect(studentDetailModalSpy).toHaveBeenLastCalledWith(refreshedStudent)
   })
 })

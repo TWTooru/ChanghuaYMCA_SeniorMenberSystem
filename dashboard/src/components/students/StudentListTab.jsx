@@ -187,7 +187,7 @@ export default function StudentListTab({ students, enrollments, onSelectStudent,
                   <tr 
                     key={s.student_id} 
                     className="clickable"
-                    onClick={() => onSelectStudent(s)}
+                    onClick={() => onSelectStudent(s, 'profile')}
                     id={`row-student-${s.student_id}`}
                   >
                     <td className="table-cell-bold">{s.student_id}</td>
@@ -210,7 +210,7 @@ export default function StudentListTab({ students, enrollments, onSelectStudent,
                         style={{ padding: '4px 8px', fontSize: '12px' }}
                         onClick={(e) => {
                           e.stopPropagation()
-                          onSelectStudent(s)
+                          onSelectStudent(s, 'history')
                         }}
                       >
                         查看歷程

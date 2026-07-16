@@ -31,7 +31,7 @@ describe('EnrollmentTab', () => {
     fireEvent.click(screen.getByText('手機課').closest('tr'))
 
     expect(onSelectStudent).toHaveBeenCalledOnce()
-    expect(onSelectStudent).toHaveBeenCalledWith(students[1])
+    expect(onSelectStudent).toHaveBeenCalledWith(students[1], 'history')
   })
 
   it('does not open another student when an enrollment student_id is missing', () => {

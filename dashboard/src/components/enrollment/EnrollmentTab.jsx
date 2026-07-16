@@ -139,7 +139,7 @@ export default function EnrollmentTab({ students, enrollments, onSelectStudent }
                     className="clickable"
                     onClick={() => {
                       const student = getStudentById(students, e.student_id)
-                      if (student && onSelectStudent) onSelectStudent(student)
+                      if (student && onSelectStudent) onSelectStudent(student, 'history')
                     }}
                   >
                     <td className="table-cell-bold">{e.student_id}</td>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Edit2, Trash2, X } from 'lucide-react'
 import ConfirmDialog from '../common/ConfirmDialog'
 import EnrollmentTimeline from '../enrollment/EnrollmentTimeline'
@@ -10,12 +10,22 @@ import { compareSeasons } from '../../domain/season'
 import { useAuth } from '../../contexts/AuthContext'
 import usePermissions from '../../hooks/usePermissions'
 
-export default function StudentDetailModal({ student, enrollments, onClose, onAddEnrollment, onRefresh }) {
+function getFocusableElements(container) {
+  return Array.from(container?.querySelectorAll('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])') || [])
+    .filter(element => !element.hasAttribute('disabled'))
+}
+
+export default function StudentDetailModal({ student, enrollments, initialTab = 'history', onClose, onAddEnrollment, onRefresh }) {
   const { role } = useAuth()
   const permissions = usePermissions(role)
   const [isEditing, setIsEditing] = useState(false)
+  const [activeDetailTab, setActiveDetailTab] = useState(initialTab)
+  const [hasUnsavedStudentChanges, setHasUnsavedStudentChanges] = useState(false)
+  const [pendingAction, setPendingAction] = useState(null)
   const [isStudentDeleteConfirmOpen, setShowDeleteConfirm] = useState(false)
   const [pendingDeleteEnrollmentId, setShowDeleteEnrollConfirm] = useState(null)
+  const dialogRef = useRef(null)
+  const previousFocusRef = useRef(null)
   const showDeleteConfirm = isStudentDeleteConfirmOpen && permissions.canDeleteStudent
   const showDeleteEnrollConfirm = permissions.canDeleteEnrollment ? pendingDeleteEnrollmentId : null
 
@@ -24,6 +34,24 @@ export default function StudentDetailModal({ student, enrollments, onClose, onAd
     if (!permissions.canDeleteStudent) setShowDeleteConfirm(false)
     if (!permissions.canDeleteEnrollment) setShowDeleteEnrollConfirm(null)
   }, [permissions.canDeleteEnrollment, permissions.canDeleteStudent, permissions.canEditStudent])
+
+  useEffect(() => {
+    setActiveDetailTab(initialTab)
+    setIsEditing(false)
+  }, [student?.student_id, initialTab])
+
+  useEffect(() => {
+    previousFocusRef.current = document.activeElement
+    const dialog = dialogRef.current
+    if (!dialog) return undefined
+    const [initialFocus] = getFocusableElements(dialog)
+    ;(initialFocus || dialog).focus()
+
+    return () => {
+      const previousFocus = previousFocusRef.current
+      if (previousFocus?.isConnected) previousFocus.focus()
+    }
+  }, [])
 
   const studentTimeline = useMemo(() => {
     if (!student || !enrollments) return []
@@ -71,29 +99,107 @@ export default function StudentDetailModal({ student, enrollments, onClose, onAd
     }
   }
 
+  const handleKeyDown = event => {
+    if (event.key === 'Escape') {
+      requestClose()
+      return
+    }
+    if (event.key !== 'Tab') return
+
+    const dialog = dialogRef.current
+    const focusableElements = getFocusableElements(dialog)
+    if (focusableElements.length === 0) {
+      event.preventDefault()
+      dialog.focus()
+      return
+    }
+
+    const first = focusableElements[0]
+    const last = focusableElements[focusableElements.length - 1]
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault()
+      last.focus()
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault()
+      first.focus()
+    }
+  }
+
+  const deleteStudentMessage = `確定要刪除學員「${student.name}」（${student.student_id}）嗎？此操作無法復原，該學員的所有選課紀錄也會一併刪除。`
+
+  const requestTab = tab => {
+    if (tab === activeDetailTab) return
+    if (isEditing && hasUnsavedStudentChanges) {
+      setPendingAction(tab)
+      return
+    }
+    setIsEditing(false)
+    setActiveDetailTab(tab)
+  }
+
+  const requestClose = () => {
+    if (isEditing && hasUnsavedStudentChanges) setPendingAction('close')
+    else onClose()
+  }
+
+  const discardAndContinue = () => {
+    const action = pendingAction
+    setPendingAction(null)
+    setIsEditing(false)
+    setHasUnsavedStudentChanges(false)
+    if (action === 'close') onClose()
+    else setActiveDetailTab(action)
+  }
+
   return (
-    <div className="modal-overlay" onClick={onClose} id="modal-overlay">
-      <div className="modal-content" onClick={event => event.stopPropagation()}>
-        <div className="modal-header">
-          <div className="modal-title-group"><span className="modal-id-badge">{student.student_id}</span><h2 className="modal-name">{student.name} ({student.gender || '未知'})</h2></div>
+    <>
+      <div className="modal-overlay student-detail-overlay" onClick={requestClose} id="modal-overlay">
+        <div className="modal-content student-detail-dialog" ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="student-detail-title" tabIndex={-1} onClick={event => event.stopPropagation()} onKeyDown={handleKeyDown}>
+          <div className="modal-header student-detail-header">
+          <div className="modal-title-group"><span className="modal-id-badge">{student.student_id}</span><h2 id="student-detail-title" className="modal-name">{student.name} ({student.gender || '未知'})</h2></div>
           <div className="modal-header-actions">
-            {!isEditing && <>{permissions.canEditStudent && <button type="button" className="btn-edit" onClick={() => setIsEditing(true)}><Edit2 size={14} /> 編輯</button>}{permissions.canDeleteStudent && <button type="button" className="btn-delete" onClick={() => setShowDeleteConfirm(true)}><Trash2 size={14} /> 刪除</button>}</>}
-            <button type="button" className="btn-close" onClick={onClose} id="btn-close-modal"><X size={20} /></button>
+            {activeDetailTab === 'profile' && !isEditing && permissions.canEditStudent && <button type="button" className="btn-edit" onClick={() => setIsEditing(true)}><Edit2 size={14} /> 編輯</button>}
+            {permissions.canDeleteStudent && <button type="button" className="btn-delete" onClick={() => setShowDeleteConfirm(true)}><Trash2 size={14} /> 刪除</button>}
+            <button type="button" className="btn-close" onClick={requestClose} id="btn-close-modal" aria-label="關閉學員資料"><X size={20} /></button>
           </div>
         </div>
-        <div className="modal-body">
-          {isEditing && permissions.canEditStudent ? <StudentEditForm student={student} onSave={() => { setIsEditing(false); if (onRefresh) onRefresh() }} onCancel={() => setIsEditing(false)} /> : <StudentInfoView student={student} />}
-          <EnrollmentTimeline
-            timeline={studentTimeline}
-            onDelete={permissions.canDeleteEnrollment ? setShowDeleteEnrollConfirm : null}
-            onAddEnrollment={permissions.canAddEnrollment ? onAddEnrollment : null}
-            onEditEnrollment={permissions.canEditEnrollment}
-            onRefresh={onRefresh}
-          />
+        <div className="student-detail-tabs" role="tablist" aria-label="學員資料夾">
+          <button type="button" role="tab" aria-selected={activeDetailTab === 'profile'} onClick={() => requestTab('profile')}>基本資料</button>
+          <button type="button" role="tab" aria-selected={activeDetailTab === 'history'} onClick={() => requestTab('history')}>歷年參修（{studentTimeline.length} 期）</button>
+        </div>
+        <div className="modal-body student-detail-body">
+          {activeDetailTab === 'profile' ? (
+            <section role="tabpanel" aria-label="基本資料">
+              {isEditing
+                ? <StudentEditForm student={student} onSave={() => { setIsEditing(false); onRefresh?.() }} onCancel={() => setIsEditing(false)} onDirtyChange={setHasUnsavedStudentChanges} />
+                : <StudentInfoView student={student} />}
+            </section>
+          ) : (
+            <section role="tabpanel" aria-label="歷年參修">
+              <EnrollmentTimeline
+                timeline={studentTimeline}
+                onDelete={permissions.canDeleteEnrollment ? setShowDeleteEnrollConfirm : null}
+                onAddEnrollment={permissions.canAddEnrollment ? onAddEnrollment : null}
+                onEditEnrollment={permissions.canEditEnrollment}
+                onRefresh={onRefresh}
+              />
+            </section>
+          )}
         </div>
       </div>
-      <ConfirmDialog isOpen={showDeleteConfirm} title="刪除學員" message={`確定要刪除學員「${student.name}」（${student.student_id}）嗎？此操作無法復原，該學員的所有選課紀錄也會一併刪除。`} onConfirm={handleDeleteStudent} onCancel={() => setShowDeleteConfirm(false)} />
+      </div>
+      <ConfirmDialog isOpen={showDeleteConfirm} title="刪除學員" message={deleteStudentMessage} onConfirm={handleDeleteStudent} onCancel={() => setShowDeleteConfirm(false)} />
       <ConfirmDialog isOpen={showDeleteEnrollConfirm !== null} title="刪除選課紀錄" message="確定要刪除此選課紀錄嗎？此操作無法復原。" onConfirm={() => handleDeleteEnrollment(showDeleteEnrollConfirm)} onCancel={() => setShowDeleteEnrollConfirm(null)} />
-    </div>
+      <ConfirmDialog
+        isOpen={pendingAction !== null}
+        title="尚有未儲存變更"
+        message="離開後，本次修改將不會保留。"
+        confirmLabel="放棄變更"
+        cancelLabel="繼續編輯"
+        tone="warning"
+        onConfirm={discardAndContinue}
+        onCancel={() => setPendingAction(null)}
+      />
+    </>
   )
 }

@@ -1,11 +1,16 @@
 const normalizeName = value => String(value || '').trim().toLocaleLowerCase('zh-TW')
 const normalizePhone = value => String(value || '').replace(/\D/g, '')
+const normalizeStoredDate = value => {
+  const match = String(value || '').trim().match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/)
+  return match ? `${match[1]}/${match[2].padStart(2, '0')}/${match[3].padStart(2, '0')}` : ''
+}
 const enrollmentKey = value => `${String(value.student_id)}\u0000${value.season}`
 const SNAPSHOT_PAGE_SIZE = 1000
 
 function suspectedDuplicate(student, existing) {
   if (normalizeName(student.name) !== normalizeName(existing.name)) return false
-  const sameBirth = student.birth_date && existing.birth_date === student.birth_date
+  const birthDate = normalizeStoredDate(student.birth_date)
+  const sameBirth = birthDate && birthDate === normalizeStoredDate(existing.birth_date)
   const phone = normalizePhone(student.mobile_phone)
   const samePhone = phone && phone === normalizePhone(existing.mobile_phone)
   return Boolean(sameBirth || samePhone)
@@ -23,6 +28,8 @@ export function classifyImport(parsed, snapshot) {
   let enrollmentsToInsert = 0
   let enrollmentsToUpdate = 0
   let courses = 0
+  let preTestsCleared = 0
+  let postTestsCleared = 0
 
   for (const row of parsed.rows) {
     const id = row.provided_student_id
@@ -46,6 +53,8 @@ export function classifyImport(parsed, snapshot) {
       if (key && existingEnrollmentKeys.has(key)) enrollmentsToUpdate += 1
       else enrollmentsToInsert += 1
       courses += enrollment.courses.length
+      if (enrollment.pre_test === null) preTestsCleared += 1
+      if (enrollment.post_test === null) postTestsCleared += 1
     }
   }
 
@@ -55,13 +64,16 @@ export function classifyImport(parsed, snapshot) {
   }
   const importedSeasons = new Set(parsed.rows.flatMap(row => row.enrollments.map(enrollment => enrollment.season)))
   const hasExistingTargetSeason = snapshot.enrollments.some(enrollment => importedSeasons.has(enrollment.season))
-  if (hasExistingTargetSeason) warnings.push({ row: null, field: '報名', message: '目標季度已有資料，本次會更新並取代課程' })
+  if (hasExistingTargetSeason) warnings.push({ row: null, field: '報名', message: '目標季度已有資料，請確認新增、更新與課程取代筆數' })
   return {
     ...parsed,
     payload: { mode: parsed.mode, rows: parsed.rows },
     summary: {
       fileRows: parsed.rows.length, oldStudents, newStudents,
       enrollmentsToInsert, enrollmentsToUpdate, courses,
+      targetSeason: parsed.seasons?.[0] || null,
+      preTestsCleared,
+      postTestsCleared,
       currentStudents: tableCounts.students,
       currentEnrollments: tableCounts.enrollments,
       currentCourses: tableCounts.courses
