@@ -18,6 +18,7 @@ const student = {
   is_60_plus: '是',
   mobile_phone: '0912345678'
 }
+const enrollment = { enrollment_id: 1, student_id: student.student_id, season: '第十五季', courses: ['電腦課'] }
 
 describe('Student detail components', () => {
   afterEach(() => {
@@ -30,6 +31,51 @@ describe('Student detail components', () => {
     expect(screen.getByText('基本聯絡資料')).not.toBeNull()
     expect(screen.getByText(/1960-01-01/)).not.toBeNull()
     expect(screen.getByText('0912345678')).not.toBeNull()
+  })
+
+  it('opens history by default and renders only the active folder', () => {
+    const { container } = render(<StudentDetailModal student={student} enrollments={[enrollment]} initialTab="history" onClose={vi.fn()} />)
+
+    expect(screen.getByRole('tab', { name: '歷年參修（1 期）' }).getAttribute('aria-selected')).toBe('true')
+    expect(screen.getByText('第十五季')).not.toBeNull()
+    expect(screen.queryByText('基本聯絡資料')).toBeNull()
+    expect(container.querySelector('.student-detail-dialog')).not.toBeNull()
+  })
+
+  it('switches to profile without rendering history', () => {
+    render(<StudentDetailModal student={student} enrollments={[enrollment]} initialTab="history" onClose={vi.fn()} />)
+    fireEvent.click(screen.getByRole('tab', { name: '基本資料' }))
+
+    expect(screen.getByText('基本聯絡資料')).not.toBeNull()
+    expect(screen.queryByText('第十五季')).toBeNull()
+  })
+
+  it('closes with Escape and restores focus to the opener', () => {
+    const opener = document.createElement('button')
+    document.body.append(opener)
+    opener.focus()
+    const onClose = vi.fn()
+    const { unmount } = render(<StudentDetailModal student={student} enrollments={[]} onClose={onClose} />)
+
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
+    expect(onClose).toHaveBeenCalledOnce()
+    unmount()
+    expect(document.activeElement).toBe(opener)
+    opener.remove()
+  })
+
+  it('keeps Tab navigation inside the dialog', () => {
+    render(<StudentDetailModal student={student} enrollments={[]} onClose={vi.fn()} />)
+
+    const dialog = screen.getByRole('dialog')
+    const closeButton = screen.getByRole('button', { name: '關閉學員資料' })
+    const historyTab = screen.getByRole('tab', { name: '歷年參修（0 期）' })
+    historyTab.focus()
+    fireEvent.keyDown(dialog, { key: 'Tab' })
+    expect(document.activeElement).toBe(closeButton)
+
+    fireEvent.keyDown(dialog, { key: 'Tab', shiftKey: true })
+    expect(document.activeElement).toBe(historyTab)
   })
 
   it('shows enrollment details and delegates adding an enrollment', () => {
@@ -126,13 +172,13 @@ describe('Student detail components', () => {
       onAddEnrollment: vi.fn(),
       onRefresh: vi.fn(),
     }
-    const { container, rerender } = render(<StudentDetailModal {...props} />)
+    const { container, rerender } = render(<StudentDetailModal {...props} initialTab="profile" />)
 
     fireEvent.click(container.querySelector('.btn-edit'))
     expect(container.querySelector('input[name="name"]')).not.toBeNull()
 
     authState.role = 'viewer'
-    rerender(<StudentDetailModal {...props} />)
+    rerender(<StudentDetailModal {...props} initialTab="profile" />)
 
     expect(container.querySelector('input[name="name"]')).toBeNull()
   })
