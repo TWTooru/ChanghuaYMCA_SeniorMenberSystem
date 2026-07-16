@@ -77,4 +77,53 @@ describe('ImportPreviewDialog', () => {
     expect(screen.getByText(/資料庫.*請確認新增與更新筆數/)).not.toBeNull()
     expect(screen.getByRole('button', { name: '確認匯入' }).disabled).toBe(true)
   })
+
+  it('moves focus to the cancel control when opened', () => {
+    render(
+      <ImportPreviewDialog
+        preview={{ summary, warnings: [], errors: [], hasBlockingErrors: false }}
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />
+    )
+
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: '取消' }))
+  })
+
+  it('keeps Tab and Shift+Tab within the dialog controls', () => {
+    render(
+      <ImportPreviewDialog
+        preview={{ summary, warnings: [], errors: [], hasBlockingErrors: false }}
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />
+    )
+    const dialog = screen.getByRole('dialog')
+    const cancel = screen.getByRole('button', { name: '取消' })
+    const confirm = screen.getByRole('button', { name: '確認匯入' })
+
+    fireEvent.keyDown(dialog, { key: 'Tab', shiftKey: true })
+    expect(document.activeElement).toBe(confirm)
+    fireEvent.keyDown(dialog, { key: 'Tab' })
+    expect(document.activeElement).toBe(cancel)
+  })
+
+  it('restores focus to the opener when closed', () => {
+    const opener = document.createElement('button')
+    document.body.append(opener)
+    opener.focus()
+    const { unmount } = render(
+      <ImportPreviewDialog
+        preview={{ summary, warnings: [], errors: [], hasBlockingErrors: false }}
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />
+    )
+    screen.getByRole('button', { name: '取消' }).focus()
+
+    unmount()
+
+    expect(document.activeElement).toBe(opener)
+    opener.remove()
+  })
 })
