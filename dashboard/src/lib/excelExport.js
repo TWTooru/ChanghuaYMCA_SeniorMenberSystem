@@ -24,8 +24,8 @@ function formatExportData(data) {
     // 報名紀錄
     season: '報名季度',
     reg_type: '新續狀況',
-    pre_test: '前測成績',
-    post_test: '後測成績',
+    pre_test: '前測時間',
+    post_test: '後測時間',
     courses: '報名課程',
     refunded: '是否退費',
     student_name: '姓名',
@@ -38,6 +38,8 @@ function formatExportData(data) {
   return data.map(item => {
     const formattedItem = {};
     for (const key in item) {
+      if (key === 'memo' || key === 'created_at') continue;
+      
       const newKey = keyMap[key] || key;
       let newValue = item[key];
       
