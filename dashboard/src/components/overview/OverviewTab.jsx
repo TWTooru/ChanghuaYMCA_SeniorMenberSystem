@@ -29,16 +29,6 @@ export default function OverviewTab({ students, stats }) {
           </div>
         </div>
         <div className="kpi-card">
-          <div className="kpi-icon-wrapper cyan"><UserCheck size={24} /></div>
-          <div>
-            <div className="kpi-label">第15期在修學員</div>
-            <div className="kpi-value-area">
-              <span className="kpi-value">{stats.activeS15}</span>
-              <span className="kpi-unit">人</span>
-            </div>
-          </div>
-        </div>
-        <div className="kpi-card">
           <div className="kpi-icon-wrapper amber"><DollarSign size={24} /></div>
           <div>
             <div className="kpi-label">累計退費記錄</div>
