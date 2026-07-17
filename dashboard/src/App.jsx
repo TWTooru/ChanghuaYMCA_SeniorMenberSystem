@@ -26,7 +26,8 @@ function AuthenticatedDashboard() {
   const ROLE_COLORS = { admin: '#ef4444', editor: '#3b82f6', viewer: '#6b7280' }
   const [activeTab, setActiveTab] = useState('overview')
   const [selectedStudent, setSelectedStudent] = useState(null)
-  const [studentDetailInitialTab, setStudentDetailInitialTab] = useState('history')
+  const [studentDetailInitialTab, setStudentDetailInitialTab] = useState('profile')
+  const [studentDetailIsTabbed, setStudentDetailIsTabbed] = useState(true)
   const [showAddStudentModal, setShowAddStudentModal] = useState(false)
   const [showAddEnrollModal, setShowAddEnrollModal] = useState(false)
   const [showExportModal, setShowExportModal] = useState(false)
@@ -92,11 +93,16 @@ function AuthenticatedDashboard() {
       males, females, ageGroups, eduCounts, popularCourses
     }
   }, [students, enrollments])
-
   const handleRefresh = () => setRefreshCount(c => c + 1)
 
-  const openStudentDetail = (student, initialTab = 'history') => {
-    setStudentDetailInitialTab(initialTab)
+  const openStudentDetail = (student, initialTab = null) => {
+    if (initialTab) {
+      setStudentDetailInitialTab(initialTab)
+      setStudentDetailIsTabbed(true)
+    } else {
+      setStudentDetailInitialTab(null)
+      setStudentDetailIsTabbed(false)
+    }
     setSelectedStudent(student)
   }
 
@@ -119,12 +125,12 @@ function AuthenticatedDashboard() {
             <FileSpreadsheet size={32} className="header-icon" />
             <div>
               <h1 className="header-title">學員個人資料聯絡簿</h1>
-              <p className="header-subtitle">資訊整理與智慧查詢系統 (SQLite 管理版)</p>
+              <p className="header-subtitle">資訊整理與智慧查詢系統</p>
             </div>
             <div style={{ marginLeft: '12px', display: 'flex', alignItems: 'center' }}>
               <span className={`status-dot ${dbStatus === 'connected' ? 'dot-glowing-green' : (dbStatus === 'connecting' ? 'dot-orange' : 'dot-grey')}`}></span>
               <span style={{ fontSize: '12px', marginLeft: '6px', fontWeight: '500', color: dbStatus === 'connected' ? '#10b981' : '#9ca3af' }}>
-                {dbStatus === 'connected' ? 'SQLite 資料庫已連線' : (dbStatus === 'connecting' ? '資料庫連線中...' : '離線模式 (載入靜態備份)')}
+                {dbStatus === 'connected' ? 'Supabase 資料庫已連線' : (dbStatus === 'connecting' ? '資料庫連線中...' : '離線模式 (載入靜態備份)')}
               </span>
             </div>
           </div>
@@ -217,6 +223,7 @@ function AuthenticatedDashboard() {
           student={selectedStudent} 
           enrollments={enrollments} 
           initialTab={studentDetailInitialTab}
+          isTabbed={studentDetailIsTabbed}
           onClose={() => setSelectedStudent(null)} 
           onAddEnrollment={() => setShowAddEnrollModal(true)}
           onRefresh={handleRefresh}

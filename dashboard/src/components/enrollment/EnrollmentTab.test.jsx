@@ -31,7 +31,7 @@ describe('EnrollmentTab', () => {
     fireEvent.click(screen.getByText('手機課').closest('tr'))
 
     expect(onSelectStudent).toHaveBeenCalledOnce()
-    expect(onSelectStudent).toHaveBeenCalledWith(students[1], 'history')
+    expect(onSelectStudent).toHaveBeenCalledWith(students[1])
   })
 
   it('does not open another student when an enrollment student_id is missing', () => {
@@ -60,7 +60,7 @@ describe('EnrollmentTab', () => {
     expect(onSelectStudent).not.toHaveBeenCalled()
   })
 
-  it('renders notes while hiding score columns in the history table', () => {
+  it('renders pre-test and post-test scores in the history table', () => {
     const { container } = render(
       <EnrollmentTab
         students={[{ student_id: '1', name: 'Student One' }]}
@@ -74,7 +74,6 @@ describe('EnrollmentTab', () => {
             pre_test: 'Pre-test: 8',
             post_test: 'Post-test: 5',
             refunded: true,
-            refund_info: 'Refund processed by card',
             courses: ['Course A']
           },
           {
@@ -83,31 +82,10 @@ describe('EnrollmentTab', () => {
             student_name: 'Student One',
             season: 'Season B',
             reg_type: 'Returning',
-            pre_test: 'Pre-test: 0',
-            post_test: 'Post-test: 6',
+            pre_test: '',
+            post_test: '',
             refunded: false,
-            refund_info: '',
             courses: ['Course B']
-          },
-          {
-            enrollment_id: 15,
-            student_id: '1',
-            student_name: 'Student One',
-            season: 'Season C',
-            reg_type: 'Returning',
-            refunded: false,
-            refund_info: null,
-            courses: ['Course C']
-          },
-          {
-            enrollment_id: 16,
-            student_id: '1',
-            student_name: 'Student One',
-            season: 'Season D',
-            reg_type: 'Returning',
-            refunded: false,
-            refund_info: undefined,
-            courses: ['Course D']
           }
         ]}
         onSelectStudent={vi.fn()}
@@ -117,20 +95,12 @@ describe('EnrollmentTab', () => {
     const table = container.querySelector('table')
     const historyTable = within(table)
 
-    expect(table.className).toBe('data-table enrollment-history-table')
+    expect(table.className).toBe('data-table')
     expect(historyTable.getAllByRole('columnheader').map(header => header.textContent)).toEqual([
-      '學員ID', '姓名', '修課期別', '新/續', '退費狀態', '選修課程', '備註'
+      '學員ID', '姓名', '修課期別', '新/續', '前測分數', '後測分數', '退費狀態', '選修課程'
     ])
-    expect(historyTable.queryByRole('columnheader', { name: '前測分數' })).toBeNull()
-    expect(historyTable.queryByRole('columnheader', { name: '後測分數' })).toBeNull()
-    expect(historyTable.queryByText('Pre-test: 8')).toBeNull()
-    expect(historyTable.queryByText('Post-test: 5')).toBeNull()
-    expect(historyTable.getByText('Refund processed by card').closest('td').className).toBe('enrollment-history-note')
-    expect(historyTable.getAllByText('--').map(note => note.closest('td').className)).toEqual([
-      'enrollment-history-note',
-      'enrollment-history-note',
-      'enrollment-history-note'
-    ])
+    expect(historyTable.getByText('Pre-test: 8')).not.toBeNull()
+    expect(historyTable.getByText('Post-test: 5')).not.toBeNull()
   })
 
   it('spans all history columns for an empty enrollment state', () => {
@@ -142,6 +112,6 @@ describe('EnrollmentTab', () => {
       />
     )
 
-    expect(screen.getByText('未找到選課歷程。').getAttribute('colspan')).toBe('7')
+    expect(screen.getByText('未找到選課歷程。').getAttribute('colspan')).toBe('8')
   })
 })

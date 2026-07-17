@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import StudentInfoView from './StudentInfoView'
 import EnrollmentTimeline from '../enrollment/EnrollmentTimeline'
@@ -36,8 +36,8 @@ describe('Student detail components', () => {
   it('opens history by default and renders only the active folder', () => {
     const { container } = render(<StudentDetailModal student={student} enrollments={[enrollment]} initialTab="history" onClose={vi.fn()} />)
 
-    expect(screen.getByRole('tab', { name: '歷年參修（1 期）' }).getAttribute('aria-selected')).toBe('true')
-    expect(screen.getByText('第十五季')).not.toBeNull()
+    expect(screen.getByRole('tab', { name: '歷年修課（1 期）' }).getAttribute('aria-selected')).toBe('true')
+    expect(within(container.querySelector('.timeline-section')).getByText('第十五季')).not.toBeNull()
     expect(screen.queryByText('基本聯絡資料')).toBeNull()
     expect(container.querySelector('.student-detail-dialog')).not.toBeNull()
   })
@@ -69,7 +69,7 @@ describe('Student detail components', () => {
 
     const dialog = screen.getByRole('dialog')
     const closeButton = screen.getByRole('button', { name: '關閉學員資料' })
-    const historyTab = screen.getByRole('tab', { name: '歷年參修（0 期）' })
+    const historyTab = screen.getByRole('tab', { name: '歷年修課（0 期）' })
     historyTab.focus()
     fireEvent.keyDown(dialog, { key: 'Tab' })
     expect(document.activeElement).toBe(closeButton)
@@ -83,7 +83,7 @@ describe('Student detail components', () => {
     render(<StudentDetailModal student={student} enrollments={[enrollment]} initialTab="profile" onClose={vi.fn()} />)
     fireEvent.click(screen.getByRole('button', { name: /編輯/ }))
     fireEvent.change(screen.getByDisplayValue('王小明'), { target: { value: '王大明' } })
-    fireEvent.click(screen.getByRole('tab', { name: '歷年參修（1 期）' }))
+    fireEvent.click(screen.getByRole('tab', { name: '歷年修課（1 期）' }))
 
     expect(screen.getByText('尚有未儲存變更')).not.toBeNull()
     expect(screen.getByDisplayValue('王大明')).not.toBeNull()
@@ -135,7 +135,7 @@ describe('Student detail components', () => {
   })
 
   it('shows only enrollments belonging to the selected student_id when names match', () => {
-    render(
+    const { container } = render(
       <StudentDetailModal
         student={{ ...student, student_id: 'S-002' }}
         enrollments={[
@@ -148,8 +148,9 @@ describe('Student detail components', () => {
       />
     )
 
-    expect(screen.getByText('第十五季')).not.toBeNull()
-    expect(screen.getByText('手機課')).not.toBeNull()
+    const timeline = within(container.querySelector('.timeline-section'))
+    expect(timeline.getByText('第十五季')).not.toBeNull()
+    expect(timeline.getByText('手機課')).not.toBeNull()
     expect(screen.queryByText('第十四季')).toBeNull()
     expect(screen.queryByText('電腦課')).toBeNull()
   })
@@ -264,5 +265,41 @@ describe('Student detail components', () => {
 
     rerender(<EnrollmentTimeline timeline={timeline} onEditEnrollment={false} />)
     expect(container.querySelector('.enrollment-edit-form')).toBeNull()
+  })
+
+  it('renders the selected student trend before the enrollment timeline', () => {
+    const { container } = render(
+      <StudentDetailModal
+        student={{ ...student, student_id: 'S-002' }}
+        enrollments={[
+          { enrollment_id: 1, student_id: 'S-001', season: '第十五季', courses: ['電腦課'] },
+          { enrollment_id: 2, student_id: 'S-002', season: '第十五季', courses: ['手機課'] },
+          { enrollment_id: 3, student_id: 'S-002', season: '第十六季', courses: ['手機課'] },
+        ]}
+        onClose={vi.fn()}
+      />
+    )
+
+    const trend = container.querySelector('.student-course-trend')
+    const timeline = container.querySelector('.timeline-section')
+    expect(trend).not.toBeNull()
+    expect(trend.textContent).toContain('手機課')
+    expect(trend.textContent).toContain('2 次')
+    expect(trend.textContent).not.toContain('電腦課')
+    expect(trend.compareDocumentPosition(timeline) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('also renders the trend in the non-tabbed history layout', () => {
+    const { container } = render(
+      <StudentDetailModal
+        student={student}
+        enrollments={[enrollment]}
+        isTabbed={false}
+        onClose={vi.fn()}
+      />
+    )
+
+    expect(container.querySelector('.student-course-trend')).not.toBeNull()
+    expect(screen.getByRole('heading', { name: '學生選課趨勢圖' })).not.toBeNull()
   })
 })

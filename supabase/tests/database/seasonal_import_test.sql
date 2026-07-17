@@ -1,5 +1,5 @@
 begin;
-select plan(28);
+select plan(31);
 truncate table public.students cascade;
 select set_config('request.jwt.claims', '{"app_metadata":{"app_role":"editor"}}', true);
 
@@ -63,11 +63,17 @@ select throws_ok(
   ]}'::jsonb)$$,
   'P0001', 'ROW_9:DUPLICATE_STUDENT_ID:399', 'duplicate supplied IDs roll back'
 );
-select throws_ok(
-  $$select public.import_season_data('{"rows":[{"source_row":4,"provided_student_id":"999","student":{"name":"不存在"},"enrollments":[]}]}'::jsonb)$$,
-  'P0001', 'ROW_4:STUDENT_ID_NOT_FOUND:999', 'unknown old ID aborts the call'
+select lives_ok(
+  $$select public.import_season_data('{"rows":[{"source_row":4,"provided_student_id":"999","student":{"name":"不存在的學生"},"enrollments":[]}]}'::jsonb)$$,
+  'unknown supplied ID creates a student'
 );
-select is((select count(*)::integer from public.students), 3, 'failed import leaves student count unchanged');
+select is((select name from public.students where student_id = '999'), '不存在的學生', 'supplied student ID is preserved');
+select lives_ok(
+  $$select public.import_season_data('{"rows":[{"source_row":4,"provided_student_id":"999","student":{"name":"不存在的學生更新"},"enrollments":[]}]}'::jsonb)$$,
+  'existing supplied ID updates the student'
+);
+select is((select name from public.students where student_id = '999'), '不存在的學生更新', 'existing supplied student is updated');
+select is((select count(*)::integer from public.students), 4, 'supplied-ID upsert changes student count only once');
 select lives_ok(
   $$select public.import_season_data('{"mode":"legacy-total","rows":[{"source_row":5,"provided_student_id":"1","student":{"name":"歷史學生"},"enrollments":[]}]}'::jsonb)$$,
   'legacy total may restore a missing historical ID'

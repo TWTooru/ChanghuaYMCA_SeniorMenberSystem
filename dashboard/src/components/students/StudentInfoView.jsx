@@ -1,13 +1,18 @@
 import { User } from 'lucide-react'
 
-export default function StudentInfoView({ student }) {
+export default function StudentInfoView({ student, onEdit }) {
   return (
     <div>
       <h3 className="panel-title" style={{ marginBottom: '12px' }}>
         <User size={16} />
         基本聯絡資料
       </h3>
-      <div className="detail-grid">
+      <div 
+        className="detail-grid" 
+        onDoubleClick={onEdit} 
+        title={onEdit ? "按兩下任意欄位快速編輯" : undefined}
+        style={onEdit ? { cursor: 'pointer' } : undefined}
+      >
         <div className="detail-item">
           <span className="detail-label">出生日期 / 年齡</span>
           <span className="detail-value">{student.birth_date || '未記錄'} {student.age ? `(${student.age} 歲)` : ''}</span>

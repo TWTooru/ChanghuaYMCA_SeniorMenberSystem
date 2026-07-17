@@ -66,6 +66,23 @@ export default function StudentListTab({ students, enrollments, onSelectStudent,
 
   const totalStudentPages = Math.ceil(filteredStudents.length / itemsPerPage) || 1
 
+  const pageNumbers = useMemo(() => {
+    const range = []
+    let start = Math.max(1, studentPage - 1)
+    let end = Math.min(totalStudentPages, studentPage + 1)
+    
+    if (studentPage === 1) {
+      end = Math.min(totalStudentPages, 3)
+    } else if (studentPage === totalStudentPages) {
+      start = Math.max(1, totalStudentPages - 2)
+    }
+    
+    for (let i = start; i <= end; i++) {
+      range.push(i)
+    }
+    return range
+  }, [studentPage, totalStudentPages])
+
   return (
     <div>
       {permissions.canAddStudent && (
@@ -236,6 +253,7 @@ export default function StudentListTab({ students, enrollments, onSelectStudent,
           </div>
           <div className="pagination-buttons">
             <button 
+              type="button"
               className="btn-secondary"
               onClick={() => setStudentPage(p => Math.max(p - 1, 1))}
               disabled={studentPage === 1}
@@ -243,7 +261,46 @@ export default function StudentListTab({ students, enrollments, onSelectStudent,
             >
               <ChevronLeft size={16} style={{ display: 'block' }} />
             </button>
+
+            {pageNumbers.map((page, index) => {
+              if (page === '...') {
+                return (
+                  <span 
+                    key={`ellipsis-${index}`} 
+                    style={{ 
+                      display: 'inline-flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      padding: '0 8px', 
+                      color: 'var(--text-muted)',
+                      userSelect: 'none' 
+                    }}
+                  >
+                    ...
+                  </span>
+                )
+              }
+              const isActive = page === studentPage
+              return (
+                <button
+                  key={`page-${page}`}
+                  type="button"
+                  className={`btn-secondary ${isActive ? 'active' : ''}`}
+                  onClick={() => setStudentPage(page)}
+                  style={isActive ? { 
+                    backgroundColor: 'var(--color-accent)', 
+                    borderColor: 'var(--color-accent)', 
+                    color: '#fff',
+                    boxShadow: '0 0 10px rgba(99, 102, 241, 0.4)' 
+                  } : undefined}
+                >
+                  {page}
+                </button>
+              )
+            })}
+
             <button 
+              type="button"
               className="btn-secondary"
               onClick={() => setStudentPage(p => Math.min(p + 1, totalStudentPages))}
               disabled={studentPage === totalStudentPages}

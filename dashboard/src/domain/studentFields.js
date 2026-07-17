@@ -12,9 +12,9 @@ export const EDUCATION_OPTIONS = [
 
 export function normalizeEducation(value) {
   const edu = typeof value === 'string' ? value.trim() : ''
-  if (!edu) return '未知'
+  if (!edu || edu === '?' || edu === '？') return '未知'
   if (edu === '未填寫') return '未填寫'
-  if (edu.includes('未受正規教育但識字')) return '未受正規教育但識字'
+  if (edu.includes('未受正規教育') || edu.includes('未受過正規教育')) return '未受正規教育但識字'
   if (edu.includes('不識字')) return '不識字'
   if (edu.includes('研究所') || edu.includes('碩') || edu.includes('博')) return '研究所'
   if (edu.includes('大學') || edu.includes('專')) return '大專/大學'

@@ -10,6 +10,9 @@ describe('student field helpers', () => {
   it('normalizes related education labels into reporting buckets', () => {
     expect(normalizeEducation('大學')).toBe('大專/大學')
     expect(normalizeEducation('未受正規教育但識字')).toBe('未受正規教育但識字')
+    expect(normalizeEducation('未受過正規教育，但識字')).toBe('未受正規教育但識字')
+    expect(normalizeEducation('?')).toBe('未知')
+    expect(normalizeEducation('？')).toBe('未知')
     expect(normalizeEducation('')).toBe('未知')
   })
 

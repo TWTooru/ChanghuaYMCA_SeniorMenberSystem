@@ -119,16 +119,17 @@ export default function EnrollmentTab({ students, enrollments, onSelectStudent }
       {/* History Table */}
       <div className="table-wrapper">
         <div className="table-scroll">
-          <table className="data-table enrollment-history-table">
+          <table className="data-table">
             <thead>
               <tr>
                 <th>學員ID</th>
                 <th>姓名</th>
                 <th>修課期別</th>
                 <th>新/續</th>
+                <th>前測分數</th>
+                <th>後測分數</th>
                 <th>退費狀態</th>
                 <th>選修課程</th>
-                <th>備註</th>
               </tr>
             </thead>
             <tbody>
@@ -139,7 +140,7 @@ export default function EnrollmentTab({ students, enrollments, onSelectStudent }
                     className="clickable"
                     onClick={() => {
                       const student = getStudentById(students, e.student_id)
-                      if (student && onSelectStudent) onSelectStudent(student, 'history')
+                      if (student && onSelectStudent) onSelectStudent(student)
                     }}
                   >
                     <td className="table-cell-bold">{e.student_id}</td>
@@ -152,6 +153,8 @@ export default function EnrollmentTab({ students, enrollments, onSelectStudent }
                         </span>
                       ) : '--'}
                     </td>
+                    <td>{e.pre_test || '--'}</td>
+                    <td>{e.post_test || '--'}</td>
                     <td>
                       <span className={`badge ${e.refunded ? 'danger' : 'success'}`}>
                         {e.refunded ? '已退費' : '正常'}
@@ -164,12 +167,11 @@ export default function EnrollmentTab({ students, enrollments, onSelectStudent }
                         ))}
                       </div>
                     </td>
-                    <td className="enrollment-history-note">{e.refund_info || '--'}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
+                  <td colSpan={8} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
                     未找到選課歷程。
                   </td>
                 </tr>

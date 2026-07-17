@@ -37,7 +37,6 @@ export function classifyImport(parsed, snapshot) {
       if (seenIds.has(id)) errors.push({ row: row.source_row, field: '學員編號', message: `檔案內重複編號 ${id}` })
       seenIds.add(id)
       const exists = studentsById.has(id)
-      if (!exists && parsed.mode !== 'legacy-total') errors.push({ row: row.source_row, field: '學員編號', message: `資料庫找不到編號 ${id}` })
       if (exists) oldStudents += 1
       else newStudents += 1
     } else {

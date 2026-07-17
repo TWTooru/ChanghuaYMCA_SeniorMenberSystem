@@ -3,6 +3,7 @@ import { Edit2, Trash2, X } from 'lucide-react'
 import ConfirmDialog from '../common/ConfirmDialog'
 import EnrollmentTimeline from '../enrollment/EnrollmentTimeline'
 import { supabase } from '../../lib/supabaseClient'
+import StudentCourseTrend from './StudentCourseTrend'
 import StudentEditForm from './StudentEditForm'
 import StudentInfoView from './StudentInfoView'
 import { getEnrollmentsForStudent } from '../../domain/studentRelations'
@@ -15,7 +16,7 @@ function getFocusableElements(container) {
     .filter(element => !element.hasAttribute('disabled'))
 }
 
-export default function StudentDetailModal({ student, enrollments, initialTab = 'history', onClose, onAddEnrollment, onRefresh }) {
+export default function StudentDetailModal({ student, enrollments, initialTab = 'history', isTabbed = true, onClose, onAddEnrollment, onRefresh }) {
   const { role } = useAuth()
   const permissions = usePermissions(role)
   const [isEditing, setIsEditing] = useState(false)
@@ -138,7 +139,7 @@ export default function StudentDetailModal({ student, enrollments, initialTab = 
   }
 
   const requestClose = () => {
-    if (isEditing && hasUnsavedStudentChanges) setPendingAction('close')
+    if (isTabbed && isEditing && hasUnsavedStudentChanges) setPendingAction('close')
     else onClose()
   }
 
@@ -149,6 +150,44 @@ export default function StudentDetailModal({ student, enrollments, initialTab = 
     setHasUnsavedStudentChanges(false)
     if (action === 'close') onClose()
     else setActiveDetailTab(action)
+  }
+
+  if (!isTabbed) {
+    return (
+      <>
+        <div className="modal-overlay student-detail-overlay" onClick={requestClose} id="modal-overlay">
+          <div className="modal-content student-detail-dialog" ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="student-detail-title" tabIndex={-1} onClick={event => event.stopPropagation()} onKeyDown={handleKeyDown}>
+            <div className="modal-header student-detail-header">
+              <div className="modal-title-group"><span className="modal-id-badge">{student.student_id}</span><h2 id="student-detail-title" className="modal-name">{student.name} ({student.gender || '未知'})</h2></div>
+              <div className="modal-header-actions">
+                {!isEditing && permissions.canEditStudent && <button type="button" className="btn-edit" onClick={() => setIsEditing(true)}><Edit2 size={14} /> 編輯</button>}
+                {permissions.canDeleteStudent && <button type="button" className="btn-delete" onClick={() => setShowDeleteConfirm(true)}><Trash2 size={14} /> 刪除</button>}
+                <button type="button" className="btn-close" onClick={requestClose} id="btn-close-modal" aria-label="關閉學員資料"><X size={20} /></button>
+              </div>
+            </div>
+            <div className="modal-body student-detail-body">
+              <section aria-label="基本資料">
+                {isEditing && permissions.canEditStudent
+                  ? <StudentEditForm student={student} onSave={() => { setIsEditing(false); onRefresh?.() }} onCancel={() => setIsEditing(false)} />
+                  : <StudentInfoView student={student} onEdit={permissions.canEditStudent ? () => setIsEditing(true) : null} />}
+              </section>
+              <section aria-label="歷年修課" style={{ marginTop: '24px' }}>
+                <StudentCourseTrend timeline={studentTimeline} />
+                <EnrollmentTimeline
+                  timeline={studentTimeline}
+                  onDelete={permissions.canDeleteEnrollment ? setShowDeleteEnrollConfirm : null}
+                  onAddEnrollment={permissions.canAddEnrollment ? onAddEnrollment : null}
+                  onEditEnrollment={permissions.canEditEnrollment}
+                  onRefresh={onRefresh}
+                />
+              </section>
+            </div>
+          </div>
+        </div>
+        <ConfirmDialog isOpen={showDeleteConfirm} title="刪除學員" message={deleteStudentMessage} onConfirm={handleDeleteStudent} onCancel={() => setShowDeleteConfirm(false)} />
+        <ConfirmDialog isOpen={showDeleteEnrollConfirm !== null} title="刪除選課紀錄" message="確定要刪除此選課紀錄嗎？此操作無法復原。" onConfirm={() => handleDeleteEnrollment(showDeleteEnrollConfirm)} onCancel={() => setShowDeleteEnrollConfirm(null)} />
+      </>
+    )
   }
 
   return (
@@ -165,17 +204,18 @@ export default function StudentDetailModal({ student, enrollments, initialTab = 
         </div>
         <div className="student-detail-tabs" role="tablist" aria-label="學員資料夾">
           <button type="button" role="tab" aria-selected={activeDetailTab === 'profile'} onClick={() => requestTab('profile')}>基本資料</button>
-          <button type="button" role="tab" aria-selected={activeDetailTab === 'history'} onClick={() => requestTab('history')}>歷年參修（{studentTimeline.length} 期）</button>
+          <button type="button" role="tab" aria-selected={activeDetailTab === 'history'} onClick={() => requestTab('history')}>歷年修課（{studentTimeline.length} 期）</button>
         </div>
         <div className="modal-body student-detail-body">
           {activeDetailTab === 'profile' ? (
             <section role="tabpanel" aria-label="基本資料">
               {isEditing
                 ? <StudentEditForm student={student} onSave={() => { setIsEditing(false); onRefresh?.() }} onCancel={() => setIsEditing(false)} onDirtyChange={setHasUnsavedStudentChanges} />
-                : <StudentInfoView student={student} />}
+                : <StudentInfoView student={student} onEdit={permissions.canEditStudent ? () => setIsEditing(true) : null} />}
             </section>
           ) : (
-            <section role="tabpanel" aria-label="歷年參修">
+            <section role="tabpanel" aria-label="歷年修課">
+              <StudentCourseTrend timeline={studentTimeline} />
               <EnrollmentTimeline
                 timeline={studentTimeline}
                 onDelete={permissions.canDeleteEnrollment ? setShowDeleteEnrollConfirm : null}

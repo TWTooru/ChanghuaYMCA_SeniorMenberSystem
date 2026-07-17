@@ -43,14 +43,25 @@ describe('classifyImport', () => {
     expect(preview.summary).toMatchObject({ oldStudents: 1, newStudents: 1, enrollmentsToInsert: 1, enrollmentsToUpdate: 1, courses: 2 })
   })
 
-  it('blocks nonexistent old IDs and suspected duplicate new students', () => {
-    const parsed = { rows: [row('999', '不存在', '1960-01-01'), row(null, '王小明', '1960-01-01')], warnings: [], errors: [] }
+  it('classifies a nonexistent supplied ID as a new student', () => {
+    const parsed = { rows: [row('999', 'New supplied ID', '1960-01-01')], warnings: [], errors: [] }
+    const preview = classifyImport(parsed, {
+      students: [{ student_id: '12', name: 'Existing student', birth_date: '1960-01-01', mobile_phone: null }],
+      enrollments: [], tableCounts: { students: 1, enrollments: 0, courses: 0 }
+    })
+
+    expect(preview.hasBlockingErrors).toBe(false)
+    expect(preview.summary).toMatchObject({ oldStudents: 0, newStudents: 1, enrollmentsToInsert: 1 })
+  })
+
+  it('blocks suspected duplicate blank-ID students', () => {
+    const parsed = { rows: [row(null, '王小明', '1960-01-01')], warnings: [], errors: [] }
     const preview = classifyImport(parsed, {
       students: [{ student_id: '12', name: '王小明', birth_date: '1960-01-01', mobile_phone: null }],
       enrollments: [], tableCounts: { students: 1, enrollments: 0, courses: 0 }
     })
     expect(preview.hasBlockingErrors).toBe(true)
-    expect(preview.errors).toHaveLength(2)
+    expect(preview.errors).toHaveLength(1)
   })
 
   it('blocks suspected duplicate blank-ID students within the imported file', () => {
