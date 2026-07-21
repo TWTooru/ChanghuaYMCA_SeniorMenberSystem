@@ -19,6 +19,13 @@ describe('Login', () => {
 
   afterEach(cleanup)
 
+  it('loads logos relative to the deployed application directory', () => {
+    render(<Login />)
+
+    expect(screen.getByAltText('YMCA Logo').getAttribute('src')).toBe('./YMCA.png')
+    expect(screen.getByAltText('Secondary Logo').getAttribute('src')).toBe('./11111111.png')
+  })
+
   it('submits the entered credentials and clears the form after success', async () => {
     const onLoginSuccess = vi.fn()
     signInWithPassword.mockResolvedValue({ error: null })
