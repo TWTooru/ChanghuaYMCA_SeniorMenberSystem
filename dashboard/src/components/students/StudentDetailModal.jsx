@@ -10,6 +10,7 @@ import { getEnrollmentsForStudent } from '../../domain/studentRelations'
 import { compareSeasons } from '../../domain/season'
 import { useAuth } from '../../contexts/AuthContext'
 import usePermissions from '../../hooks/usePermissions'
+import useUnsavedChangesGuard from '../../hooks/useUnsavedChangesGuard'
 import { deleteStudent } from '../../services/studentService'
 import { deleteEnrollment } from '../../services/enrollmentService'
 import './students.css'
@@ -24,8 +25,13 @@ export default function StudentDetailModal({ student, enrollments, initialTab = 
   const permissions = usePermissions(role)
   const [isEditing, setIsEditing] = useState(false)
   const [activeDetailTab, setActiveDetailTab] = useState(initialTab)
-  const [hasUnsavedStudentChanges, setHasUnsavedStudentChanges] = useState(false)
-  const [pendingAction, setPendingAction] = useState(null)
+  const {
+    setHasUnsavedChanges: setHasUnsavedStudentChanges,
+    pendingAction,
+    requestAction,
+    confirmPendingAction,
+    cancelPendingAction,
+  } = useUnsavedChangesGuard()
   const [isStudentDeleteConfirmOpen, setShowDeleteConfirm] = useState(false)
   const [pendingDeleteEnrollmentId, setShowDeleteEnrollConfirm] = useState(null)
   const dialogRef = useRef(null)
@@ -42,7 +48,8 @@ export default function StudentDetailModal({ student, enrollments, initialTab = 
   useEffect(() => {
     setActiveDetailTab(initialTab)
     setIsEditing(false)
-  }, [student?.student_id, initialTab])
+    setHasUnsavedStudentChanges(false)
+  }, [student?.student_id, initialTab, setHasUnsavedStudentChanges])
 
   useEffect(() => {
     previousFocusRef.current = document.activeElement
@@ -127,26 +134,21 @@ export default function StudentDetailModal({ student, enrollments, initialTab = 
 
   const requestTab = tab => {
     if (tab === activeDetailTab) return
-    if (isEditing && hasUnsavedStudentChanges) {
-      setPendingAction(tab)
-      return
-    }
-    setIsEditing(false)
-    setActiveDetailTab(tab)
+    requestAction(() => {
+      setIsEditing(false)
+      setActiveDetailTab(tab)
+    })
   }
 
   const requestClose = () => {
-    if (isTabbed && isEditing && hasUnsavedStudentChanges) setPendingAction('close')
-    else onClose()
-  }
-
-  const discardAndContinue = () => {
-    const action = pendingAction
-    setPendingAction(null)
-    setIsEditing(false)
-    setHasUnsavedStudentChanges(false)
-    if (action === 'close') onClose()
-    else setActiveDetailTab(action)
+    if (isTabbed) {
+      requestAction(() => {
+        setIsEditing(false)
+        onClose()
+      })
+    } else {
+      onClose()
+    }
   }
 
   if (!isTabbed) {
@@ -165,7 +167,7 @@ export default function StudentDetailModal({ student, enrollments, initialTab = 
             <div className="modal-body student-detail-body">
               <section aria-label="基本資料">
                 {isEditing && permissions.canEditStudent
-                  ? <StudentEditForm student={student} onSave={() => { setIsEditing(false); onRefresh?.() }} onCancel={() => setIsEditing(false)} />
+                  ? <StudentEditForm student={student} onSave={() => { setIsEditing(false); setHasUnsavedStudentChanges(false); onRefresh?.() }} onCancel={() => { setIsEditing(false); setHasUnsavedStudentChanges(false) }} />
                   : <StudentInfoView student={student} onEdit={permissions.canEditStudent ? () => setIsEditing(true) : null} />}
               </section>
               <section aria-label="歷年修課" style={{ marginTop: '24px' }}>
@@ -207,7 +209,7 @@ export default function StudentDetailModal({ student, enrollments, initialTab = 
           {activeDetailTab === 'profile' ? (
             <section role="tabpanel" aria-label="基本資料">
               {isEditing
-                ? <StudentEditForm student={student} onSave={() => { setIsEditing(false); onRefresh?.() }} onCancel={() => setIsEditing(false)} onDirtyChange={setHasUnsavedStudentChanges} />
+                ? <StudentEditForm student={student} onSave={() => { setIsEditing(false); setHasUnsavedStudentChanges(false); onRefresh?.() }} onCancel={() => { setIsEditing(false); setHasUnsavedStudentChanges(false) }} onDirtyChange={setHasUnsavedStudentChanges} />
                 : <StudentInfoView student={student} onEdit={permissions.canEditStudent ? () => setIsEditing(true) : null} />}
             </section>
           ) : (
@@ -234,8 +236,8 @@ export default function StudentDetailModal({ student, enrollments, initialTab = 
         confirmLabel="放棄變更"
         cancelLabel="繼續編輯"
         tone="warning"
-        onConfirm={discardAndContinue}
-        onCancel={() => setPendingAction(null)}
+        onConfirm={confirmPendingAction}
+        onCancel={cancelPendingAction}
       />
     </>
   )
