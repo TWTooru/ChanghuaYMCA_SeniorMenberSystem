@@ -45,7 +45,7 @@ export default function Login({ onLoginSuccess }) {
                 <div className="flex flex-col items-center mb-10">
                     <div className="flex items-center justify-center gap-6 mb-6">
                         <img src="./YMCA.png" alt="YMCA Logo" className="h-16 w-auto object-contain drop-shadow-md" />
-                        <img src="./11111111.png" alt="Secondary Logo" className="h-16 w-auto object-contain drop-shadow-md" />
+                        <img src="./ActiveAgingCenter_LOGO.png" alt="Active Aging Center Logo" className="h-16 w-auto object-contain drop-shadow-md" />
                     </div>
                     <h2 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-b from-white to-white/60 tracking-tight">
                         YMCA樂齡活力中心
