@@ -166,3 +166,47 @@ describe('createEnrollmentWithCourses', () => {
     ).rejects.toThrow('rollback failed')
   })
 })
+
+import { deleteEnrollment } from './enrollmentService'
+
+describe('deleteEnrollment', () => {
+  it('deletes an enrollment by enrollment_id (DB cascade handles courses)', async () => {
+    const calls = []
+    const client = {
+      from(table) {
+        calls.push(table)
+        return {
+          delete() {
+            calls.push('delete')
+            return {
+              eq: async (col, val) => {
+                calls.push({ col, val })
+                return { error: null }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    await deleteEnrollment(client, 42)
+    expect(calls).toContain('enrollments')
+    expect(calls).toContainEqual({ col: 'enrollment_id', val: 42 })
+  })
+
+  it('throws when delete fails', async () => {
+    const client = {
+      from() {
+        return {
+          delete() {
+            return {
+              eq: async () => ({ error: new Error('delete denied') })
+            }
+          }
+        }
+      }
+    }
+
+    await expect(deleteEnrollment(client, 1)).rejects.toThrow('delete denied')
+  })
+})

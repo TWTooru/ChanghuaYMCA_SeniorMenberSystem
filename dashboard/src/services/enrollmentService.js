@@ -42,3 +42,9 @@ export async function createEnrollmentWithCourses(client, studentId, form) {
 
   throw new Error(`課程新增失敗，已取消此選課紀錄。(${courseError.message})`)
 }
+
+export async function deleteEnrollment(client, enrollmentId) {
+  const { error } = await client.from('enrollments').delete().eq('enrollment_id', enrollmentId)
+  if (error) throw error
+}
+
