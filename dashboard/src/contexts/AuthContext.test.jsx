@@ -25,6 +25,16 @@ describe('extractRole', () => {
     const session = { user: { app_metadata: { app_role: '' } } }
     expect(extractRole(session)).toBe('viewer')
   })
+
+  it('extracts role from app_metadata.role if app_role is missing', () => {
+    const session = { user: { app_metadata: { role: 'editor' } } }
+    expect(extractRole(session)).toBe('editor')
+  })
+
+  it('extracts role from user_metadata.role if app_metadata role is missing', () => {
+    const session = { user: { user_metadata: { role: 'admin' } } }
+    expect(extractRole(session)).toBe('admin')
+  })
 })
 
 describe('detectPasswordFlow', () => {

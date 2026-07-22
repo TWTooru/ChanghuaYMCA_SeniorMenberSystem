@@ -25,7 +25,7 @@ export default function AdminAccountPage() {
 
 function AuthorizedAdminAccountPage() {
   const { user: currentUser } = useAuth()
-  const { users, auditLogs, loading, mutation, errorCode, invite, changeRole, resend, resetPassword, remove } = useAdminUsers()
+  const { users, auditLogs, loading, mutation, errorCode, refresh, invite, changeRole, resend, resetPassword, remove } = useAdminUsers()
   const [inviteOpen, setInviteOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [reloginNotice, setReloginNotice] = useState(false)
@@ -46,8 +46,28 @@ function AuthorizedAdminAccountPage() {
 
   return (
     <main className="admin-page">
-      <div className="admin-page-header"><div><h1>帳號管理</h1><p>管理後台使用者、角色與操作紀錄。</p></div><button className="btn-primary" type="button" onClick={() => setInviteOpen(true)}>邀請帳號</button></div>
-      {errorCode && <div className="sql-alert error" role="alert">{ERROR_MESSAGES[errorCode] || '帳號管理操作失敗，請稍後再試。'}</div>}
+      <div className="admin-page-header">
+        <div>
+          <h1>帳號管理</h1>
+          <p>管理後台使用者、角色與操作紀錄。</p>
+        </div>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <button className="btn-secondary" type="button" onClick={refresh} disabled={loading} aria-label="重新整理帳號列表">
+            {loading ? '載入中…' : '重新整理'}
+          </button>
+          <button className="btn-primary" type="button" onClick={() => setInviteOpen(true)}>
+            邀請帳號
+          </button>
+        </div>
+      </div>
+      {errorCode && (
+        <div className="sql-alert error" role="alert" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>{ERROR_MESSAGES[errorCode] || '帳號管理操作失敗，請稍後再試。'}</span>
+          <button className="btn-secondary" type="button" onClick={refresh} style={{ marginLeft: '12px', padding: '4px 10px', fontSize: '12px' }}>
+            重試連線
+          </button>
+        </div>
+      )}
       {reloginNotice && <div className="sql-alert success">角色變更後，該使用者需要重新登入。</div>}
       <section className="admin-summary-grid" aria-label="帳號摘要">
         <div className="admin-summary-card"><span>全部帳號</span><strong className="admin-summary-value">{users.length}</strong></div>

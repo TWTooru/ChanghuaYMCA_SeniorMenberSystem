@@ -12,7 +12,13 @@ const AuthContext = createContext({
 });
 
 export function extractRole(session) {
-    return session?.user?.app_metadata?.app_role || 'viewer';
+    if (!session?.user) return 'viewer';
+    return (
+        session.user.app_metadata?.app_role ||
+        session.user.app_metadata?.role ||
+        session.user.user_metadata?.role ||
+        'viewer'
+    );
 }
 
 export function detectPasswordFlow(locationLike) {
