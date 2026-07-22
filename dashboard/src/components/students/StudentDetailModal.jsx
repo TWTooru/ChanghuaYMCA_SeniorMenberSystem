@@ -12,6 +12,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import usePermissions from '../../hooks/usePermissions'
 import { deleteStudent } from '../../services/studentService'
 import { deleteEnrollment } from '../../services/enrollmentService'
+import './students.css'
 
 function getFocusableElements(container) {
   return Array.from(container?.querySelectorAll('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])') || [])

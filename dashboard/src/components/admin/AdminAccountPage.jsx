@@ -4,6 +4,7 @@ import useAdminUsers from '../../hooks/useAdminUsers'
 import AdminAuditLog from './AdminAuditLog'
 import DeleteUserDialog from './DeleteUserDialog'
 import InviteUserModal from './InviteUserModal'
+import './admin.css'
 
 const ROLE_LABELS = { admin: '管理員', editor: '編輯者', viewer: '瀏覽者' }
 const ERROR_MESSAGES = {

@@ -4,6 +4,7 @@ import Swal from 'sweetalert2'
 import withReactContent from 'sweetalert2-react-content'
 import { commitImport, prepareImport } from '../../services/dataImportService'
 import ImportPreviewDialog from './ImportPreviewDialog'
+import './sync.css'
 
 const MySwal = withReactContent(Swal)
 

@@ -3,6 +3,7 @@ import {
   Users, BookOpen, DollarSign,
   TrendingUp, Award, FileText, Heart
 } from 'lucide-react'
+import './OverviewTab.css'
 
 const EDUCATION_ORDER = [
   '研究所',

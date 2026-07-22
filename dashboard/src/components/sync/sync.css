@@ -1,0 +1,153 @@
+/* SQL Console Grid Layout */
+.sql-console-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .sql-console-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sql-editor-area {
+  display: flex;
+  flex-direction: column;
+}
+
+.sql-helper-area {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* SQL Textarea Editor */
+.sql-textarea {
+  width: 100%;
+  height: 180px;
+  background: #0f172a;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: #38bdf8; /* Sky blue code color */
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 14px;
+  padding: 16px;
+  resize: vertical;
+  line-height: 1.5;
+  transition: all 0.2s ease;
+}
+
+.sql-textarea:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+.sql-editor-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+/* SQL Alert styling */
+.sql-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  font-size: 14px;
+}
+
+.sql-alert.error {
+  background: var(--color-danger-glow);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+}
+
+.sql-alert.success {
+  background: var(--color-success-glow);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #6ee7b7;
+}
+
+.sql-error-msg {
+  font-family: monospace;
+  font-size: 13px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 8px;
+  border-radius: 4px;
+  margin-top: 8px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* SQL Schema Help Tree */
+.schema-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.schema-table-node {
+  background: rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.schema-table-summary {
+  padding: 10px 14px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.02);
+  font-size: 14px;
+  color: var(--text-primary);
+  user-select: none;
+}
+
+.schema-table-summary:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.schema-column-list {
+  margin: 0;
+  padding: 10px 14px 10px 32px;
+  list-style-type: disc;
+  border-top: 1px solid rgba(255, 255, 255, 0.03);
+  font-size: 12px;
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.schema-column-list code {
+  color: #f43f5e; /* Rose code color */
+  background: rgba(244, 63, 94, 0.05);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 12px;
+}
+
+/* SQL Template button */
+.sql-template-btn {
+  text-align: left;
+  font-size: 13px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  transition: all 0.2s ease;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sql-template-btn:hover {
+  background: var(--color-accent-glow);
+  color: #a5b4fc;
+  border-color: var(--color-accent);
+}

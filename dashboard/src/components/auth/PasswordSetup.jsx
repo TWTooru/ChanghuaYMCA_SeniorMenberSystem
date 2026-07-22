@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../../lib/supabaseClient'
+import './auth.css'
 
 const UPDATE_ERROR = '密碼設定失敗，請重新開啟連結後再試一次。'
 

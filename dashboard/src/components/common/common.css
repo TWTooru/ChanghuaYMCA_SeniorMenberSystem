@@ -1,0 +1,343 @@
+/* Custom Form Modals for Add Student & Add Enrollment */
+.modal-overlay-center {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(8px);
+  z-index: 110;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.form-modal-content {
+  width: 650px;
+  max-width: 100%;
+  max-height: 90vh;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.5);
+  animation: fadeInCenter 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+.student-detail-overlay {
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.student-detail-dialog {
+  width: min(960px, 100%);
+  height: min(90dvh, 900px);
+  max-height: 90dvh;
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  overflow: hidden;
+  animation: fadeInCenter 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.student-detail-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.student-detail-tabs [role="tab"] {
+  padding: 12px 18px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.student-detail-tabs [role="tab"][aria-selected="true"] {
+  border-bottom-color: var(--color-accent);
+  color: var(--text-primary);
+  background: var(--color-accent-glow);
+}
+
+.student-detail-body {
+  min-height: 0;
+}
+
+@media (max-width: 700px) {
+  .student-detail-overlay { padding: 8px; }
+  .student-detail-dialog { width: 100%; height: calc(100dvh - 16px); max-height: calc(100dvh - 16px); border-radius: 12px; }
+  .student-detail-header, .student-detail-tabs { padding-left: 16px; padding-right: 16px; }
+}
+
+.student-course-trend {
+  margin-bottom: 24px;
+  padding: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: rgba(31, 41, 55, 0.3);
+}
+
+.student-course-trend-title {
+  margin: 0 0 16px;
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.student-course-trend-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.student-course-trend-item {
+  display: grid;
+  grid-template-columns: minmax(110px, 180px) minmax(120px, 1fr) auto;
+  gap: 8px 12px;
+  align-items: center;
+}
+
+.student-course-trend-name {
+  min-width: 0;
+  color: var(--text-primary);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.student-course-trend-track {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.student-course-trend-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--color-accent), #818cf8);
+}
+
+.student-course-trend-count {
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.student-course-trend-seasons {
+  grid-column: 2 / 4;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.student-course-trend-seasons-label,
+.student-course-trend-season {
+  font-size: 11px;
+}
+
+.student-course-trend-seasons-label {
+  color: var(--text-muted);
+  padding: 3px 0;
+}
+
+.student-course-trend-season {
+  padding: 3px 8px;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 999px;
+  color: #c7d2fe;
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.student-course-trend-empty {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+@media (max-width: 600px) {
+  .student-course-trend-item {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .student-course-trend-track,
+  .student-course-trend-seasons {
+    grid-column: 1 / -1;
+  }
+}
+
+.import-preview-modal-content {
+  max-height: calc(100dvh - 40px);
+}
+
+@keyframes fadeInCenter {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  padding: 20px 24px;
+  overflow-y: auto;
+}
+
+.import-preview-modal-body {
+  flex: 1;
+  min-height: 0;
+}
+
+.import-preview-notice {
+  grid-column: span 2;
+  padding: 12px 16px;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  background: rgba(245, 158, 11, 0.16);
+  color: #fbbf24;
+  font-weight: 600;
+}
+
+@media (max-width: 600px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .import-preview-notice {
+    grid-column: span 1;
+  }
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group.full-width {
+  grid-column: span 2;
+}
+
+.student-edit-section-title {
+  grid-column: 1 / -1;
+  margin: 8px 0 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.student-edit-error {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--color-danger);
+  border-radius: 8px;
+  color: var(--color-danger);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.student-edit-actions {
+  position: sticky;
+  bottom: -24px;
+  z-index: 2;
+  flex-direction: row;
+  justify-content: flex-end;
+  gap: 12px;
+  margin: 12px -24px -24px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+}
+
+@media (max-width: 600px) {
+  .form-group.full-width {
+    grid-column: span 1;
+  }
+}
+
+.form-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.form-input, .form-select, .form-textarea {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-primary);
+  padding: 10px 14px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px var(--color-accent-glow);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.form-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.form-footer.full-width {
+  grid-column: span 2;
+}
+
+@media (max-width: 600px) {
+  .form-footer.full-width {
+    grid-column: span 1;
+  }
+}
+
+.modal-header-centered {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header-centered h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.form-checkbox-group {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 8px;
+  padding-top: 8px;
+}
+
+.form-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}

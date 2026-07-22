@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { Search, ChevronLeft, ChevronRight } from 'lucide-react'
 import { getStudentById } from '../../domain/studentRelations'
+import './enrollment.css'
 
 export default function EnrollmentTab({ students, enrollments, onSelectStudent }) {
   const [historySearch, setHistorySearch] = useState('')

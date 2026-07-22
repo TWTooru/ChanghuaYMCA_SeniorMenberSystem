@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { Search, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import usePermissions from '../../hooks/usePermissions'
+import './students.css'
 
 export default function StudentListTab({ students, enrollments, onSelectStudent, onShowAddStudent }) {
   const { role } = useAuth()
