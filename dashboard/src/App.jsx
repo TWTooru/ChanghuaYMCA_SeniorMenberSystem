@@ -19,11 +19,13 @@ import PasswordSetup from './components/auth/PasswordSetup'
 import AdminAccountPage from './components/admin/AdminAccountPage'
 import { useAuth } from './contexts/AuthContext'
 import usePermissions from './hooks/usePermissions'
+import useTheme from './hooks/useTheme'
 import AppHeader from './components/common/AppHeader'
 
 function AuthenticatedDashboard() {
   const { session, user, role, signOut } = useAuth()
   const permissions = usePermissions(role)
+  const { theme, toggleTheme } = useTheme()
   const [activeTab, setActiveTab] = useState('overview')
   const [showAddStudentModal, setShowAddStudentModal] = useState(false)
   const [showAddEnrollModal, setShowAddEnrollModal] = useState(false)
@@ -61,6 +63,8 @@ function AuthenticatedDashboard() {
         onShowExportModal={() => setShowExportModal(true)}
         onSignOut={signOut}
         syncSlot={permissions.canSyncExcel ? <ExcelSync onSyncComplete={handleRefresh} /> : null}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       {dbStatus === 'offline' && (

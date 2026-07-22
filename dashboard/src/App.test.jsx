@@ -84,7 +84,7 @@ describe('App header access controls', () => {
     render(<App />)
 
     expect(screen.queryAllByTestId('excel-sync')).toHaveLength(0)
-    expect(document.querySelector('.btn-secondary')).toBeNull()
+    expect(document.querySelector('.btn-refresh-inline')).toBeNull()
   })
 
   it.each(['editor', 'admin'])('%s can see Excel sync and refresh controls', (role) => {
@@ -92,7 +92,7 @@ describe('App header access controls', () => {
     render(<App />)
 
     expect(screen.queryAllByTestId('excel-sync')).toHaveLength(1)
-    expect(document.querySelector('.btn-secondary')).toBeTruthy()
+    expect(document.querySelector('.btn-refresh-inline')).toBeTruthy()
   })
 
   it('shows account management navigation only to admins', () => {
