@@ -165,17 +165,17 @@
 
 .badge.success {
   background: var(--color-success-glow);
-  color: #6ee7b7;
+  color: var(--badge-success-text, #10b981);
 }
 
 .badge.danger {
   background: var(--color-danger-glow);
-  color: #fca5a5;
+  color: var(--badge-danger-text, #ef4444);
 }
 
 .badge.accent {
   background: var(--color-accent-glow);
-  color: #a5b4fc;
+  color: var(--badge-accent-text, #6366f1);
 }
 
 .badge.neutral {

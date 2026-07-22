@@ -70,6 +70,7 @@
   font-size: 24px;
   font-weight: 700;
   font-family: var(--font-heading);
+  color: var(--text-primary);
 }
 
 .kpi-unit {
@@ -229,9 +230,10 @@
 .donut-legend-pct {
   font-size: 11px;
   padding: 2px 6px;
-  background: rgba(99, 102, 241, 0.15);
-  color: #a5b4fc;
+  background: var(--color-accent-glow);
+  color: var(--badge-accent-text, #6366f1);
   border-radius: 4px;
+  font-weight: 600;
 }
 
 .donut-legend-val {
@@ -253,7 +255,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--table-row-hover, rgba(255, 255, 255, 0.02));
+  border: 1px solid var(--border-color);
   border-radius: 6px;
 }
 
@@ -272,13 +275,15 @@
   font-size: 11px;
   padding: 2px 6px;
   background: var(--color-accent-glow);
-  color: #a5b4fc;
+  color: var(--badge-accent-text, #6366f1);
   border-radius: 4px;
+  font-weight: 600;
 }
 
 .dist-value {
   font-size: 14px;
   font-weight: 600;
+  color: var(--text-primary);
 }
 
 /* Seniors Metric Panel */
