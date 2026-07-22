@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import './App.css'
-import { FileSpreadsheet, RefreshCw, Download, Activity, Users, Calendar, AlertCircle, LogOut, ShieldCheck } from 'lucide-react'
+import { Activity, Users, Calendar, AlertCircle, ShieldCheck } from 'lucide-react'
 
 import useApiData from './hooks/useApiData'
 import useStats from './hooks/useStats'
@@ -19,12 +19,11 @@ import PasswordSetup from './components/auth/PasswordSetup'
 import AdminAccountPage from './components/admin/AdminAccountPage'
 import { useAuth } from './contexts/AuthContext'
 import usePermissions from './hooks/usePermissions'
+import AppHeader from './components/common/AppHeader'
 
 function AuthenticatedDashboard() {
   const { session, user, role, signOut } = useAuth()
   const permissions = usePermissions(role)
-  const ROLE_LABELS = { admin: '管理員', editor: '編輯者', viewer: '檢視者' }
-  const ROLE_COLORS = { admin: '#ef4444', editor: '#3b82f6', viewer: '#6b7280' }
   const [activeTab, setActiveTab] = useState('overview')
   const [showAddStudentModal, setShowAddStudentModal] = useState(false)
   const [showAddEnrollModal, setShowAddEnrollModal] = useState(false)
@@ -53,54 +52,16 @@ function AuthenticatedDashboard() {
 
   return (
     <div className="app-container">
-      <header className="app-header">
-        <div className="header-content">
-          <div className="header-title-area">
-            <FileSpreadsheet size={32} className="header-icon" />
-            <div>
-              <h1 className="header-title">學員個人資料聯絡簿</h1>
-              <p className="header-subtitle">資訊整理與智慧查詢系統</p>
-            </div>
-            <div style={{ marginLeft: '12px', display: 'flex', alignItems: 'center' }}>
-              <span className={`status-dot ${dbStatus === 'connected' ? 'dot-glowing-green' : (dbStatus === 'connecting' ? 'dot-orange' : 'dot-grey')}`}></span>
-              <span style={{ fontSize: '12px', marginLeft: '6px', fontWeight: '500', color: dbStatus === 'connected' ? '#10b981' : '#9ca3af' }}>
-                {dbStatus === 'connected' ? 'Supabase 資料庫已連線' : (dbStatus === 'connecting' ? '資料庫連線中...' : '離線模式 (載入靜態備份)')}
-              </span>
-            </div>
-          </div>
-          <div className="header-actions">
-            {permissions.canSyncExcel && <ExcelSync onSyncComplete={handleRefresh} />}
-            {permissions.canRefreshSync && dbStatus === 'connected' && (
-              <button 
-                type="button"
-                className="btn-secondary" 
-                style={{ display: 'flex', gap: '6px', alignItems: 'center' }}
-                onClick={handleRefresh}
-              >
-                <RefreshCw size={14} className={dbStatus === 'connecting' ? 'spin' : ''} />
-                <span>整理同步</span>
-              </button>
-            )}
-            <button 
-              className="btn-primary" 
-              id="btn-download-excel"
-              onClick={() => setShowExportModal(true)}
-            >
-              <Download size={18} />
-              <span>下載整理版 Excel</span>
-            </button>
-            <div className="header-user-info">
-              <span className="header-user-email">{user?.email}</span>
-              <span className="header-role-badge" style={{ backgroundColor: ROLE_COLORS[role] || '#6b7280' }}>
-                {ROLE_LABELS[role] || '檢視者'}
-              </span>
-              <button type="button" className="btn-logout" onClick={signOut} title="登出">
-                <LogOut size={16} />
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <AppHeader
+        dbStatus={dbStatus}
+        permissions={permissions}
+        user={user}
+        role={role}
+        onRefresh={handleRefresh}
+        onShowExportModal={() => setShowExportModal(true)}
+        onSignOut={signOut}
+        syncSlot={permissions.canSyncExcel ? <ExcelSync onSyncComplete={handleRefresh} /> : null}
+      />
 
       {dbStatus === 'offline' && (
         <div className="offline-banner">
