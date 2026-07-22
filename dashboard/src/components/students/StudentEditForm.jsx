@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../../lib/supabaseClient'
+import { updateStudent } from '../../services/studentService'
 
 export default function StudentEditForm({ student, onSave, onCancel, onDirtyChange = () => {} }) {
   const initialForm = useMemo(() => ({ ...student }), [student])
@@ -33,8 +34,7 @@ export default function StudentEditForm({ student, onSave, onCancel, onDirtyChan
         age: editForm.age ? parseInt(editForm.age, 10) : null,
         is_60_plus: editForm.age && parseInt(editForm.age, 10) >= 60 ? '是' : '否',
       }
-      const { error } = await supabase.from('students').update(payload).eq('student_id', student.student_id)
-      if (error) throw error
+      await updateStudent(supabase, student.student_id, payload)
       onDirtyChange(false)
       onSave()
     } catch (error) {

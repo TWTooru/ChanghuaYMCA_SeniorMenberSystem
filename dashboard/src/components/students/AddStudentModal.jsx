@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { EDUCATION_OPTIONS } from '../../domain/studentFields'
+import { createStudent } from '../../services/studentService'
 
 export default function AddStudentModal({ students, onClose, onRefresh }) {
   const [newStudent, setNewStudent] = useState({
@@ -58,16 +59,12 @@ export default function AddStudentModal({ students, onClose, onRefresh }) {
 
     const insertStudent = async () => {
       try {
-        const { error } = await supabase.from('students').insert([bodyData]);
-        if (error) {
-          alert(error.message);
-        } else {
-          alert("新增成功！");
-          if (onRefresh) onRefresh();
-          onClose();
-        }
+        await createStudent(supabase, bodyData);
+        alert("新增成功！");
+        if (onRefresh) onRefresh();
+        onClose();
       } catch (err) {
-        alert("伺服器錯誤: " + err.message);
+        alert(err.message);
       }
     };
     insertStudent();

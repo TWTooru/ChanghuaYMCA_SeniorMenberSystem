@@ -10,6 +10,8 @@ import { getEnrollmentsForStudent } from '../../domain/studentRelations'
 import { compareSeasons } from '../../domain/season'
 import { useAuth } from '../../contexts/AuthContext'
 import usePermissions from '../../hooks/usePermissions'
+import { deleteStudent } from '../../services/studentService'
+import { deleteEnrollment } from '../../services/enrollmentService'
 
 function getFocusableElements(container) {
   return Array.from(container?.querySelectorAll('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])') || [])
@@ -69,11 +71,7 @@ export default function StudentDetailModal({ student, enrollments, initialTab = 
     }
 
     try {
-      const { data: enrolls } = await supabase.from('enrollments').select('enrollment_id').eq('student_id', student.student_id)
-      if (enrolls && enrolls.length > 0) await supabase.from('courses').delete().in('enrollment_id', enrolls.map(enrollment => enrollment.enrollment_id))
-      await supabase.from('enrollments').delete().eq('student_id', student.student_id)
-      const { error } = await supabase.from('students').delete().eq('student_id', student.student_id)
-      if (error) throw error
+      await deleteStudent(supabase, student.student_id)
       alert('學員已刪除')
       if (onRefresh) onRefresh()
       onClose()
@@ -89,9 +87,7 @@ export default function StudentDetailModal({ student, enrollments, initialTab = 
     }
 
     try {
-      await supabase.from('courses').delete().eq('enrollment_id', enrollmentId)
-      const { error } = await supabase.from('enrollments').delete().eq('enrollment_id', enrollmentId)
-      if (error) throw error
+      await deleteEnrollment(supabase, enrollmentId)
       alert('選課紀錄已刪除')
       if (onRefresh) onRefresh()
       setShowDeleteEnrollConfirm(null)
