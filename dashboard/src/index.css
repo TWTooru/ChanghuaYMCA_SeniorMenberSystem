@@ -55,9 +55,25 @@
   --text-secondary: #475569;
   --text-muted: #64748b;
 
+  --color-accent: #4f46e5;
+  --color-accent-glow: rgba(79, 70, 229, 0.1);
+  --color-success: #059669;
+  --color-success-glow: rgba(5, 150, 105, 0.1);
+  --color-warning: #d97706;
+  --color-danger: #dc2626;
+
   --header-bg: rgba(255, 255, 255, 0.85);
   --nav-bg: rgba(255, 255, 255, 0.85);
-  --panel-bg: rgba(255, 255, 255, 0.95);
+  --panel-bg: #ffffff;
+  --input-bg: #f8fafc;
+  --table-header-bg: #f1f5f9;
+  --table-row-hover: #f8fafc;
+  --table-row-alt: #ffffff;
+  --modal-overlay-bg: rgba(15, 23, 42, 0.4);
+
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.06), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  --shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
 }
 
 *, *::before, *::after {

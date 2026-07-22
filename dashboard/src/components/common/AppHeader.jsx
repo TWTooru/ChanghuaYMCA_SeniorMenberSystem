@@ -52,10 +52,10 @@ export default function AppHeader({
             className="btn-theme-toggle" 
             onClick={onToggleTheme}
             title={theme === 'dark' ? '切換至明亮模式' : '切換至黑暗模式'}
+            aria-label={theme === 'dark' ? '切換至明亮模式' : '切換至黑暗模式'}
             id="btn-theme-toggle"
           >
-            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-            <span>{theme === 'dark' ? '明亮模式' : '黑暗模式'}</span>
+            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
           </button>
           <button 
             className="btn-primary" 

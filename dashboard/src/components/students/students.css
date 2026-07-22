@@ -1,6 +1,6 @@
 /* Search Filters Box */
 .filters-panel {
-  background: rgba(17, 24, 39, 0.4);
+  background: var(--panel-bg, rgba(17, 24, 39, 0.4));
   border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 20px;
@@ -9,6 +9,7 @@
   grid-template-columns: 2fr 1fr 1fr 1fr;
   gap: 16px;
   align-items: flex-end;
+  box-shadow: var(--shadow-sm);
 }
 
 @media (max-width: 900px) {
@@ -84,11 +85,11 @@
 
 /* Data Table Styling */
 .table-wrapper {
-  background: rgba(31, 41, 55, 0.2);
+  background: var(--panel-bg, rgba(31, 41, 55, 0.2));
   border: 1px solid var(--border-color);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-sm);
   margin-bottom: 24px;
 }
 
@@ -106,7 +107,7 @@
 }
 
 .data-table th {
-  background: rgba(17, 24, 39, 0.8);
+  background: var(--table-header-bg, rgba(17, 24, 39, 0.8));
   color: var(--text-secondary);
   font-weight: 600;
   padding: 14px 16px;
@@ -119,7 +120,7 @@
 
 .data-table td {
   padding: 14px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid var(--border-color);
   color: var(--text-primary);
   white-space: nowrap;
 }
@@ -136,7 +137,7 @@
 }
 
 .data-table tbody tr:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--table-row-hover, rgba(255, 255, 255, 0.02));
 }
 
 .data-table tr.clickable {
