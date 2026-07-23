@@ -39,6 +39,17 @@ describe('useStudentSelection', () => {
     expect(result.current.selectedStudent).toBeNull()
   })
 
+  it('replaces the selected student after an ID change', () => {
+    const original = { student_id: 'S-001', name: 'Ada' }
+    const updated = { student_id: '12', name: 'Ada' }
+    const { result } = renderHook(() => useStudentSelection([original]))
+
+    act(() => result.current.openStudentDetail(original, 'profile'))
+    act(() => result.current.replaceSelectedStudent(updated))
+
+    expect(result.current.selectedStudent).toEqual(updated)
+  })
+
   it('syncs selected student when students list updates', () => {
     const original = { student_id: '1', name: '王小明' }
     const refreshed = { student_id: '1', name: '王大明' }

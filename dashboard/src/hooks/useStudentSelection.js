@@ -20,6 +20,10 @@ export default function useStudentSelection(students) {
     setSelectedStudent(null)
   }, [])
 
+  const replaceSelectedStudent = useCallback(updatedStudent => {
+    setSelectedStudent(updatedStudent)
+  }, [])
+
   useEffect(() => {
     setSelectedStudent(current => {
       if (!current) return current
@@ -33,5 +37,6 @@ export default function useStudentSelection(students) {
     studentDetailIsTabbed,
     openStudentDetail,
     closeStudentDetail,
+    replaceSelectedStudent,
   }
 }

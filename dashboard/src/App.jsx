@@ -43,7 +43,7 @@ function AuthenticatedDashboard() {
   const handleExport = useExportHandler(students, enrollments)
   const {
     selectedStudent, studentDetailInitialTab, studentDetailIsTabbed,
-    openStudentDetail, closeStudentDetail
+    openStudentDetail, closeStudentDetail, replaceSelectedStudent
   } = useStudentSelection(students)
 
   const handleRefresh = () => setRefreshCount(c => c + 1)
@@ -126,6 +126,7 @@ function AuthenticatedDashboard() {
           onClose={closeStudentDetail} 
           onAddEnrollment={() => setShowAddEnrollModal(true)}
           onRefresh={handleRefresh}
+          onStudentUpdated={replaceSelectedStudent}
         />
       )}
       

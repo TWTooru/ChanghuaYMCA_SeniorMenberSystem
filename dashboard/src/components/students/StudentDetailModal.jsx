@@ -20,7 +20,7 @@ function getFocusableElements(container) {
     .filter(element => !element.hasAttribute('disabled'))
 }
 
-export default function StudentDetailModal({ student, enrollments, initialTab = 'history', isTabbed = true, onClose, onAddEnrollment, onRefresh }) {
+export default function StudentDetailModal({ student, enrollments, initialTab = 'history', isTabbed = true, onClose, onAddEnrollment, onRefresh, onStudentUpdated }) {
   const { role } = useAuth()
   const permissions = usePermissions(role)
   const [isEditing, setIsEditing] = useState(false)
@@ -69,6 +69,13 @@ export default function StudentDetailModal({ student, enrollments, initialTab = 
     return getEnrollmentsForStudent(enrollments, student.student_id)
       .sort((a, b) => compareSeasons(a.season, b.season))
   }, [student, enrollments])
+
+  const handleStudentSaved = updatedStudent => {
+    setIsEditing(false)
+    setHasUnsavedStudentChanges(false)
+    onStudentUpdated?.(updatedStudent)
+    onRefresh?.()
+  }
 
   if (!student) return null
 
@@ -167,7 +174,7 @@ export default function StudentDetailModal({ student, enrollments, initialTab = 
             <div className="modal-body student-detail-body">
               <section aria-label="基本資料">
                 {isEditing && permissions.canEditStudent
-                  ? <StudentEditForm student={student} onSave={() => { setIsEditing(false); setHasUnsavedStudentChanges(false); onRefresh?.() }} onCancel={() => { setIsEditing(false); setHasUnsavedStudentChanges(false) }} />
+                  ? <StudentEditForm student={student} onSave={handleStudentSaved} onCancel={() => { setIsEditing(false); setHasUnsavedStudentChanges(false) }} />
                   : <StudentInfoView student={student} onEdit={permissions.canEditStudent ? () => setIsEditing(true) : null} />}
               </section>
               <section aria-label="歷年修課" style={{ marginTop: '24px' }}>
@@ -209,7 +216,7 @@ export default function StudentDetailModal({ student, enrollments, initialTab = 
           {activeDetailTab === 'profile' ? (
             <section role="tabpanel" aria-label="基本資料">
               {isEditing
-                ? <StudentEditForm student={student} onSave={() => { setIsEditing(false); setHasUnsavedStudentChanges(false); onRefresh?.() }} onCancel={() => { setIsEditing(false); setHasUnsavedStudentChanges(false) }} onDirtyChange={setHasUnsavedStudentChanges} />
+                ? <StudentEditForm student={student} onSave={handleStudentSaved} onCancel={() => { setIsEditing(false); setHasUnsavedStudentChanges(false) }} onDirtyChange={setHasUnsavedStudentChanges} />
                 : <StudentInfoView student={student} onEdit={permissions.canEditStudent ? () => setIsEditing(true) : null} />}
             </section>
           ) : (

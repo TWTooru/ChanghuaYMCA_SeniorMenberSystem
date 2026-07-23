@@ -7,6 +7,7 @@ const updateStudentResult = vi.hoisted(() => ({ error: null }))
 
 vi.mock('../../lib/supabaseClient', () => ({
   supabase: {
+    rpc: async () => ({ data: null, error: updateStudentResult.error }),
     from: () => ({
       update: () => ({ eq: async () => updateStudentResult }),
     }),
@@ -30,7 +31,7 @@ describe('Student detail edit forms', () => {
       />
     )
 
-    expect(screen.getByDisplayValue('S-001').disabled).toBe(true)
+    expect(screen.getByDisplayValue('S-001').disabled).toBe(false)
     expect(screen.getByDisplayValue('王小明')).not.toBeNull()
     expect(screen.getByDisplayValue('是')).not.toBeNull()
   })
