@@ -54,8 +54,8 @@ describe('StudentListTab add-student access', () => {
       />
     )
 
-    const firstPageButton = screen.getByRole('button', { name: '頝唾???' })
-    const lastPageButton = screen.getByRole('button', { name: '頝唾?撠暸?' })
+    const firstPageButton = screen.getByRole('button', { name: '跳至最前頁' })
+    const lastPageButton = screen.getByRole('button', { name: '跳至最尾頁' })
 
     expect(firstPageButton.disabled).toBe(true)
     expect(lastPageButton.disabled).toBe(false)

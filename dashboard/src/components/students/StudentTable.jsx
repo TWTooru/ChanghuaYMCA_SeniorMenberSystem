@@ -132,8 +132,8 @@ export default function StudentTable({
             onClick={() => onPageChange(1)}
             disabled={studentPage === 1}
             id="btn-student-first"
-            aria-label="頝唾???"
-            title="頝唾???"
+            aria-label="跳至最前頁"
+            title="跳至最前頁"
           >
             <ChevronsLeft size={16} style={{ display: 'block' }} />
           </button>
@@ -199,8 +199,8 @@ export default function StudentTable({
             onClick={() => onPageChange(totalStudentPages)}
             disabled={studentPage === totalStudentPages}
             id="btn-student-last"
-            aria-label="頝唾?撠暸?"
-            title="頝唾?撠暸?"
+            aria-label="跳至最尾頁"
+            title="跳至最尾頁"
           >
             <ChevronsRight size={16} style={{ display: 'block' }} />
           </button>
