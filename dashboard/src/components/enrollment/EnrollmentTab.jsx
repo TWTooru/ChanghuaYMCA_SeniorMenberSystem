@@ -1,5 +1,11 @@
 import { useState, useMemo } from 'react'
-import { Search, ChevronLeft, ChevronRight } from 'lucide-react'
+import {
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight
+} from 'lucide-react'
 import { getStudentById } from '../../domain/studentRelations'
 import './enrollment.css'
 
@@ -187,6 +193,17 @@ export default function EnrollmentTab({ students, enrollments, onSelectStudent }
             顯示第 {filteredHistory.length > 0 ? (historyPage - 1) * itemsPerPage + 1 : 0} 至 {Math.min(historyPage * itemsPerPage, filteredHistory.length)} 筆紀錄（共 {filteredHistory.length} 筆）
           </div>
           <div className="pagination-buttons">
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => setHistoryPage(1)}
+              disabled={historyPage === 1}
+              id="btn-history-first"
+              aria-label="跳至最前頁"
+              title="跳至最前頁"
+            >
+              <ChevronsLeft size={16} style={{ display: 'block' }} />
+            </button>
             <button 
               className="btn-secondary"
               onClick={() => setHistoryPage(p => Math.max(p - 1, 1))}
@@ -202,6 +219,17 @@ export default function EnrollmentTab({ students, enrollments, onSelectStudent }
               id="btn-history-next"
             >
               <ChevronRight size={16} style={{ display: 'block' }} />
+            </button>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => setHistoryPage(totalHistoryPages)}
+              disabled={historyPage === totalHistoryPages}
+              id="btn-history-last"
+              aria-label="跳至最尾頁"
+              title="跳至最尾頁"
+            >
+              <ChevronsRight size={16} style={{ display: 'block' }} />
             </button>
           </div>
         </div>
