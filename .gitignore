@@ -25,6 +25,7 @@ exports/
 .idea/
 .vscode/
 *.log
+*--conversation=*.txt
 .superpowers/
 docs/
 .worktrees/
