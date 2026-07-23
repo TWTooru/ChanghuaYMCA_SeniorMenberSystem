@@ -79,12 +79,46 @@ describe('quarter CSV import parser', () => {
     ])
   })
 
+  it('normalizes supplied IDs and rejects invalid nonblank IDs', () => {
+    const valid = Object.fromEntries(headers.map(header => [header, '']))
+    valid[fixedHeaders[0]] = '0012'
+    valid[fixedHeaders[1]] = 'Valid student'
+    const invalid = { ...valid, [fixedHeaders[0]]: 'A12' }
+
+    const parsed = parseQuarterCsvRows([valid, invalid], { headers })
+
+    expect(parsed.rows[0].provided_student_id).toBe('12')
+    expect(parsed.errors).toContainEqual(expect.objectContaining({
+      row: 3,
+      field: fixedHeaders[0],
+    }))
+  })
+
+  it('blocks duplicate blank-ID rows only when all three identity fields match', () => {
+    const first = Object.fromEntries(headers.map(header => [header, '']))
+    first[fixedHeaders[1]] = 'Duplicate student'
+    first[fixedHeaders[2]] = 'F'
+    first[fixedHeaders[3]] = '1960/1/2'
+    const duplicate = {
+      ...first,
+      [fixedHeaders[1]]: ' Duplicate student ',
+      [fixedHeaders[3]]: '1960-01-02',
+    }
+    const differentGender = { ...first, [fixedHeaders[2]]: 'M' }
+
+    const parsed = parseQuarterCsvRows([first, duplicate, differentGender], { headers })
+
+    expect(parsed.errors.filter(error => error.field === fixedHeaders[0])).toEqual([
+      expect.objectContaining({ row: 3 }),
+    ])
+  })
+
   it('blocks duplicate IDs and duplicate blank-ID identities in one file', () => {
     const rows = [
       { 學員編號: '12', 姓名: '甲', '第16季前測': '', '第16季後測': '', '第16季(新、續)': '', 課程1: '' },
       { 學員編號: '12', 姓名: '甲', '第16季前測': '', '第16季後測': '', '第16季(新、續)': '', 課程1: '' },
-      { 學員編號: '', 姓名: '乙', 出生日期: '1962/2/2', 手機電話: '0933-000-000', '第16季前測': '', '第16季後測': '', '第16季(新、續)': '', 課程1: '' },
-      { 學員編號: '', 姓名: ' 乙 ', 出生日期: '1962-02-02', 手機電話: '0933000000', '第16季前測': '', '第16季後測': '', '第16季(新、續)': '', 課程1: '' }
+      { 學員編號: '', 姓名: '乙', 性別: '女', 出生日期: '1962/2/2', 手機電話: '0933-000-000', '第16季前測': '', '第16季後測': '', '第16季(新、續)': '', 課程1: '' },
+      { 學員編號: '', 姓名: ' 乙 ', 性別: '女', 出生日期: '1962-02-02', 手機電話: '0933000000', '第16季前測': '', '第16季後測': '', '第16季(新、續)': '', 課程1: '' }
     ]
     const parsed = parseQuarterCsvRows(rows, { headers: [...fixedHeaders, '第16季前測', '第16季後測', '第16季(新、續)', '課程1'] })
     expect(parsed.errors.filter(error => error.field === '學員編號')).toHaveLength(2)

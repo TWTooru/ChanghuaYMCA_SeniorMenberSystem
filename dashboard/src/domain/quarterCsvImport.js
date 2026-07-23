@@ -1,6 +1,7 @@
 import { cleanCourseName, cleanStr } from './excelImport'
 import { normalizeSeason, seasonNumber } from './season'
 import { calculateAgeFromBirthDate } from './studentFields'
+import { buildStudentIdentityKey, normalizeStudentId } from './studentIdentity'
 
 const FIXED_COLUMNS = {
   姓名: 'name', 性別: 'gender', 出生日期: 'birth_date', 地址: 'address', 家裡電話: 'home_phone',
@@ -21,16 +22,6 @@ export function normalizeCsvDate(value) {
   const date = new Date(Date.UTC(year, month - 1, day))
   if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null
   return `${yearText}/${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}`
-}
-
-const normalizeName = value => String(value || '').trim().toLocaleLowerCase('zh-TW')
-const normalizePhone = value => String(value || '').replace(/\D/g, '')
-const sameIdentity = (left, right) => {
-  if (normalizeName(left.name) !== normalizeName(right.name)) return false
-  return Boolean(
-    (left.birth_date && left.birth_date === right.birth_date)
-    || (normalizePhone(left.mobile_phone) && normalizePhone(left.mobile_phone) === normalizePhone(right.mobile_phone))
-  )
 }
 
 export function parseQuarterCsvRows(rows, { headers = [], today = new Date() } = {}) {
@@ -71,13 +62,18 @@ export function parseQuarterCsvRows(rows, { headers = [], today = new Date() } =
   }
 
   const seenIds = new Set()
-  const newRows = []
+  const blankIdentityRows = new Map()
   const parsedRows = rows.map((sourceRowData, index) => {
     const sourceRow = index + 2
     const row = Object.fromEntries(
       Object.entries(sourceRowData).map(([header, value]) => [String(header).trim(), value])
     )
-    const providedStudentId = cleanStr(row['學員編號'])
+    let providedStudentId = null
+    try {
+      providedStudentId = normalizeStudentId(row['學員編號'], { allowBlank: true })
+    } catch (error) {
+      errors.push({ row: sourceRow, field: '學員編號', message: error.message })
+    }
     const student = Object.fromEntries(Object.entries(FIXED_COLUMNS).map(([header, key]) => [key, cleanStr(row[header])]))
     const birthRaw = cleanStr(row['出生日期'])
     student.birth_date = normalizeCsvDate(birthRaw)
@@ -110,9 +106,17 @@ export function parseQuarterCsvRows(rows, { headers = [], today = new Date() } =
       if (seenIds.has(providedStudentId)) errors.push({ row: sourceRow, field: '學員編號', message: `檔案內重複編號 ${providedStudentId}` })
       seenIds.add(providedStudentId)
     } else {
-      const duplicate = newRows.find(previous => sameIdentity(student, previous.student))
-      if (duplicate) errors.push({ row: sourceRow, field: '學員編號', message: `疑似重複學生，請先核對來源第 ${duplicate.source_row} 列` })
-      newRows.push(parsedRow)
+      const identityKey = buildStudentIdentityKey(student)
+      const firstRow = identityKey ? blankIdentityRows.get(identityKey) : null
+      if (firstRow) {
+        errors.push({
+          row: sourceRow,
+          field: '學員編號',
+          message: `疑似重複學生，請先核對來源第 ${firstRow} 列`,
+        })
+      } else if (identityKey) {
+        blankIdentityRows.set(identityKey, sourceRow)
+      }
     }
     return parsedRow
   })
