@@ -38,6 +38,28 @@ describe('ImportPreviewDialog', () => {
     expect(onConfirm).toHaveBeenCalledOnce()
   })
 
+  it('shows blank-ID student reconciliation results', () => {
+    render(
+      <ImportPreviewDialog
+        preview={{
+          summary,
+          studentResolutions: [
+            { sourceRow: 2, studentName: 'Ada', action: 'update', studentId: '12' },
+            { sourceRow: 3, studentName: 'Bea', action: 'insert', studentId: null },
+          ],
+          warnings: [], errors: [], hasBlockingErrors: false,
+        }}
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />
+    )
+
+    expect(screen.getByText('更新學生 1 筆')).not.toBeNull()
+    expect(screen.getByText('新增學生 1 筆')).not.toBeNull()
+    expect(screen.getByText('第 2 列：Ada → 更新學生 12')).not.toBeNull()
+    expect(screen.getByText('第 3 列：Bea → 新增並由系統指派編號')).not.toBeNull()
+  })
+
   it('shows the target season and cleared pre- and post-test totals', () => {
     render(
       <ImportPreviewDialog

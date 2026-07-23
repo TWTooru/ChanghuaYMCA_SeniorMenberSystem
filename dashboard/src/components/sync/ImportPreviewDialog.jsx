@@ -9,7 +9,7 @@ function getFocusableElements(container) {
 }
 
 export default function ImportPreviewDialog({ preview, isImporting = false, onConfirm, onCancel }) {
-  const { summary, warnings = [], errors = [], hasBlockingErrors } = preview
+  const { summary, studentResolutions = [], warnings = [], errors = [], hasBlockingErrors } = preview
   const confirmationDisabled = hasBlockingErrors || isImporting
   const dialogRef = useRef(null)
   const previousFocusRef = useRef(null)
@@ -107,9 +107,26 @@ export default function ImportPreviewDialog({ preview, isImporting = false, onCo
             <ul style={{ margin: 0, paddingLeft: '20px', listStyleType: 'disc', display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <li style={{ fontSize: '14px' }}>新增報名 {summary.enrollmentsToInsert} 筆</li>
               <li style={{ fontSize: '14px' }}>更新報名 {summary.enrollmentsToUpdate} 筆</li>
+              <li style={{ fontSize: '14px' }}>更新學生 {summary.oldStudents} 筆</li>
+              <li style={{ fontSize: '14px' }}>新增學生 {summary.newStudents} 筆</li>
               <li style={{ fontSize: '14px' }}>課程 {summary.courses} 筆</li>
             </ul>
           </section>
+
+          {studentResolutions.length > 0 && (
+            <section className="form-group full-width" aria-label="學生編號處理結果">
+              <h3 style={{ fontSize: '15px', fontWeight: '700', margin: '8px 0 4px' }}>學生編號處理結果</h3>
+              <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                {studentResolutions.map(resolution => (
+                  <li key={resolution.sourceRow} style={{ fontSize: '14px' }}>
+                    {resolution.action === 'update'
+                      ? `第 ${resolution.sourceRow} 列：${resolution.studentName} → 更新學生 ${resolution.studentId}`
+                      : `第 ${resolution.sourceRow} 列：${resolution.studentName} → 新增並由系統指派編號`}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
           {errors.length > 0 && (
             <section 

@@ -1,15 +1,46 @@
 import { describe, expect, it } from 'vitest'
 import { classifyImport, loadImportPreview } from './importPreviewService'
 
-const row = (id, name, birth, mobile = null) => ({
+const row = (id, name, birth, mobile = null, gender = 'F') => ({
   source_row: 2,
   provided_student_id: id,
-  student: { name, birth_date: birth, mobile_phone: mobile },
+  student: { name, gender, birth_date: birth, mobile_phone: mobile },
   enrollments: [{ season: '第十六季', reg_type: '續', pre_test: null, post_test: null, courses: ['肌力'] }]
 })
 
 describe('classifyImport', () => {
-  it('matches historical text date separators and reports blank-test writes', () => {
+  it('resolves one strict blank-ID match without rewriting the payload', () => {
+    const parsed = { rows: [row(null, 'Ada', '1960/01/01', null, 'F')], warnings: [], errors: [] }
+    const preview = classifyImport(parsed, {
+      students: [{ student_id: '12', name: 'Ada', gender: 'F', birth_date: '1960-01-01' }],
+      enrollments: [{ student_id: '12', season: parsed.rows[0].enrollments[0].season }],
+      tableCounts: { students: 1, enrollments: 1, courses: 0 },
+    })
+
+    expect(preview.hasBlockingErrors).toBe(false)
+    expect(preview.summary).toMatchObject({ oldStudents: 1, newStudents: 0, enrollmentsToUpdate: 1 })
+    expect(preview.studentResolutions).toEqual([
+      { sourceRow: 2, studentName: 'Ada', action: 'update', studentId: '12' },
+    ])
+    expect(preview.payload.rows[0].provided_student_id).toBeNull()
+  })
+
+  it('blocks when a strict blank-ID identity matches multiple students', () => {
+    const parsed = { rows: [row(null, 'Ada', '1960/01/01', null, 'F')], warnings: [], errors: [] }
+    const preview = classifyImport(parsed, {
+      students: [
+        { student_id: '12', name: 'Ada', gender: 'F', birth_date: '1960/01/01' },
+        { student_id: '13', name: 'Ada', gender: 'F', birth_date: '1960-01-01' },
+      ],
+      enrollments: [],
+      tableCounts: { students: 2, enrollments: 0, courses: 0 },
+    })
+
+    expect(preview.hasBlockingErrors).toBe(true)
+    expect(preview.errors).toContainEqual(expect.objectContaining({ row: 2 }))
+  })
+
+  it('treats an incomplete blank-ID identity as a new student', () => {
     const parsed = {
       mode: 'single-season', seasons: ['第十六季'], warnings: [], errors: [],
       rows: [row(null, '王小明', '1960/01/01')]
@@ -19,7 +50,7 @@ describe('classifyImport', () => {
       students: [{ student_id: '12', name: '王小明', birth_date: '1960-01-01', mobile_phone: null }],
       enrollments: [], tableCounts: { students: 1, enrollments: 0, courses: 0 }
     })
-    expect(preview.hasBlockingErrors).toBe(true)
+    expect(preview.hasBlockingErrors).toBe(false)
     expect(preview.summary).toMatchObject({ targetSeason: '第十六季', preTestsCleared: 1, postTestsCleared: 1 })
   })
 
@@ -54,14 +85,14 @@ describe('classifyImport', () => {
     expect(preview.summary).toMatchObject({ oldStudents: 0, newStudents: 1, enrollmentsToInsert: 1 })
   })
 
-  it('blocks suspected duplicate blank-ID students', () => {
+  it('treats an incomplete blank-ID identity as new even when name and birth date match', () => {
     const parsed = { rows: [row(null, '王小明', '1960-01-01')], warnings: [], errors: [] }
     const preview = classifyImport(parsed, {
       students: [{ student_id: '12', name: '王小明', birth_date: '1960-01-01', mobile_phone: null }],
       enrollments: [], tableCounts: { students: 1, enrollments: 0, courses: 0 }
     })
-    expect(preview.hasBlockingErrors).toBe(true)
-    expect(preview.errors).toHaveLength(1)
+    expect(preview.hasBlockingErrors).toBe(false)
+    expect(preview.errors).toHaveLength(0)
   })
 
   it('blocks suspected duplicate blank-ID students within the imported file', () => {
