@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Upload } from 'lucide-react'
 import Swal from 'sweetalert2'
 import withReactContent from 'sweetalert2-react-content'
@@ -60,14 +61,35 @@ export default function ExcelSync({ onSyncComplete }) {
         <span>{isReading ? '讀取中...' : isImporting ? '匯入中...' : '匯入季度 CSV'}</span>
       </button>
       {preview && <ImportPreviewDialog preview={preview} isImporting={isImporting} onConfirm={handleConfirm} onCancel={() => setPreview(null)} />}
-      {assignedIds.length > 0 && (
-        <section className="form-group" aria-label="本次指派的學員編號">
-          <h3>本次指派的學員編號</h3>
-          <ul>
-            {assignedIds.map(({ source_row, student_id }) => <li key={`${source_row}-${student_id}`}>來源第 {source_row} 列：{student_id}</li>)}
-          </ul>
-          <button type="button" className="btn-secondary" onClick={copyAssignedIds} disabled={isImporting}>複製新學員編號</button>
-        </section>
+      {assignedIds.length > 0 && createPortal(
+        <div
+          className="modal-overlay-center"
+          style={{ zIndex: 1200 }}
+          onClick={() => setAssignedIds([])}
+        >
+          <section
+            className="form-modal-content"
+            role="dialog"
+            aria-modal="true"
+            aria-label="本次指派的學員編號"
+            style={{ width: 'min(560px, calc(100vw - 32px))', maxHeight: 'min(70vh, 620px)', display: 'flex', flexDirection: 'column' }}
+            onClick={event => event.stopPropagation()}
+          >
+            <div className="modal-header-centered">
+              <h3>本次指派的學員編號</h3>
+              <button type="button" className="btn-close" aria-label="關閉指派編號結果" onClick={() => setAssignedIds([])}>×</button>
+            </div>
+            <p style={{ margin: '0 0 12px' }}>共 {assignedIds.length} 位新學員，可複製後保存。</p>
+            <ul style={{ overflowY: 'auto', margin: '0', padding: '0 8px 0 24px', flex: 1 }}>
+              {assignedIds.map(({ source_row, student_id }) => <li key={`${source_row}-${student_id}`}>來源第 {source_row} 列：{student_id}</li>)}
+            </ul>
+            <div className="form-footer" style={{ marginTop: '16px' }}>
+              <button type="button" className="btn-secondary" onClick={() => setAssignedIds([])}>關閉</button>
+              <button type="button" className="btn-primary" onClick={copyAssignedIds} disabled={isImporting}>複製新學員編號</button>
+            </div>
+          </section>
+        </div>,
+        document.body
       )}
     </div>
   )

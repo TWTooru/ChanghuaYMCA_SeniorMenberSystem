@@ -73,7 +73,7 @@ describe('ExcelSync', () => {
     fireEvent.change(document.querySelector('input[type="file"]'), { target: { files: [new File(['data'], 'season.csv', { type: 'text/csv' })] } })
     fireEvent.click(await screen.findByRole('button', { name: '確認匯入' }))
 
-    expect(await screen.findByLabelText('本次指派的學員編號')).not.toBeNull()
+    expect(await screen.findByRole('dialog', { name: '本次指派的學員編號' })).not.toBeNull()
     expect(screen.getByText('來源第 2 列：399')).not.toBeNull()
   })
   it('copies newly assigned student IDs and accepts CSV files only', async () => {
