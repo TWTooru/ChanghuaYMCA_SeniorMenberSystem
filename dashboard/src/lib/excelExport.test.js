@@ -53,7 +53,7 @@ describe('excelExport', () => {
   it('aborts early and does not call writeFile if no sheets are included', () => {
     vi.clearAllMocks()
     // Mock the sheet list length to 0 to simulate empty workbook
-    const originalSheetNames = XLSX.utils.book_new().SheetNames
+    const _originalSheetNames = XLSX.utils.book_new().SheetNames
     XLSX.utils.book_new.mockImplementationOnce(() => ({ SheetNames: [] }))
     
     exportToExcel([], [], [], 'export.xlsx', {

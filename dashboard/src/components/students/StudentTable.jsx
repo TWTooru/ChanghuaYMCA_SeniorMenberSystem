@@ -11,7 +11,7 @@ import {
 
 export default function StudentTable({
   students,
-  enrollments,
+  _enrollments,
   sortOrder,
   onToggleSort,
   onSelectStudent,
