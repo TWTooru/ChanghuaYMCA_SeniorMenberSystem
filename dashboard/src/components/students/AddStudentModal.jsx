@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { X } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { EDUCATION_OPTIONS } from '../../domain/studentFields'
 import { createStudent } from '../../services/studentService'
+import { STUDENT_ID_VALIDATION_MESSAGE, normalizeStudentId } from '../../domain/studentIdentity'
 import '../common/common.css'
 
 export default function AddStudentModal({ students, onClose, onRefresh }) {
@@ -12,21 +13,20 @@ export default function AddStudentModal({ students, onClose, onRefresh }) {
     relationship: '', emergency_contact_phone: '', education: '大專/大學', occupation: ''
   });
 
-  const suggestNextStudentId = () => {
-    if (!students || students.length === 0) return 1;
-    let maxNum = 0;
-    students.forEach(s => {
-      const num = parseInt(s.student_id, 10);
-      if (!isNaN(num) && num > maxNum) {
-        maxNum = num;
-      }
-    });
-    return maxNum + 1;
-  };
+  const suggestNextStudentId = useCallback(() => {
+    let maximum = 0n;
+    for (const student of students || []) {
+      try {
+        const value = BigInt(normalizeStudentId(student.student_id));
+        if (value > maximum) maximum = value;
+      } catch { /* Existing legacy IDs are intentionally ignored. */ }
+    }
+    return String(maximum + 1n);
+  }, [students]);
 
   useEffect(() => {
     setNewStudent(prev => ({ ...prev, student_id: suggestNextStudentId() }));
-  }, [students]);
+  }, [suggestNextStudentId]);
 
   const handleBirthDateChange = (val) => {
     let calculatedAge = '';
@@ -46,7 +46,14 @@ export default function AddStudentModal({ students, onClose, onRefresh }) {
 
   const handleAddStudentSubmit = (e) => {
     e.preventDefault();
-    if (!newStudent.student_id || !newStudent.name) {
+    let normalizedStudentId;
+    try {
+      normalizedStudentId = normalizeStudentId(newStudent.student_id);
+    } catch {
+      alert(STUDENT_ID_VALIDATION_MESSAGE);
+      return;
+    }
+    if (!String(newStudent.name || '').trim()) {
       alert("學員 ID 與姓名為必填欄位！");
       return;
     }
@@ -54,6 +61,8 @@ export default function AddStudentModal({ students, onClose, onRefresh }) {
     const ageParsed = newStudent.age ? parseInt(newStudent.age, 10) : null;
     const bodyData = {
       ...newStudent,
+      student_id: normalizedStudentId,
+      name: String(newStudent.name).trim(),
       age: ageParsed,
       is_60_plus: (ageParsed && ageParsed >= 60) ? '是' : '否'
     };
