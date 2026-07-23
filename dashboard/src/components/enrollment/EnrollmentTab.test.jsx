@@ -62,7 +62,7 @@ describe('EnrollmentTab', () => {
     expect(onSelectStudent).not.toHaveBeenCalled()
   })
 
-  it('renders pre-test and post-test scores in the history table', () => {
+  it('renders the simplified history columns with courses before refund status', () => {
     const { container } = render(
       <EnrollmentTab
         students={[{ student_id: '1', name: 'Student One' }]}
@@ -99,10 +99,15 @@ describe('EnrollmentTab', () => {
 
     expect(table.className).toBe('data-table')
     expect(historyTable.getAllByRole('columnheader').map(header => header.textContent)).toEqual([
-      '學員ID', '姓名', '修課期別', '新/續', '前測分數', '後測分數', '退費狀態', '選修課程'
+      '學員ID', '姓名', '修課期別', '新/續', '選修課程', '退費狀態'
     ])
-    expect(historyTable.getByText('Pre-test: 8')).not.toBeNull()
-    expect(historyTable.getByText('Post-test: 5')).not.toBeNull()
+    expect(historyTable.queryByText('Pre-test: 8')).toBeNull()
+    expect(historyTable.queryByText('Post-test: 5')).toBeNull()
+
+    const firstEnrollmentCells = within(historyTable.getAllByRole('row')[1]).getAllByRole('cell')
+    expect(firstEnrollmentCells.map(cell => cell.textContent)).toEqual([
+      '1', 'Student One', 'Season A', 'New', 'Course A', '已退費'
+    ])
   })
 
   it('spans all history columns for an empty enrollment state', () => {
@@ -114,7 +119,7 @@ describe('EnrollmentTab', () => {
       />
     )
 
-    expect(screen.getByText('未找到選課歷程。').getAttribute('colspan')).toBe('8')
+    expect(screen.getByText('未找到選課歷程。').getAttribute('colspan')).toBe('6')
   })
 
   it('jumps directly between the first and last enrollment pages', () => {
