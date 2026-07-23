@@ -92,4 +92,13 @@ describe('data import service', () => {
     await expect(commitImport({ hasBlockingErrors: false, payload }, client)).resolves.toEqual({ students_inserted: 1 })
     expect(client.rpc).toHaveBeenCalledWith('import_season_data', { p_payload: payload })
   })
+
+  it.each([
+    ['ROW_4:INVALID_STUDENT_ID', /第 4 列.*學員 ID/],
+    ['ROW_5:AMBIGUOUS_STUDENT_MATCH', /第 5 列.*多位學生/],
+    ['ROW_3:DUPLICATE_IMPORT_IDENTITY:2', /第 3 列.*第 2 列/],
+  ])('maps import RPC error %s', async (message, expected) => {
+    const client = { rpc: vi.fn().mockResolvedValue({ data: null, error: { message } }) }
+    await expect(commitImport({ hasBlockingErrors: false, payload: { mode: 'single-season', rows: [] } }, client)).rejects.toThrow(expected)
+  })
 })

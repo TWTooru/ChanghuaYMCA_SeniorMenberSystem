@@ -3,6 +3,17 @@ import { parseQuarterCsvRows } from '../domain/quarterCsvImport'
 import { supabase } from '../lib/supabaseClient'
 import { loadImportPreview } from './importPreviewService'
 
+export function mapImportError(error) {
+  const message = error?.message || String(error || '')
+  let match = message.match(/ROW_(\d+):INVALID_STUDENT_ID/)
+  if (match) return new Error(`第 ${match[1]} 列：學員 ID 必須是大於 0 的整數`)
+  match = message.match(/ROW_(\d+):AMBIGUOUS_STUDENT_MATCH/)
+  if (match) return new Error(`第 ${match[1]} 列：姓名、性別與出生日期對應多位學生，請先處理資料`)
+  match = message.match(/ROW_(\d+):DUPLICATE_IMPORT_IDENTITY:(\d+)/)
+  if (match) return new Error(`第 ${match[1]} 列：與來源第 ${match[2]} 列為重複學生`)
+  return error
+}
+
 export async function prepareImport(file, client = supabase) {
   if (!file?.name?.toLowerCase().endsWith('.csv')) throw new Error('只接受 CSV 檔案')
   if (file.size > 5 * 1024 * 1024) throw new Error('CSV 檔案不可超過 5 MiB')
@@ -29,7 +40,7 @@ export async function commitImport(preview, client = supabase) {
   if (preview.hasBlockingErrors) throw new Error('匯入資料仍有錯誤，無法寫入')
 
   const { data, error } = await client.rpc('import_season_data', { p_payload: preview.payload })
-  if (error) throw error
+  if (error) throw mapImportError(error)
 
   return data
 }

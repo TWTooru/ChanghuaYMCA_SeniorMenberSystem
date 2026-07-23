@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createStudent, updateStudent, deleteStudent } from './studentService'
 
 describe('createStudent', () => {
@@ -33,9 +33,24 @@ describe('createStudent', () => {
 })
 
 describe('updateStudent', () => {
+  it('updates a complete profile through the atomic RPC', async () => {
+    const updated = { student_id: '12', name: 'Ada' }
+    const client = { rpc: vi.fn().mockResolvedValue({ data: updated, error: null }) }
+
+    await expect(updateStudent(client, 'S-001', updated)).resolves.toEqual(updated)
+    expect(client.rpc).toHaveBeenCalledWith('update_student_profile', {
+      p_original_id: 'S-001',
+      p_student: updated,
+    })
+  })
   it('updates a student by student_id', async () => {
     const calls = []
     const client = {
+      rpc(_name, args) {
+        calls.push({ op: 'update', payload: args.p_student })
+        calls.push({ op: 'eq', col: 'student_id', val: args.p_original_id })
+        return Promise.resolve({ data: null, error: null })
+      },
       from(table) {
         calls.push(table)
         return {
@@ -59,6 +74,7 @@ describe('updateStudent', () => {
 
   it('throws when update fails', async () => {
     const client = {
+      rpc: async () => ({ data: null, error: new Error('update denied') }),
       from() {
         return {
           update() {
