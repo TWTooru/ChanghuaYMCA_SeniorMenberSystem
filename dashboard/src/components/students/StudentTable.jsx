@@ -1,5 +1,13 @@
 import { useMemo } from 'react'
-import { ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
+} from 'lucide-react'
 
 export default function StudentTable({
   students,
@@ -118,6 +126,17 @@ export default function StudentTable({
           顯示第 {totalFilteredCount > 0 ? (studentPage - 1) * itemsPerPage + 1 : 0} 至 {Math.min(studentPage * itemsPerPage, totalFilteredCount)} 筆學員（共 {totalFilteredCount} 筆）
         </div>
         <div className="pagination-buttons">
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => onPageChange(1)}
+            disabled={studentPage === 1}
+            id="btn-student-first"
+            aria-label="頝唾???"
+            title="頝唾???"
+          >
+            <ChevronsLeft size={16} style={{ display: 'block' }} />
+          </button>
           <button 
             type="button"
             className="btn-secondary"
@@ -173,6 +192,17 @@ export default function StudentTable({
             id="btn-student-next"
           >
             <ChevronRight size={16} style={{ display: 'block' }} />
+          </button>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => onPageChange(totalStudentPages)}
+            disabled={studentPage === totalStudentPages}
+            id="btn-student-last"
+            aria-label="頝唾?撠暸?"
+            title="頝唾?撠暸?"
+          >
+            <ChevronsRight size={16} style={{ display: 'block' }} />
           </button>
         </div>
       </div>
