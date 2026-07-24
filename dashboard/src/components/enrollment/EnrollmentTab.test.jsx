@@ -62,7 +62,7 @@ describe('EnrollmentTab', () => {
     expect(onSelectStudent).not.toHaveBeenCalled()
   })
 
-  it('renders the simplified history columns with courses before refund status', () => {
+  it('renders the compact history columns and read-only billing values', () => {
     const { container } = render(
       <EnrollmentTab
         students={[{ student_id: '1', name: 'Student One' }]}
@@ -76,6 +76,8 @@ describe('EnrollmentTab', () => {
             pre_test: 'Pre-test: 8',
             post_test: 'Post-test: 5',
             refunded: true,
+            amount: 1200,
+            invoice_number: 'AB12345678',
             courses: ['Course A']
           },
           {
@@ -87,7 +89,19 @@ describe('EnrollmentTab', () => {
             pre_test: '',
             post_test: '',
             refunded: false,
+            amount: 0,
+            invoice_number: '',
             courses: ['Course B']
+          },
+          {
+            enrollment_id: 15,
+            student_id: '1',
+            student_name: 'Student One',
+            season: 'Season C',
+            refunded: false,
+            amount: null,
+            invoice_number: null,
+            courses: ['Course C']
           }
         ]}
         onSelectStudent={vi.fn()}
@@ -99,15 +113,46 @@ describe('EnrollmentTab', () => {
 
     expect(table.className).toBe('data-table')
     expect(historyTable.getAllByRole('columnheader').map(header => header.textContent)).toEqual([
-      '學員ID', '姓名', '修課期別', '新/續', '選修課程', '退費狀態'
+      '姓名', '季別', '課程', '退費狀況', '金額', '發票編號'
     ])
     expect(historyTable.queryByText('Pre-test: 8')).toBeNull()
     expect(historyTable.queryByText('Post-test: 5')).toBeNull()
 
-    const firstEnrollmentCells = within(historyTable.getAllByRole('row')[1]).getAllByRole('cell')
-    expect(firstEnrollmentCells.map(cell => cell.textContent)).toEqual([
-      '1', 'Student One', 'Season A', 'New', 'Course A', '已退費'
+    expect(historyTable.queryByText('New')).toBeNull()
+    expect(historyTable.queryByText('Returning')).toBeNull()
+
+    const rows = historyTable.getAllByRole('row')
+    expect(within(rows[1]).getAllByRole('cell').map(cell => cell.textContent)).toEqual([
+      'Student One', 'Season A', 'Course A', '已退費', 'NT$ 1200', 'AB12345678'
     ])
+    expect(within(rows[2]).getAllByRole('cell').map(cell => cell.textContent)).toEqual([
+      'Student One', 'Season B', 'Course B', '正常', 'NT$ 0', '--'
+    ])
+    expect(within(rows[3]).getAllByRole('cell').map(cell => cell.textContent)).toEqual([
+      'Student One', 'Season C', 'Course C', '正常', '--', '--'
+    ])
+  })
+
+  it('keeps name/course, season, and refund filters without a registration filter', () => {
+    render(
+      <EnrollmentTab students={[]} enrollments={[
+        { enrollment_id: 21, student_id: '1', student_name: 'Alice', season: 'Season A', reg_type: 'New', refunded: false, courses: ['Course A'] },
+        { enrollment_id: 22, student_id: '2', student_name: 'Bob', season: 'Season B', reg_type: 'Returning', refunded: true, courses: ['Phone Course'] }
+      ]} onSelectStudent={vi.fn()} />
+    )
+
+    expect(screen.queryByLabelText('新/續生')).toBeNull()
+    fireEvent.change(screen.getByLabelText('搜尋姓名或課程'), { target: { value: 'Phone' } })
+    expect(screen.getByText('Bob')).not.toBeNull()
+    expect(screen.queryByText('Alice')).toBeNull()
+    fireEvent.change(screen.getByLabelText('搜尋姓名或課程'), { target: { value: '' } })
+    fireEvent.change(screen.getByLabelText('篩選季別'), { target: { value: 'Season A' } })
+    expect(screen.getByText('Alice')).not.toBeNull()
+    expect(screen.queryByText('Bob')).toBeNull()
+    fireEvent.change(screen.getByLabelText('篩選季別'), { target: { value: '' } })
+    fireEvent.change(screen.getByLabelText('退費狀況'), { target: { value: 'refunded' } })
+    expect(screen.getByText('Bob')).not.toBeNull()
+    expect(screen.queryByText('Alice')).toBeNull()
   })
 
   it('spans all history columns for an empty enrollment state', () => {

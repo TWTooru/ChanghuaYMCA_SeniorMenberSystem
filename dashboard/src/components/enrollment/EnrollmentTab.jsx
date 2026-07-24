@@ -12,7 +12,6 @@ import './enrollment.css'
 export default function EnrollmentTab({ students, enrollments, onSelectStudent }) {
   const [historySearch, setHistorySearch] = useState('')
   const [historySeasonFilter, setHistorySeasonFilter] = useState('')
-  const [historyRegFilter, setHistoryRegFilter] = useState('')
   const [historyRefundFilter, setHistoryRefundFilter] = useState('')
   const [historyPage, setHistoryPage] = useState(1)
   const itemsPerPage = 10
@@ -26,13 +25,12 @@ export default function EnrollmentTab({ students, enrollments, onSelectStudent }
   const filteredHistory = useMemo(() => {
     if (!enrollments) return []
     return enrollments.filter(e => {
-      const matchesSearch = 
-        e.student_name.toLowerCase().includes(historySearch.toLowerCase()) ||
-        String(e.student_id).toLowerCase().includes(historySearch.toLowerCase()) ||
-        e.courses.some(c => c.toLowerCase().includes(historySearch.toLowerCase()))
+      const normalizedSearch = historySearch.toLowerCase()
+      const matchesSearch =
+        e.student_name.toLowerCase().includes(normalizedSearch) ||
+        e.courses.some(c => c.toLowerCase().includes(normalizedSearch))
       
       const matchesSeason = historySeasonFilter === '' || e.season === historySeasonFilter
-      const matchesReg = historyRegFilter === '' || e.reg_type === historyRegFilter
       
       let matchesRefund = true
       if (historyRefundFilter !== '') {
@@ -40,9 +38,9 @@ export default function EnrollmentTab({ students, enrollments, onSelectStudent }
         else if (historyRefundFilter === 'normal') matchesRefund = !e.refunded
       }
       
-      return matchesSearch && matchesSeason && matchesReg && matchesRefund
+      return matchesSearch && matchesSeason && matchesRefund
     })
-  }, [enrollments, historySearch, historySeasonFilter, historyRegFilter, historyRefundFilter])
+  }, [enrollments, historySearch, historySeasonFilter, historyRefundFilter])
 
   const paginatedHistory = useMemo(() => {
     const startIndex = (historyPage - 1) * itemsPerPage
@@ -56,14 +54,14 @@ export default function EnrollmentTab({ students, enrollments, onSelectStudent }
       {/* Filters panel */}
       <div className="filters-panel">
         <div className="filter-group">
-          <label className="filter-label" htmlFor="history-search">檢索姓名與選修課程</label>
+          <label className="filter-label" htmlFor="history-search">搜尋姓名或課程</label>
           <div className="search-input-wrapper">
             <Search size={16} className="search-icon" />
             <input 
               type="text" 
               id="history-search" 
               className="search-input" 
-              placeholder="輸入姓名、ID或課程名稱搜尋..." 
+              placeholder="輸入姓名或課程名稱搜尋..."
               value={historySearch}
               onChange={(e) => {
                 setHistorySearch(e.target.value)
@@ -73,7 +71,7 @@ export default function EnrollmentTab({ students, enrollments, onSelectStudent }
           </div>
         </div>
         <div className="filter-group">
-          <label className="filter-label" htmlFor="history-season">篩選修課期別</label>
+          <label className="filter-label" htmlFor="history-season">篩選季別</label>
           <select 
             id="history-season" 
             className="select-input"
@@ -90,23 +88,7 @@ export default function EnrollmentTab({ students, enrollments, onSelectStudent }
           </select>
         </div>
         <div className="filter-group">
-          <label className="filter-label" htmlFor="history-reg">新/續生</label>
-          <select 
-            id="history-reg" 
-            className="select-input"
-            value={historyRegFilter}
-            onChange={(e) => {
-              setHistoryRegFilter(e.target.value)
-              setHistoryPage(1)
-            }}
-          >
-            <option value="">全部</option>
-            <option value="新">新</option>
-            <option value="續">續</option>
-          </select>
-        </div>
-        <div className="filter-group">
-          <label className="filter-label" htmlFor="history-refund">退費狀態</label>
+          <label className="filter-label" htmlFor="history-refund">退費狀況</label>
           <select 
             id="history-refund" 
             className="select-input"
@@ -129,12 +111,12 @@ export default function EnrollmentTab({ students, enrollments, onSelectStudent }
           <table className="data-table">
             <thead>
               <tr>
-                <th>學員ID</th>
                 <th>姓名</th>
-                <th>修課期別</th>
-                <th>新/續</th>
-                <th>選修課程</th>
-                <th>退費狀態</th>
+                <th>季別</th>
+                <th>課程</th>
+                <th>退費狀況</th>
+                <th>金額</th>
+                <th>發票編號</th>
               </tr>
             </thead>
             <tbody>
@@ -148,16 +130,8 @@ export default function EnrollmentTab({ students, enrollments, onSelectStudent }
                       if (student && onSelectStudent) onSelectStudent(student)
                     }}
                   >
-                    <td className="table-cell-bold">{e.student_id}</td>
                     <td className="table-cell-bold">{e.student_name}</td>
                     <td>{e.season}</td>
-                    <td>
-                      {e.reg_type ? (
-                        <span className={`badge ${e.reg_type === '新' ? 'success' : 'neutral'}`}>
-                          {e.reg_type}
-                        </span>
-                      ) : '--'}
-                    </td>
                     <td>
                       <div className="timeline-courses">
                         {e.courses.map(c => (
@@ -170,6 +144,8 @@ export default function EnrollmentTab({ students, enrollments, onSelectStudent }
                         {e.refunded ? '已退費' : '正常'}
                       </span>
                     </td>
+                    <td>{e.amount == null ? '--' : `NT$ ${e.amount}`}</td>
+                    <td>{e.invoice_number || '--'}</td>
                   </tr>
                 ))
               ) : (

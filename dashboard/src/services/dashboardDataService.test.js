@@ -32,6 +32,8 @@ describe('fetchDashboardData', () => {
             student_id: '1',
             season: '第十五季',
             refunded: 0,
+            amount: 1200,
+            invoice_number: 'AB12345678',
             courses: [{ course_name: '肌力訓練' }, { course_name: '北歐健走' }]
           },
           {
@@ -57,6 +59,8 @@ describe('fetchDashboardData', () => {
           student_id: '1',
           season: '第十五季',
           refunded: false,
+          amount: 1200,
+          invoice_number: 'AB12345678',
           student_name: '王小明',
           courses: ['肌力訓練', '北歐健走']
         },
