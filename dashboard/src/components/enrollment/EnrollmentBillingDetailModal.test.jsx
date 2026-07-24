@@ -77,7 +77,7 @@ describe('EnrollmentBillingDetailModal', () => {
 
     fireEvent.change(screen.getByLabelText('Amount'), { target: { value: '1500' } })
     fireEvent.change(screen.getByLabelText('Invoice number'), { target: { value: ' CD87654321 ' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Save billing' }))
+    fireEvent.click(screen.getByRole('button', { name: '儲存收費資料' }))
 
     await screen.findByText('Billing saved')
     expect(updateEnrollmentBilling).toHaveBeenCalledWith(
@@ -106,7 +106,7 @@ describe('EnrollmentBillingDetailModal', () => {
     )
 
     fireEvent.change(screen.getByLabelText('Amount'), { target: { value: '1600' } })
-    const saveButton = screen.getByRole('button', { name: 'Save billing' })
+    const saveButton = screen.getByRole('button', { name: '儲存收費資料' })
     fireEvent.click(saveButton)
     fireEvent.click(saveButton)
 

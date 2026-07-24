@@ -118,7 +118,7 @@ export default function EnrollmentBillingDetailModal({
             {permissions.canEditEnrollment && (
               <div className="enrollment-billing-actions">
                 <button type="submit" className="btn-primary" disabled={isSaving}>
-                  {isSaving ? 'Saving…' : 'Save billing'}
+                  {isSaving ? '儲存中…' : '儲存收費資料'}
                 </button>
               </div>
             )}
