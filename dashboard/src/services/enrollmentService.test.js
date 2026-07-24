@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { createEnrollmentWithCourses } from './enrollmentService'
+import {
+  createEnrollmentWithCourses,
+  deleteEnrollment,
+  normalizeEnrollmentBilling,
+  updateEnrollmentBilling,
+} from './enrollmentService'
 
 describe('createEnrollmentWithCourses', () => {
   it('inserts an enrollment and split course rows', async () => {
@@ -167,8 +172,6 @@ describe('createEnrollmentWithCourses', () => {
   })
 })
 
-import { deleteEnrollment } from './enrollmentService'
-
 describe('deleteEnrollment', () => {
   it('deletes an enrollment by enrollment_id (DB cascade handles courses)', async () => {
     const calls = []
@@ -208,5 +211,76 @@ describe('deleteEnrollment', () => {
     }
 
     await expect(deleteEnrollment(client, 1)).rejects.toThrow('delete denied')
+  })
+})
+
+describe('normalizeEnrollmentBilling', () => {
+  it.each([
+    [{ amount: '', invoice_number: '  ' }, { amount: null, invoice_number: null }],
+    [{ amount: '0', invoice_number: ' AB12345678 ' }, { amount: 0, invoice_number: 'AB12345678' }],
+    [{ amount: '1200', invoice_number: 'CD87654321' }, { amount: 1200, invoice_number: 'CD87654321' }],
+  ])('normalizes billing values', (input, expected) => {
+    expect(normalizeEnrollmentBilling(input)).toEqual(expected)
+  })
+
+  it.each(['-1', '1.5', 'abc', '9007199254740992'])('rejects invalid amount %s', amount => {
+    expect(() => normalizeEnrollmentBilling({ amount, invoice_number: '' }))
+      .toThrow('金額必須為 0 或正整數')
+  })
+})
+
+describe('updateEnrollmentBilling', () => {
+  it('updates only normalized billing fields', async () => {
+    const calls = []
+    const client = {
+      from(table) {
+        calls.push({ table })
+        return {
+          update(payload) {
+            calls.push({ payload })
+            return {
+              eq: async (column, value) => {
+                calls.push({ column, value })
+                return { error: null }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    await expect(updateEnrollmentBilling(client, 42, {
+      amount: '1200',
+      invoice_number: ' AB12345678 ',
+      season: 'must not be sent',
+    })).resolves.toEqual({
+      amount: 1200,
+      invoice_number: 'AB12345678',
+    })
+
+    expect(calls).toEqual([
+      { table: 'enrollments' },
+      { payload: { amount: 1200, invoice_number: 'AB12345678' } },
+      { column: 'enrollment_id', value: 42 },
+    ])
+  })
+
+  it('throws the Supabase update error', async () => {
+    const client = {
+      from() {
+        return {
+          update() {
+            return {
+              eq: async () => ({ error: new Error('update denied') })
+            }
+          }
+        }
+      }
+    }
+
+    await expect(updateEnrollmentBilling(client, 42, {
+      amount: '',
+      invoice_number: '',
+    })).rejects.toThrow('update denied')
   })
 })

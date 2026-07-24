@@ -48,3 +48,35 @@ export async function deleteEnrollment(client, enrollmentId) {
   if (error) throw error
 }
 
+export function normalizeEnrollmentBilling({ amount, invoice_number }) {
+  const normalizedAmountText = String(amount ?? '').trim()
+  const normalizedInvoiceNumber = String(invoice_number ?? '').trim()
+
+  let normalizedAmount = null
+  if (normalizedAmountText !== '') {
+    if (!/^\d+$/.test(normalizedAmountText)) {
+      throw new Error('金額必須為 0 或正整數')
+    }
+    normalizedAmount = Number(normalizedAmountText)
+    if (!Number.isSafeInteger(normalizedAmount)) {
+      throw new Error('金額必須為 0 或正整數')
+    }
+  }
+
+  return {
+    amount: normalizedAmount,
+    invoice_number: normalizedInvoiceNumber || null,
+  }
+}
+
+export async function updateEnrollmentBilling(client, enrollmentId, billing) {
+  const payload = normalizeEnrollmentBilling(billing)
+  const { error } = await client
+    .from('enrollments')
+    .update(payload)
+    .eq('enrollment_id', enrollmentId)
+
+  if (error) throw error
+  return payload
+}
+
