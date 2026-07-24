@@ -1,0 +1,61 @@
+.enrollment-billing-dialog {
+  width: min(760px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+}
+
+.enrollment-billing-subtitle {
+  margin-top: 4px;
+  color: var(--text-secondary);
+}
+
+.enrollment-billing-body {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.enrollment-billing-context {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.enrollment-billing-form,
+.enrollment-billing-student {
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.enrollment-billing-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.enrollment-billing-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.enrollment-billing-message {
+  margin-top: 12px;
+  font-size: 13px;
+}
+
+.enrollment-billing-message.error {
+  color: var(--color-danger);
+}
+
+.enrollment-billing-message.success {
+  color: var(--color-success);
+}
+
+@media (max-width: 640px) {
+  .enrollment-billing-fields {
+    grid-template-columns: 1fr;
+  }
+}
