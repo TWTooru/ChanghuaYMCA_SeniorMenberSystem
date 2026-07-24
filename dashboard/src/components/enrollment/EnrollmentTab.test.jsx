@@ -10,7 +10,7 @@ describe('EnrollmentTab', () => {
       { student_id: '1', name: '王小明' },
       { student_id: '2', name: '王小明' }
     ]
-    const onSelectStudent = vi.fn()
+    const onSelectEnrollment = vi.fn()
 
     render(
       <EnrollmentTab
@@ -26,18 +26,38 @@ describe('EnrollmentTab', () => {
             courses: ['手機課']
           }
         ]}
-        onSelectStudent={onSelectStudent}
+        onSelectEnrollment={onSelectEnrollment}
       />
     )
 
     fireEvent.click(screen.getByText('手機課').closest('tr'))
 
-    expect(onSelectStudent).toHaveBeenCalledOnce()
-    expect(onSelectStudent).toHaveBeenCalledWith(students[1])
+    expect(onSelectEnrollment).toHaveBeenCalledOnce()
+    expect(onSelectEnrollment).toHaveBeenCalledWith(students[1], expect.objectContaining({ enrollment_id: 11 }))
+  })
+
+  it('reports the exact enrollment selected for the matched student', () => {
+    const students = [{ student_id: '1', name: 'Student One' }]
+    const enrollment = {
+      enrollment_id: 99,
+      student_id: '1',
+      student_name: 'Student One',
+      season: 'Season A',
+      refunded: false,
+      courses: ['Course A'],
+    }
+    const onSelectEnrollment = vi.fn()
+
+    render(<EnrollmentTab students={students} enrollments={[enrollment]} onSelectEnrollment={onSelectEnrollment} />)
+
+    fireEvent.click(screen.getByText('Course A').closest('tr'))
+
+    expect(onSelectEnrollment).toHaveBeenCalledOnce()
+    expect(onSelectEnrollment).toHaveBeenCalledWith(students[0], enrollment)
   })
 
   it('does not open another student when an enrollment student_id is missing', () => {
-    const onSelectStudent = vi.fn()
+    const onSelectEnrollment = vi.fn()
 
     render(
       <EnrollmentTab
@@ -53,13 +73,13 @@ describe('EnrollmentTab', () => {
             courses: ['肌力課']
           }
         ]}
-        onSelectStudent={onSelectStudent}
+        onSelectEnrollment={onSelectEnrollment}
       />
     )
 
     fireEvent.click(screen.getByText('肌力課').closest('tr'))
 
-    expect(onSelectStudent).not.toHaveBeenCalled()
+    expect(onSelectEnrollment).not.toHaveBeenCalled()
   })
 
   it('renders the compact history columns and read-only billing values', () => {
@@ -104,7 +124,7 @@ describe('EnrollmentTab', () => {
             courses: ['Course C']
           }
         ]}
-        onSelectStudent={vi.fn()}
+        onSelectEnrollment={vi.fn()}
       />
     )
 
@@ -138,7 +158,7 @@ describe('EnrollmentTab', () => {
       <EnrollmentTab students={[]} enrollments={[
         { enrollment_id: 21, student_id: '1', student_name: 'Alice', season: 'Season A', reg_type: 'New', refunded: false, courses: ['Course A'] },
         { enrollment_id: 22, student_id: '2', student_name: 'Bob', season: 'Season B', reg_type: 'Returning', refunded: true, courses: ['Phone Course'] }
-      ]} onSelectStudent={vi.fn()} />
+      ]} onSelectEnrollment={vi.fn()} />
     )
 
     expect(screen.queryByLabelText('新/續生')).toBeNull()
@@ -160,7 +180,7 @@ describe('EnrollmentTab', () => {
       <EnrollmentTab
         students={[]}
         enrollments={[]}
-        onSelectStudent={vi.fn()}
+        onSelectEnrollment={vi.fn()}
       />
     )
 
@@ -184,7 +204,7 @@ describe('EnrollmentTab', () => {
       <EnrollmentTab
         students={[]}
         enrollments={enrollments}
-        onSelectStudent={vi.fn()}
+        onSelectEnrollment={vi.fn()}
       />
     )
 

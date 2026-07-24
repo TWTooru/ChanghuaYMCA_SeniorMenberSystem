@@ -9,6 +9,7 @@ import useStudentSelection from './hooks/useStudentSelection'
 import OverviewTab from './components/overview/OverviewTab'
 import StudentListTab from './components/students/StudentListTab'
 import EnrollmentTab from './components/enrollment/EnrollmentTab'
+import EnrollmentBillingDetailModal from './components/enrollment/EnrollmentBillingDetailModal'
 import StudentDetailModal from './components/students/StudentDetailModal'
 import AddStudentModal from './components/students/AddStudentModal'
 import AddEnrollModal from './components/enrollment/AddEnrollModal'
@@ -30,6 +31,7 @@ function AuthenticatedDashboard() {
   const [showAddStudentModal, setShowAddStudentModal] = useState(false)
   const [showAddEnrollModal, setShowAddEnrollModal] = useState(false)
   const [showExportModal, setShowExportModal] = useState(false)
+  const [selectedBillingRecord, setSelectedBillingRecord] = useState(null)
   const [refreshCount, setRefreshCount] = useState(0)
 
   useEffect(() => {
@@ -38,6 +40,12 @@ function AuthenticatedDashboard() {
 
   const { dbData, dbStatus, dbError } = useApiData(session, refreshCount)
   const { students, enrollments } = dbData
+  const selectedBillingStudent = selectedBillingRecord
+    ? students.find(student => String(student.student_id) === String(selectedBillingRecord.studentId))
+    : null
+  const selectedBillingEnrollment = selectedBillingRecord
+    ? enrollments.find(enrollment => String(enrollment.enrollment_id) === String(selectedBillingRecord.enrollmentId))
+    : null
 
   const stats = useStats(students, enrollments)
   const handleExport = useExportHandler(students, enrollments)
@@ -107,7 +115,12 @@ function AuthenticatedDashboard() {
           <EnrollmentTab 
             students={students} 
             enrollments={enrollments} 
-            onSelectStudent={openStudentDetail}
+            onSelectEnrollment={(student, enrollment) => {
+              setSelectedBillingRecord({
+                studentId: student.student_id,
+                enrollmentId: enrollment.enrollment_id,
+              })
+            }}
           />
         )}
         {activeTab === 'admin' && role === 'admin' && <AdminAccountPage />}
@@ -116,6 +129,15 @@ function AuthenticatedDashboard() {
       <footer className="app-footer">
         <p>© 2026 YMCA 樂齡健康活力中心 學員資訊管理系統 - 本系統供行政查詢與分析統計使用</p>
       </footer>
+
+      {selectedBillingStudent && selectedBillingEnrollment && (
+        <EnrollmentBillingDetailModal
+          student={selectedBillingStudent}
+          enrollment={selectedBillingEnrollment}
+          onClose={() => setSelectedBillingRecord(null)}
+          onRefresh={handleRefresh}
+        />
+      )}
 
       {selectedStudent && (
         <StudentDetailModal 

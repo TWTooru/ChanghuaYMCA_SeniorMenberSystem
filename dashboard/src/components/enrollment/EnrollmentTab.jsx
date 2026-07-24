@@ -9,7 +9,7 @@ import {
 import { getStudentById } from '../../domain/studentRelations'
 import './enrollment.css'
 
-export default function EnrollmentTab({ students, enrollments, onSelectStudent }) {
+export default function EnrollmentTab({ students, enrollments, onSelectEnrollment }) {
   const [historySearch, setHistorySearch] = useState('')
   const [historySeasonFilter, setHistorySeasonFilter] = useState('')
   const [historyRefundFilter, setHistoryRefundFilter] = useState('')
@@ -127,7 +127,7 @@ export default function EnrollmentTab({ students, enrollments, onSelectStudent }
                     className="clickable"
                     onClick={() => {
                       const student = getStudentById(students, e.student_id)
-                      if (student && onSelectStudent) onSelectStudent(student)
+                      if (student && onSelectEnrollment) onSelectEnrollment(student, e)
                     }}
                   >
                     <td className="table-cell-bold">{e.student_name}</td>

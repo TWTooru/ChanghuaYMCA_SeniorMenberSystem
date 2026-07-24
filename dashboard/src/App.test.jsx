@@ -9,6 +9,7 @@ let apiData = {
 }
 const apiDataSpy = vi.fn(() => apiData)
 const studentDetailModalSpy = vi.hoisted(() => vi.fn())
+const billingDetailModalSpy = vi.hoisted(() => vi.fn())
 
 const signOut = vi.fn()
 const authState = {
@@ -34,7 +35,19 @@ vi.mock('./components/students/StudentListTab', () => ({
     ? <button type="button" onClick={() => onSelectStudent(students[0], 'profile')}>open first student</button>
     : null,
 }))
-vi.mock('./components/enrollment/EnrollmentTab', () => ({ default: () => null }))
+vi.mock('./components/enrollment/EnrollmentTab', () => ({
+  default: ({ students, enrollments, onSelectEnrollment }) => (
+    students[0] && enrollments[0]
+      ? <button type="button" onClick={() => onSelectEnrollment(students[0], enrollments[0])}>open billing detail</button>
+      : null
+  ),
+}))
+vi.mock('./components/enrollment/EnrollmentBillingDetailModal', () => ({
+  default: ({ student, enrollment, onClose }) => {
+    billingDetailModalSpy({ student, enrollment })
+    return <div data-testid="billing-detail-modal">{student.name}:{enrollment.enrollment_id}<button type="button" onClick={onClose}>close billing detail</button></div>
+  },
+}))
 vi.mock('./components/students/StudentDetailModal', () => ({
   default: ({ student }) => {
     studentDetailModalSpy(student)
@@ -59,6 +72,7 @@ describe('App header access controls', () => {
     signOut.mockClear()
     apiDataSpy.mockClear()
     studentDetailModalSpy.mockClear()
+    billingDetailModalSpy.mockClear()
     apiData = {
       dbData: { students: [], enrollments: [] },
       dbStatus: 'connected',
@@ -164,5 +178,22 @@ describe('App header access controls', () => {
 
     expect(screen.getByTestId('student-detail-modal').textContent).toBe('王大明')
     expect(studentDetailModalSpy).toHaveBeenLastCalledWith(refreshedStudent)
+  })
+
+  it('opens the exact enrollment billing detail independently from student detail', () => {
+    const student = { student_id: '1', name: 'Student One' }
+    const enrollment = { enrollment_id: 42, student_id: '1', amount: 1200, invoice_number: 'AB12345678', courses: [] }
+    apiData = { dbData: { students: [student], enrollments: [enrollment] }, dbStatus: 'connected', dbError: null }
+    render(<App />)
+
+    fireEvent.click(document.querySelector('#tab-history'))
+    fireEvent.click(screen.getByRole('button', { name: 'open billing detail' }))
+
+    expect(screen.getByTestId('billing-detail-modal').textContent).toContain('Student One:42')
+    expect(screen.queryByTestId('student-detail-modal')).toBeNull()
+    expect(billingDetailModalSpy).toHaveBeenLastCalledWith({ student, enrollment })
+
+    fireEvent.click(screen.getByRole('button', { name: 'close billing detail' }))
+    expect(screen.queryByTestId('billing-detail-modal')).toBeNull()
   })
 })
