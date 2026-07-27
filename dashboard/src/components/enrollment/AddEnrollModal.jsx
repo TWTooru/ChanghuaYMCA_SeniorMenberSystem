@@ -3,12 +3,13 @@ import { X } from 'lucide-react'
 import { supabase } from '../../lib/supabaseClient'
 import { createEnrollmentWithCourses } from '../../services/enrollmentService'
 import { normalizeSeason } from '../../domain/season'
+import CourseTagPicker from './CourseTagPicker'
 import '../common/common.css'
 
 export default function AddEnrollModal({ student, onClose, onRefresh, defaultSeason = '第十五季' }) {
   const [newEnroll, setNewEnroll] = useState({
     season: defaultSeason, reg_type: '續', pre_test: '', post_test: '',
-    refunded: false, refund_info: '', courses: ''
+    refunded: false, refund_info: '', courses: []
   });
 
   const handleAddEnrollSubmit = (e) => {
@@ -20,6 +21,11 @@ export default function AddEnrollModal({ student, onClose, onRefresh, defaultSea
       return
     }
     
+    if (newEnroll.courses.length === 0) {
+      alert('請至少選擇一門課程')
+      return
+    }
+
     const insertEnrollment = async () => {
       try {
         await createEnrollmentWithCourses(supabase, student.student_id, { ...newEnroll, season });
@@ -114,15 +120,12 @@ export default function AddEnrollModal({ student, onClose, onRefresh, defaultSea
             />
           </div>
           <div className="form-group full-width">
-            <label className="form-label" htmlFor="enrollment-courses">選修課程 * (多個請用英文逗號 , 或中文逗號 ， 隔開)</label>
-            <input 
-              id="enrollment-courses"
-              type="text" 
-              className="form-input" 
-              value={newEnroll.courses} 
-              onChange={e => setNewEnroll({...newEnroll, courses: e.target.value})} 
-              required
-              placeholder="例如: 活力有氧,肌力訓練"
+            <span className="form-label">選修課程 *</span>
+            <CourseTagPicker
+              selectedCourseNames={newEnroll.courses}
+              lockedCourseNames={[]}
+              onChange={courses => setNewEnroll(current => ({ ...current, courses }))}
+              canManage
             />
           </div>
           <div className="form-group form-checkbox-group">

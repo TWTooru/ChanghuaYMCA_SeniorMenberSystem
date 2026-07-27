@@ -7,7 +7,7 @@ import {
 } from './enrollmentService'
 
 describe('createEnrollmentWithCourses', () => {
-  it('inserts an enrollment and split course rows', async () => {
+  it('inserts deduplicated selected course rows', async () => {
     const calls = []
     const client = {
       from(table) {
@@ -43,7 +43,7 @@ describe('createEnrollmentWithCourses', () => {
         post_test: '2024-02-01',
         refunded: false,
         refund_info: '',
-        courses: '肌力訓練, 北歐健走'
+        courses: ['Course A', 'Course B', 'Course A']
       })
     ).resolves.toEqual({ enrollment_id: 42, student_id: '1' })
 
@@ -65,9 +65,54 @@ describe('createEnrollmentWithCourses', () => {
         table: 'courses',
         operation: 'insert',
         rows: [
-          { enrollment_id: 42, course_name: '肌力訓練' },
-          { enrollment_id: 42, course_name: '北歐健走' }
+          { enrollment_id: 42, course_name: 'Course A' },
+          { enrollment_id: 42, course_name: 'Course B' }
         ]
+      }
+    ])
+  })
+
+  it('removes blank selected course names and skips course insertion when none remain', async () => {
+    const calls = []
+    const client = {
+      from(table) {
+        if (table === 'enrollments') {
+          return {
+            insert(rows) {
+              calls.push({ table, operation: 'insert', rows })
+              return {
+                select() {
+                  return {
+                    single: async () => ({ data: { enrollment_id: 43, student_id: '1' }, error: null })
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        return {
+          insert: async rows => {
+            calls.push({ table, operation: 'insert', rows })
+            return { error: null }
+          }
+        }
+      }
+    }
+
+    await expect(createEnrollmentWithCourses(client, '1', {
+      season: 'spring', reg_type: 'regular', pre_test: '', post_test: '',
+      refunded: false, refund_info: '', courses: [' ', '', '  ']
+    })).resolves.toEqual({ enrollment_id: 43, student_id: '1' })
+
+    expect(calls).toEqual([
+      {
+        table: 'enrollments',
+        operation: 'insert',
+        rows: [{
+          season: 'spring', reg_type: 'regular', pre_test: '', post_test: '',
+          refunded: 0, refund_info: '', student_id: '1'
+        }]
       }
     ])
   })
@@ -117,7 +162,7 @@ describe('createEnrollmentWithCourses', () => {
         post_test: '',
         refunded: false,
         refund_info: '',
-        courses: '肌力訓練'
+        courses: ['Course A']
       })
     ).rejects.toThrow('課程新增失敗')
 
@@ -166,7 +211,7 @@ describe('createEnrollmentWithCourses', () => {
         post_test: '',
         refunded: false,
         refund_info: '',
-        courses: '肌力訓練'
+        courses: ['Course A']
       })
     ).rejects.toThrow('rollback failed')
   })
@@ -284,3 +329,4 @@ describe('updateEnrollmentBilling', () => {
     })).rejects.toThrow('update denied')
   })
 })
+

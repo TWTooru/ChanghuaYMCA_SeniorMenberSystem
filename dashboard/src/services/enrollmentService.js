@@ -1,4 +1,10 @@
-import { splitCourseNames } from '../domain/studentFields'
+export function normalizeSelectedCourseNames(courses = []) {
+  return [...new Set(
+    (Array.isArray(courses) ? courses : [])
+      .map(course => String(course ?? '').trim())
+      .filter(Boolean)
+  )]
+}
 
 export async function createEnrollmentWithCourses(client, studentId, form) {
   const { season, reg_type, pre_test, post_test, refunded, refund_info, courses } = form
@@ -20,7 +26,7 @@ export async function createEnrollmentWithCourses(client, studentId, form) {
 
   if (error) throw error
 
-  const courseList = splitCourseNames(courses)
+  const courseList = normalizeSelectedCourseNames(courses)
   if (courseList.length === 0) return insertedEnrollment
 
   const courseData = courseList.map(courseName => ({
