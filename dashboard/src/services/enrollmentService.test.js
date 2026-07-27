@@ -1,9 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   createEnrollmentWithCourses,
   deleteEnrollment,
   normalizeEnrollmentBilling,
   updateEnrollmentBilling,
+  updateEnrollmentWithCourses,
 } from './enrollmentService'
 
 describe('createEnrollmentWithCourses', () => {
@@ -259,6 +260,72 @@ describe('deleteEnrollment', () => {
   })
 })
 
+describe('updateEnrollmentWithCourses', () => {
+  it('updates enrollment metadata and selected courses through one atomic RPC', async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: null, error: null })
+    const client = { rpc }
+
+    await updateEnrollmentWithCourses(client, 42, {
+      season: '第十六季',
+      reg_type: '續',
+      pre_test: '',
+      post_test: '',
+      refunded: false,
+      refund_info: '',
+      courses: [' 肌力訓練 ', '北歐健走', '肌力訓練'],
+    })
+
+    expect(rpc).toHaveBeenCalledWith('update_enrollment_with_courses', {
+      p_enrollment_id: 42,
+      p_season: '第十六季',
+      p_reg_type: '續',
+      p_pre_test: '',
+      p_post_test: '',
+      p_refunded: 0,
+      p_refund_info: '',
+      p_course_names: ['肌力訓練', '北歐健走'],
+    })
+  })
+
+  it('rejects an empty normalized course list before calling Supabase', async () => {
+    const rpc = vi.fn()
+
+    await expect(updateEnrollmentWithCourses({ rpc }, 42, {
+      season: '第十六季',
+      reg_type: '續',
+      pre_test: '',
+      post_test: '',
+      refunded: false,
+      refund_info: '',
+      courses: [' ', ''],
+    })).rejects.toThrow('請至少選擇一門課程')
+    expect(rpc).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['COURSE_RECEIPT_LOCKED', '已有收據的課程不能移除'],
+    ['COURSE_REQUIRED', '請至少選擇一門課程'],
+    ['database unavailable', 'database unavailable'],
+  ])('maps RPC error "%s" to "%s"', async (message, expectedMessage) => {
+    const client = {
+      rpc: vi.fn().mockResolvedValue({
+        data: null,
+        error: { message },
+      }),
+    }
+
+    await expect(updateEnrollmentWithCourses(client, 42, {
+      season: '第十六季',
+      reg_type: '續',
+      pre_test: '',
+      post_test: '',
+      refunded: false,
+      refund_info: '',
+      courses: ['肌力訓練'],
+    })).rejects.toThrow(expectedMessage)
+  })
+})
+
 describe('normalizeEnrollmentBilling', () => {
   it.each([
     [{ amount: '', invoice_number: '  ' }, { amount: null, invoice_number: null }],
@@ -329,4 +396,3 @@ describe('updateEnrollmentBilling', () => {
     })).rejects.toThrow('update denied')
   })
 })
-
