@@ -1,3 +1,5 @@
+import { normalizeCourseDetails } from '../domain/enrollmentBilling'
+
 export async function fetchDashboardData(client) {
   const { data: studentsData, error: studentsError } = await client
     .from('students')
@@ -8,7 +10,7 @@ export async function fetchDashboardData(client) {
 
   const { data: enrollmentsData, error: enrollmentsError } = await client
     .from('enrollments')
-    .select('*, courses(*)')
+    .select('*, courses(*, course_receipts(*))')
     .limit(9999)
 
   if (enrollmentsError) throw enrollmentsError
@@ -19,13 +21,16 @@ export async function fetchDashboardData(client) {
 
   return {
     students,
-    enrollments: enrollments.map(enrollment => ({
-      ...enrollment,
-      student_name: studentMap.get(String(enrollment.student_id)) || '未知',
-      courses: Array.isArray(enrollment.courses)
-        ? enrollment.courses.map(course => course.course_name)
-        : [],
-      refunded: Boolean(enrollment.refunded)
-    }))
+    enrollments: enrollments.map(enrollment => {
+      const courseDetails = normalizeCourseDetails(enrollment.courses)
+
+      return {
+        ...enrollment,
+        student_name: studentMap.get(String(enrollment.student_id)) || '未知',
+        courseDetails,
+        courses: courseDetails.map(course => course.courseName),
+        refunded: Boolean(enrollment.refunded)
+      }
+    })
   }
 }
