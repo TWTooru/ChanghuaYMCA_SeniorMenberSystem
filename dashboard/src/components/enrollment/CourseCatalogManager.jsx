@@ -1,15 +1,56 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+
+function getFocusableElements(container) {
+  return Array.from(container.querySelectorAll(
+    'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+  )).filter(element => !element.hasAttribute('disabled'))
+}
 
 export default function CourseCatalogManager({
   catalog,
   onSaveCourse,
   onDeactivateCourse,
   onClose,
+  returnFocusRef,
 }) {
   const [courseName, setCourseName] = useState('')
   const [confirmingCourse, setConfirmingCourse] = useState(null)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState('')
+  const dialogRef = useRef(null)
+
+  useEffect(() => {
+    const dialog = dialogRef.current
+    const [initialFocus] = getFocusableElements(dialog)
+    ;(initialFocus || dialog).focus()
+
+    return () => {
+      const returnFocus = returnFocusRef?.current
+      if (returnFocus?.isConnected) returnFocus.focus()
+    }
+  }, [returnFocusRef])
+
+  const handleKeyDown = event => {
+    if (event.key !== 'Tab') return
+
+    const dialog = dialogRef.current
+    const focusableElements = getFocusableElements(dialog)
+    if (focusableElements.length === 0) {
+      event.preventDefault()
+      dialog.focus()
+      return
+    }
+
+    const first = focusableElements[0]
+    const last = focusableElements[focusableElements.length - 1]
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault()
+      last.focus()
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault()
+      first.focus()
+    }
+  }
 
   const handleSave = async event => {
     event.preventDefault()
@@ -43,7 +84,15 @@ export default function CourseCatalogManager({
   }
 
   return (
-    <div className="course-catalog-manager" role="dialog" aria-modal="true" aria-labelledby="course-catalog-manager-title">
+    <div
+      ref={dialogRef}
+      className="course-catalog-manager"
+      role="dialog"
+      tabIndex={-1}
+      aria-modal="true"
+      aria-labelledby="course-catalog-manager-title"
+      onKeyDown={handleKeyDown}
+    >
       <div className="course-catalog-manager-header">
         <h3 id="course-catalog-manager-title">管理課程</h3>
         <button type="button" className="btn-secondary course-catalog-close" onClick={onClose} disabled={pending}>

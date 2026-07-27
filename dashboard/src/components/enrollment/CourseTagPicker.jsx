@@ -43,7 +43,6 @@ export default function CourseTagPicker({
 
   const closeManager = () => {
     setManagerOpen(false)
-    requestAnimationFrame(() => manageButtonRef.current?.focus())
   }
 
   const handleSaveCourse = async courseName => {
@@ -124,6 +123,7 @@ export default function CourseTagPicker({
           onSaveCourse={handleSaveCourse}
           onDeactivateCourse={handleDeactivateCourse}
           onClose={closeManager}
+          returnFocusRef={manageButtonRef}
         />
       )}
     </section>

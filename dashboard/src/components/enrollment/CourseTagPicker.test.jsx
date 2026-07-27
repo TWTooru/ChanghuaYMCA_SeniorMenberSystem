@@ -126,6 +126,63 @@ describe('CourseTagPicker', () => {
     expect(screen.queryByRole('button', { name: '管理課程' })).toBeNull()
   })
 
+  it('moves keyboard focus into the catalog manager when it opens', async () => {
+    render(
+      <CourseTagPicker
+        selectedCourseNames={[]}
+        lockedCourseNames={[]}
+        onChange={vi.fn()}
+        canManage
+      />
+    )
+
+    await screen.findByRole('button', { name: '肌力訓練' })
+    fireEvent.click(screen.getByRole('button', { name: '管理課程' }))
+
+    await screen.findByRole('dialog', { name: '管理課程' })
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: '關閉' }))
+  })
+
+  it('wraps Tab and Shift+Tab focus within the catalog manager', async () => {
+    render(
+      <CourseTagPicker
+        selectedCourseNames={[]}
+        lockedCourseNames={[]}
+        onChange={vi.fn()}
+        canManage
+      />
+    )
+
+    await screen.findByRole('button', { name: '肌力訓練' })
+    fireEvent.click(screen.getByRole('button', { name: '管理課程' }))
+
+    const close = await screen.findByRole('button', { name: '關閉' })
+    const last = screen.getByRole('button', { name: '停用 北歐健走' })
+    fireEvent.keyDown(close, { key: 'Tab', shiftKey: true })
+    expect(document.activeElement).toBe(last)
+
+    fireEvent.keyDown(last, { key: 'Tab' })
+    expect(document.activeElement).toBe(close)
+  })
+
+  it('restores focus to the catalog manager opener after close', async () => {
+    render(
+      <CourseTagPicker
+        selectedCourseNames={[]}
+        lockedCourseNames={[]}
+        onChange={vi.fn()}
+        canManage
+      />
+    )
+
+    await screen.findByRole('button', { name: '肌力訓練' })
+    const manageButton = screen.getByRole('button', { name: '管理課程' })
+    fireEvent.click(manageButton)
+    fireEvent.click(await screen.findByRole('button', { name: '關閉' }))
+
+    await waitFor(() => expect(document.activeElement).toBe(manageButton))
+  })
+
   it('adds or reactivates a trimmed course, refreshes the catalog, and preserves selections', async () => {
     const onChange = vi.fn()
     vi.mocked(saveCourseCatalogEntry).mockResolvedValue({
