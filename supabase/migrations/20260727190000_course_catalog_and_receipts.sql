@@ -19,6 +19,18 @@ create table public.course_receipts (
   updated_at timestamptz not null default now()
 );
 
+-- The initial schema owns this helper, but production installations may have
+-- lost it outside migration history. Keep this migration self-contained.
+create or replace function public.set_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
 create trigger course_catalog_set_updated_at
 before update on public.course_catalog
 for each row execute function public.set_updated_at();
