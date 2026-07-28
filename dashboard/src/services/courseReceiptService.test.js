@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   createCourseReceipt,
+  deleteCourseReceipt,
   normalizeCourseReceipt,
   updateCourseReceipt,
 } from './courseReceiptService'
@@ -27,6 +28,30 @@ function createReceiptClient(calls, result) {
               return {
                 select() {
                   calls.push({ operation: 'select' })
+                  return { single: async () => result }
+                },
+              }
+            },
+          }
+        },
+      }
+    },
+  }
+}
+
+function createDeleteReceiptClient(calls, result) {
+  return {
+    from(table) {
+      calls.push({ table })
+      return {
+        delete() {
+          calls.push({ operation: 'delete' })
+          return {
+            eq(column, value) {
+              calls.push({ operation: 'eq', column, value })
+              return {
+                select(columns) {
+                  calls.push({ operation: 'select', columns })
                   return { single: async () => result }
                 },
               }
@@ -124,5 +149,44 @@ describe('updateCourseReceipt', () => {
       payload: { amount: 1200, invoice_number: 'AB12345678' },
     })
     expect(calls).toContainEqual({ operation: 'eq', column: 'receipt_id', value: 5 })
+  })
+})
+
+describe('deleteCourseReceipt', () => {
+  it('deletes a receipt and returns its id', async () => {
+    const calls = []
+    const client = createDeleteReceiptClient(calls, {
+      data: { receipt_id: 5 },
+      error: null,
+    })
+
+    await expect(deleteCourseReceipt(client, 5)).resolves.toEqual({ receiptId: 5 })
+
+    expect(calls).toEqual([
+      { table: 'course_receipts' },
+      { operation: 'delete' },
+      { operation: 'eq', column: 'receipt_id', value: 5 },
+      { operation: 'select', columns: 'receipt_id' },
+    ])
+  })
+
+  it.each([null, 'c5df2f0a-43c2-4fd8-a7e5-0d7d19a9c571', 0, -1])(
+    'rejects invalid receipt id %p before querying Supabase',
+    async receiptId => {
+      const calls = []
+      const client = createDeleteReceiptClient(calls, { data: null, error: null })
+
+      await expect(deleteCourseReceipt(client, receiptId)).rejects.toThrow()
+      expect(calls).toEqual([])
+    },
+  )
+
+  it('throws the Supabase error when deletion is denied', async () => {
+    const client = createDeleteReceiptClient([], {
+      data: null,
+      error: new Error('delete denied'),
+    })
+
+    await expect(deleteCourseReceipt(client, 5)).rejects.toThrow('delete denied')
   })
 })

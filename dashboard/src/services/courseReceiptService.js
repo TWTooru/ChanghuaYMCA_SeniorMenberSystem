@@ -15,6 +15,8 @@ function throwReceiptError(error) {
   throw error
 }
 
+const INVALID_RECEIPT_ID_ERROR = '收據 ID 必須是大於 0 的整數'
+
 export function normalizeCourseReceipt({ amount, invoice_number }) {
   const normalizedAmountText = String(amount ?? '').trim()
   const normalizedInvoiceNumber = String(invoice_number ?? '').trim()
@@ -59,4 +61,20 @@ export async function updateCourseReceipt(client, receiptId, billing) {
 
   if (error) throwReceiptError(error)
   return mapReceipt(data)
+}
+
+export async function deleteCourseReceipt(client, receiptId) {
+  if (!Number.isSafeInteger(receiptId) || receiptId <= 0) {
+    throw new Error(INVALID_RECEIPT_ID_ERROR)
+  }
+
+  const { data, error } = await client
+    .from('course_receipts')
+    .delete()
+    .eq('receipt_id', receiptId)
+    .select('receipt_id')
+    .single()
+
+  if (error) throw error
+  return { receiptId: data.receipt_id }
 }
