@@ -82,6 +82,13 @@
   color: var(--text-secondary);
 }
 
+.course-receipt-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .course-receipt-editor {
   margin-top: 16px;
   padding: 16px;
@@ -176,7 +183,8 @@
     align-items: start;
   }
 
-  .course-receipt-edit {
+  .course-receipt-row-actions {
     justify-self: start;
+    justify-content: flex-start;
   }
 }

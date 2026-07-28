@@ -5,6 +5,7 @@ import usePermissions from '../../hooks/usePermissions'
 import { supabase } from '../../lib/supabaseClient'
 import {
   createCourseReceipt,
+  deleteCourseReceipt,
   updateCourseReceipt,
 } from '../../services/courseReceiptService'
 import StudentInfoView from '../students/StudentInfoView'
@@ -12,6 +13,7 @@ import './enrollmentBillingDetail.css'
 
 const DUPLICATE_RECEIPT_ERROR = '此課程已有收據，請重新整理後再編輯'
 const MISSING_COURSE_ID_ERROR = '課程資料已更新，請重新載入後再試'
+const DELETE_CONFIRMATION = '確定刪除此課程的收據？金額與發票編號將無法復原。'
 
 function isValidId(value) {
   return Number.isSafeInteger(value) && value > 0
@@ -155,6 +157,35 @@ export default function EnrollmentBillingDetailModal({
     }
   }
 
+  const handleDeleteReceipt = async course => {
+    if (!permissions.canEditEnrollment || saveInFlight.current) return
+
+    const receiptId = course.receipt?.receiptId
+    if (!isValidId(receiptId)) {
+      setError(MISSING_COURSE_ID_ERROR)
+      return
+    }
+
+    if (!window.confirm(DELETE_CONFIRMATION)) return
+
+    saveInFlight.current = true
+    setIsSaving(true)
+    clearMessages()
+    try {
+      await deleteCourseReceipt(supabase, receiptId)
+      setEditor(current => (
+        current?.mode === 'edit' && current.receiptId === receiptId ? null : current
+      ))
+      setSuccess('收據已刪除')
+      onRefresh?.()
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : '收據刪除失敗')
+    } finally {
+      saveInFlight.current = false
+      setIsSaving(false)
+    }
+  }
+
   return (
     <div className="modal-overlay enrollment-billing-overlay" onClick={onClose}>
       <div
@@ -216,14 +247,24 @@ export default function EnrollmentBillingDetailModal({
                     </span>
                   </div>
                   {permissions.canEditEnrollment && (
-                    <button
-                      type="button"
-                      className="btn-secondary course-receipt-edit"
-                      disabled={isSaving}
-                      onClick={() => startEditingReceipt(course)}
-                    >
-                      編輯
-                    </button>
+                    <div className="course-receipt-row-actions">
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        disabled={isSaving}
+                        onClick={() => startEditingReceipt(course)}
+                      >
+                        編輯
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-danger"
+                        disabled={isSaving}
+                        onClick={() => handleDeleteReceipt(course)}
+                      >
+                        刪除
+                      </button>
+                    </div>
                   )}
                 </article>
               ))}

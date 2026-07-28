@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import EnrollmentBillingDetailModal from './EnrollmentBillingDetailModal'
 import {
   createCourseReceipt,
+  deleteCourseReceipt,
   updateCourseReceipt,
 } from '../../services/courseReceiptService'
 
@@ -13,6 +14,7 @@ vi.mock('../../contexts/AuthContext', () => ({
 }))
 vi.mock('../../services/courseReceiptService', () => ({
   createCourseReceipt: vi.fn(),
+  deleteCourseReceipt: vi.fn(),
   updateCourseReceipt: vi.fn(),
 }))
 
@@ -59,11 +61,15 @@ function beginCreatingReceipt(courseName = '書法') {
 }
 
 describe('EnrollmentBillingDetailModal', () => {
-  afterEach(cleanup)
+  afterEach(() => {
+    cleanup()
+    vi.restoreAllMocks()
+  })
 
   beforeEach(() => {
     authState.role = 'editor'
     vi.mocked(createCourseReceipt).mockReset()
+    vi.mocked(deleteCourseReceipt).mockReset()
     vi.mocked(updateCourseReceipt).mockReset()
   })
 
@@ -82,6 +88,7 @@ describe('EnrollmentBillingDetailModal', () => {
     expect(within(receiptRow).getByText('NT$ 1200')).toBeTruthy()
     expect(within(receiptRow).getByText('R-100')).toBeTruthy()
     expect(within(receiptRow).getByRole('button', { name: '編輯' })).toBeTruthy()
+    expect(within(receiptRow).getByRole('button', { name: '刪除' })).toBeTruthy()
     expect(within(legacy).getByText('舊制帳單')).toBeTruthy()
     expect(within(legacy).getByText('NT$ 2400')).toBeTruthy()
     expect(within(legacy).getByText('LEGACY-MULTI')).toBeTruthy()
@@ -198,8 +205,10 @@ describe('EnrollmentBillingDetailModal', () => {
 
     const addButton = screen.getByRole('button', { name: '新增收據' })
     const editButton = within(existingReceiptRow).getByRole('button', { name: '編輯' })
+    const deleteButton = within(existingReceiptRow).getByRole('button', { name: '刪除' })
     expect(addButton.disabled).toBe(true)
     expect(editButton.disabled).toBe(true)
+    expect(deleteButton.disabled).toBe(true)
 
     fireEvent.click(editButton)
     fireEvent.click(addButton)
@@ -273,6 +282,84 @@ describe('EnrollmentBillingDetailModal', () => {
     expect(within(legacy).getByText('LEGACY-MULTI')).toBeTruthy()
     expect(screen.queryByRole('button', { name: '新增收據' })).toBeNull()
     expect(screen.queryByRole('button', { name: '編輯' })).toBeNull()
+    expect(screen.queryByRole('button', { name: '刪除' })).toBeNull()
+    expect(screen.queryByRole('button', { name: '儲存收據' })).toBeNull()
+  })
+
+  it('shows receipt mutation actions to administrators', () => {
+    authState.role = 'admin'
+    const { container } = renderModal()
+    const receiptRow = within(container.querySelector('.enrollment-billing-receipts'))
+      .getByText('水彩')
+      .closest('.course-receipt-row')
+
+    expect(within(receiptRow).getByRole('button', { name: '編輯' })).toBeTruthy()
+    expect(within(receiptRow).getByRole('button', { name: '刪除' })).toBeTruthy()
+  })
+
+  it('does not delete or refresh when permanent deletion is cancelled', () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    const { props } = renderModal()
+
+    fireEvent.click(screen.getByRole('button', { name: '刪除' }))
+
+    expect(confirm).toHaveBeenCalledWith('確定刪除此課程的收據？金額與發票編號將無法復原。')
+    expect(deleteCourseReceipt).not.toHaveBeenCalled()
+    expect(props.onRefresh).not.toHaveBeenCalled()
+  })
+
+  it('deletes the confirmed receipt, refreshes, and keeps the modal open', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    vi.mocked(deleteCourseReceipt).mockResolvedValue({ receiptId: 100 })
+    const { props } = renderModal()
+
+    fireEvent.click(screen.getByRole('button', { name: '刪除' }))
+
+    await waitFor(() => {
+      expect(deleteCourseReceipt).toHaveBeenCalledWith(expect.anything(), 100)
+    })
+    expect(await screen.findByText('收據已刪除')).toBeTruthy()
+    expect(props.onRefresh).toHaveBeenCalledOnce()
+    expect(props.onClose).not.toHaveBeenCalled()
+    expect(screen.getByRole('dialog')).toBeTruthy()
+  })
+
+  it('keeps the receipt visible and reports a deletion failure', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    vi.mocked(deleteCourseReceipt).mockRejectedValue(new Error('delete denied'))
+    renderModal()
+
+    fireEvent.click(screen.getByRole('button', { name: '刪除' }))
+
+    expect((await screen.findByRole('alert')).textContent).toContain('delete denied')
+    expect(screen.getByText('R-100')).toBeTruthy()
+    expect(screen.getByRole('button', { name: '刪除' })).toBeTruthy()
+  })
+
+  it('issues one deletion while the confirmed request is pending', () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    vi.mocked(deleteCourseReceipt).mockReturnValue(new Promise(() => {}))
+    renderModal()
+
+    const deleteButton = screen.getByRole('button', { name: '刪除' })
+    fireEvent.click(deleteButton)
+    fireEvent.click(deleteButton)
+
+    expect(deleteCourseReceipt).toHaveBeenCalledOnce()
+    expect(deleteButton.disabled).toBe(true)
+  })
+
+  it('closes an inline editor after deleting that receipt', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    vi.mocked(deleteCourseReceipt).mockResolvedValue({ receiptId: 100 })
+    renderModal()
+
+    fireEvent.click(screen.getByRole('button', { name: '編輯' }))
+    expect(screen.getByRole('button', { name: '儲存收據' })).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: '刪除' }))
+
+    await screen.findByText('收據已刪除')
     expect(screen.queryByRole('button', { name: '儲存收據' })).toBeNull()
   })
 
