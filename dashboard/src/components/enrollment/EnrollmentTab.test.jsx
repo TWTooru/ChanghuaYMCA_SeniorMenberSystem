@@ -153,6 +153,62 @@ describe('EnrollmentTab', () => {
     ])
   })
 
+  it('renders receipt summaries ahead of legacy enrollment billing', () => {
+    render(
+      <EnrollmentTab
+        students={[{ student_id: '1', name: 'Student One' }]}
+        enrollments={[
+          {
+            enrollment_id: 13,
+            student_id: '1',
+            student_name: 'Student One',
+            season: 'Season A',
+            refunded: false,
+            amount: 9999,
+            invoice_number: 'LEGACY',
+            courses: ['Course A', 'Course B'],
+            courseDetails: [
+              { receipt: { amount: 1000, invoiceNumber: 'R-1' } },
+              { receipt: { amount: 500, invoiceNumber: 'R-2' } },
+            ],
+          },
+        ]}
+        onSelectEnrollment={vi.fn()}
+      />
+    )
+
+    expect(screen.getByText('NT$ 1500')).not.toBeNull()
+    expect(screen.getByText('R-1')).not.toBeNull()
+    expect(screen.getByText('R-2')).not.toBeNull()
+    expect(screen.queryByText('NT$ 9999')).toBeNull()
+    expect(screen.queryByText('LEGACY')).toBeNull()
+  })
+
+  it('does not fall back to legacy billing when a receipt row is blank', () => {
+    render(
+      <EnrollmentTab
+        students={[{ student_id: '1', name: 'Student One' }]}
+        enrollments={[
+          {
+            enrollment_id: 16,
+            student_id: '1',
+            student_name: 'Student One',
+            season: 'Season D',
+            refunded: false,
+            amount: 2400,
+            invoice_number: 'LEGACY-2',
+            courses: ['Course D'],
+            courseDetails: [{ receipt: { amount: null, invoiceNumber: null } }],
+          },
+        ]}
+        onSelectEnrollment={vi.fn()}
+      />
+    )
+
+    const row = screen.getByText('Course D').closest('tr')
+    expect(within(row).getAllByRole('cell').slice(-2).map(cell => cell.textContent)).toEqual(['--', '--'])
+  })
+
   it('keeps name/course, season, and refund filters without a registration filter', () => {
     render(
       <EnrollmentTab students={[]} enrollments={[
