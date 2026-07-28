@@ -7,6 +7,7 @@ import {
   ChevronsRight
 } from 'lucide-react'
 import { getStudentById } from '../../domain/studentRelations'
+import { summarizeEnrollmentBilling } from '../../domain/enrollmentBilling'
 import './enrollment.css'
 
 export default function EnrollmentTab({ students, enrollments, onSelectEnrollment }) {
@@ -121,7 +122,10 @@ export default function EnrollmentTab({ students, enrollments, onSelectEnrollmen
             </thead>
             <tbody>
               {paginatedHistory.length > 0 ? (
-                paginatedHistory.map((e, idx) => (
+                paginatedHistory.map((e, idx) => {
+                  const billing = summarizeEnrollmentBilling(e)
+
+                  return (
                   <tr 
                     key={`${e.student_id}-${e.season}-${idx}`}
                     className="clickable"
@@ -144,10 +148,17 @@ export default function EnrollmentTab({ students, enrollments, onSelectEnrollmen
                         {e.refunded ? '已退費' : '正常'}
                       </span>
                     </td>
-                    <td>{e.amount == null ? '--' : `NT$ ${e.amount}`}</td>
-                    <td>{e.invoice_number || '--'}</td>
+                    <td>{billing.amount == null ? '--' : `NT$ ${billing.amount}`}</td>
+                    <td>
+                      {billing.invoiceNumbers.length > 0 ? (
+                        <div className="invoice-number-list">
+                          {billing.invoiceNumbers.map(invoice => <span key={invoice}>{invoice}</span>)}
+                        </div>
+                      ) : '--'}
+                    </td>
                   </tr>
-                ))
+                  )
+                })
               ) : (
                 <tr>
                   <td colSpan={6} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>

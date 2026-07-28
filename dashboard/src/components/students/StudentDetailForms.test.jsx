@@ -2,8 +2,18 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import StudentEditForm from './StudentEditForm'
 import EnrollmentEditForm from '../enrollment/EnrollmentEditForm'
+import { fetchCourseCatalog } from '../../services/courseCatalogService'
 
 const updateStudentResult = vi.hoisted(() => ({ error: null }))
+
+vi.mock('../../services/courseCatalogService', () => ({
+  deactivateCourseCatalogEntry: vi.fn(),
+  fetchCourseCatalog: vi.fn().mockResolvedValue([
+    { courseCatalogId: 1, courseName: '電腦課', active: true },
+    { courseCatalogId: 2, courseName: '手機課', active: true },
+  ]),
+  saveCourseCatalogEntry: vi.fn(),
+}))
 
 vi.mock('../../lib/supabaseClient', () => ({
   supabase: {
@@ -19,6 +29,7 @@ const student = { student_id: 'S-001', name: '王小明', gender: '男', age: 66
 afterEach(() => {
   cleanup()
   updateStudentResult.error = null
+  vi.mocked(fetchCourseCatalog).mockClear()
 })
 
 describe('Student detail edit forms', () => {
@@ -36,7 +47,7 @@ describe('Student detail edit forms', () => {
     expect(screen.getByDisplayValue('是')).not.toBeNull()
   })
 
-  it('prefills the enrollment edit form including its courses', () => {
+  it('prefills the enrollment edit form including its course tags', async () => {
     render(
       <EnrollmentEditForm
         enrollment={{ enrollment_id: 1, season: '第十五季', reg_type: '新', refunded: 0, courses: ['電腦課', '手機課'] }}
@@ -46,7 +57,9 @@ describe('Student detail edit forms', () => {
     )
 
     expect(screen.getByDisplayValue('第十五季')).not.toBeNull()
-    expect(screen.getByDisplayValue('電腦課, 手機課')).not.toBeNull()
+    expect(await screen.findByRole('button', { name: '電腦課' })).not.toBeNull()
+    expect(screen.getByRole('button', { name: '手機課' })).not.toBeNull()
+    expect(screen.queryByDisplayValue('電腦課, 手機課')).toBeNull()
   })
 
   it('reports dirty state when a profile field changes', () => {
