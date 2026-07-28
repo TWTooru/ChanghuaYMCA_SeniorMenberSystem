@@ -22,10 +22,120 @@
   gap: 16px;
 }
 
-.enrollment-billing-form,
+.enrollment-billing-receipts,
+.enrollment-legacy-billing,
 .enrollment-billing-student {
   padding-top: 20px;
   border-top: 1px solid var(--border-color);
+}
+
+.enrollment-billing-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.enrollment-billing-heading h3 {
+  margin: 0;
+}
+
+.course-receipt-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.course-receipt-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.8fr) minmax(0, 1.8fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-primary);
+}
+
+.course-receipt-values {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.course-receipt-values > span {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  overflow-wrap: anywhere;
+}
+
+.course-receipt-label {
+  margin-bottom: 2px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.course-receipt-empty {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.course-receipt-editor {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-primary);
+}
+
+.course-receipt-editor h4,
+.enrollment-legacy-billing h3 {
+  margin: 0;
+}
+
+.course-receipt-course-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.course-receipt-course-option {
+  min-height: 34px;
+  padding: 6px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.course-receipt-course-option:hover {
+  border-color: var(--color-accent);
+  background: var(--color-accent-glow);
+}
+
+.course-receipt-course-option:focus-visible,
+.course-receipt-row button:focus-visible,
+.course-receipt-editor button:focus-visible,
+.course-receipt-editor input:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.enrollment-legacy-billing {
+  padding: 20px 16px 16px;
+  border-right: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  border-left: 1px solid var(--border-color);
+  border-radius: 0 0 10px 10px;
+  background: var(--bg-primary);
+}
+
+.enrollment-legacy-billing .course-receipt-values {
+  margin-top: 12px;
 }
 
 .enrollment-billing-fields {
@@ -38,6 +148,7 @@
 .enrollment-billing-actions {
   display: flex;
   justify-content: flex-end;
+  gap: 8px;
   margin-top: 16px;
 }
 
@@ -55,7 +166,17 @@
 }
 
 @media (max-width: 640px) {
+  .course-receipt-row,
+  .course-receipt-values,
   .enrollment-billing-fields {
     grid-template-columns: 1fr;
+  }
+
+  .course-receipt-row {
+    align-items: start;
+  }
+
+  .course-receipt-edit {
+    justify-self: start;
   }
 }
