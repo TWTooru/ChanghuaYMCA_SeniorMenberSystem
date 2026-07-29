@@ -1,5 +1,10 @@
 import { normalizeCourseDetails } from '../domain/enrollmentBilling'
 
+/**
+ * 讀取 `students` 與巢狀的 `enrollments → courses → course_receipts`，
+ * 轉換為儀表板可直接使用的 `{ students, enrollments }` 快照；補齊學員名稱、
+ * 正規化課程／收據明細，並將退款旗標轉為布林值。
+ */
 export async function fetchDashboardData(client) {
   const { data: studentsData, error: studentsError } = await client
     .from('students')

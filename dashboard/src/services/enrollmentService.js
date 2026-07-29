@@ -1,3 +1,8 @@
+/**
+ * 封裝選課與課程資料的異動；建立流程會在課程寫入失敗時補償刪除選課紀錄，
+ * 更新流程則透過 RPC 維持選課與課程清單的一致性。
+ */
+/** 去除空白與重複值，產生可寫入 `courses` 的課程名稱清單。 */
 export function normalizeSelectedCourseNames(courses = []) {
   return [...new Set(
     (Array.isArray(courses) ? courses : [])
@@ -6,6 +11,10 @@ export function normalizeSelectedCourseNames(courses = []) {
   )]
 }
 
+/**
+ * 先建立 `enrollments`，再新增去重後的 `courses`；若課程新增失敗，會刪除剛建立的
+ * 選課紀錄作為補償，避免留下不完整資料。
+ */
 export async function createEnrollmentWithCourses(client, studentId, form) {
   const { season, reg_type, pre_test, post_test, refunded, refund_info, courses } = form
   const enrollmentData = {
@@ -49,6 +58,10 @@ export async function createEnrollmentWithCourses(client, studentId, form) {
   throw new Error(`課程新增失敗，已取消此選課紀錄。(${courseError.message})`)
 }
 
+/**
+ * 透過 `update_enrollment_with_courses` 一次更新選課中繼資料與課程清單。
+ * RPC 會維護原子性；服務僅將已知錯誤碼轉為 UI 訊息。
+ */
 export async function updateEnrollmentWithCourses(client, enrollmentId, form) {
   const { season, reg_type, pre_test, post_test, refunded, refund_info, courses } = form
   const courseNames = normalizeSelectedCourseNames(courses)
@@ -74,6 +87,7 @@ export async function updateEnrollmentWithCourses(client, enrollmentId, form) {
   throw new Error(mappedMessage || error.message)
 }
 
+/** 依 `enrollment_id` 刪除選課；關聯的 `courses` 由資料庫級聯規則處理。 */
 export async function deleteEnrollment(client, enrollmentId) {
   const { error } = await client.from('enrollments').delete().eq('enrollment_id', enrollmentId)
   if (error) throw error
