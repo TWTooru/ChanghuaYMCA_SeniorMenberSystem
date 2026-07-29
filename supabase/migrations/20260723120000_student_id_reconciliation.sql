@@ -1,3 +1,4 @@
+-- 讓選課紀錄的學員編號以 students.student_id 為唯一依據；學員編號異動或刪除時一併維持關聯完整性。
 alter table public.enrollments
   drop constraint if exists enrollments_student_id_fkey;
 
@@ -8,6 +9,7 @@ alter table public.enrollments
   on update cascade
   on delete cascade;
 
+-- 資料庫端的學員編號正規化規則：僅接受數字、移除前導零，並拒絕全零或非數字的輸入。
 create or replace function public.normalize_student_id(p_value text)
 returns text
 language plpgsql
@@ -24,6 +26,7 @@ begin
 end;
 $$;
 
+-- 觸發器保留既有可辨識的學員編號；新增不存在的編號或修改編號時，統一套用正規化規則。
 create or replace function public.enforce_student_id()
 returns trigger
 language plpgsql
@@ -46,6 +49,7 @@ create trigger students_enforce_student_id
 before insert or update of student_id on public.students
 for each row execute function public.enforce_student_id();
 
+-- 個人資料更新集中由此 RPC 處理，避免學員編號變更繞過驗證；外鍵的更新連鎖會同步選課紀錄。
 create or replace function public.update_student_profile(p_original_id text, p_student jsonb)
 returns jsonb
 language plpgsql
@@ -103,8 +107,10 @@ $$;
 revoke all on function public.update_student_profile(text, jsonb) from public;
 grant execute on function public.update_student_profile(text, jsonb) to authenticated;
 
+-- 保留舊版匯入流程作為資料寫入端，新的包裝函式先完成學員身分比對與編號配置。
 alter function public.import_season_data(jsonb) rename to import_season_data_legacy;
 
+-- 匯入時優先正規化提供的編號；未提供時以身分資料比對既有學員，否則配置下一個數字編號。
 create function public.import_season_data(p_payload jsonb)
 returns jsonb
 language plpgsql
