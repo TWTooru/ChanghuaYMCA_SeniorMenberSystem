@@ -26,7 +26,7 @@ export default function useAdminUsers() {
   const [loading, setLoading] = useState(true)
   const [mutation, setMutation] = useState(null)
   const [errorCode, setErrorCode] = useState(null)
-  // `refreshId` 判斷資料新舊；`authorizationGeneration` 額外隔離權限失效前後的所有非同步工作。
+  // `refreshId` 判斷資料新舊；每次 refresh 都在請求開始時遞增並擷取 `authorizationGeneration`，以隔離權限失效前後的非同步工作。
   const refreshId = useRef(0)
   const authorizationGeneration = useRef(0)
   const mutationId = useRef(0)
@@ -34,7 +34,6 @@ export default function useAdminUsers() {
 
   const handleError = useCallback(error => {
     const code = getErrorCode(error)
-    // 敏感授權錯誤會推進 generation，讓較早啟動但較晚完成的成功回應全部失效。
     if (SENSITIVE_ERROR_CODES.has(code)) {
       setUsers([])
       setAuditLogs([])
@@ -56,6 +55,7 @@ export default function useAdminUsers() {
     } catch (error) {
       if (requestId !== refreshId.current || requestGeneration !== authorizationGeneration.current) return
       const code = getErrorCode(error)
+      // 敏感授權錯誤會推進 `refreshId`，讓較早啟動但較晚完成的成功回應全部失效。
       if (SENSITIVE_ERROR_CODES.has(code)) refreshId.current += 1
       handleError(error)
       handledError = true
