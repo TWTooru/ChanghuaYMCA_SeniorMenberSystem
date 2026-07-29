@@ -3,6 +3,10 @@ function firstReceipt(value) {
   return value || null
 }
 
+/**
+ * Converts nested course and receipt rows into the UI's stable `courseDetails`
+ * shape, handling relationship results returned as either arrays or objects.
+ */
 export function normalizeCourseDetails(courseRows = []) {
   return courseRows.map(course => {
     const rawReceipt = firstReceipt(course.course_receipts)
@@ -20,12 +24,17 @@ export function normalizeCourseDetails(courseRows = []) {
   })
 }
 
+/**
+ * Summarizes receipt-backed billing when present, otherwise preserves the
+ * legacy enrollment `amount` and `invoice_number` fields as a fallback.
+ */
 export function summarizeEnrollmentBilling(enrollment) {
   const receipts = (enrollment.courseDetails || [])
     .map(course => course.receipt)
     .filter(Boolean)
 
   if (receipts.length === 0) {
+    // Older enrollment rows predate course receipts, so their own fields remain the source of truth.
     const invoice = String(enrollment.invoice_number ?? '').trim()
     return {
       amount: enrollment.amount == null ? null : enrollment.amount,

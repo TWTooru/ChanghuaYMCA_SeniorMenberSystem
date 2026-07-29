@@ -10,6 +10,10 @@ export const EDUCATION_OPTIONS = [
   '未知'
 ]
 
+/**
+ * Maps loose spreadsheet and form education values into the UI's canonical
+ * categories while retaining non-empty values that do not match a known rule.
+ */
 export function normalizeEducation(value) {
   const edu = typeof value === 'string' ? value.trim() : ''
   if (!edu || edu === '?' || edu === '？') return '未知'
@@ -25,6 +29,10 @@ export function normalizeEducation(value) {
   return edu
 }
 
+/**
+ * Calculates completed age using a caller-provided `today` when deterministic
+ * import or display behavior is required.
+ */
 export function calculateAgeFromBirthDate(value, today = new Date()) {
   if (!value) return null
 
@@ -46,6 +54,7 @@ export function calculateAgeFromBirthDate(value, today = new Date()) {
   return age >= 0 ? age : null
 }
 
+/** Converts a numeric age into the display label used for the sixty-plus group. */
 export function formatSixtyPlus(age) {
   return Number(age) >= 60 ? '是' : '否'
 }

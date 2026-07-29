@@ -23,6 +23,10 @@ function parseChineseNumber(value) {
   return (tens ? CHINESE_DIGITS[tens] : 1) * 10 + (ones ? CHINESE_DIGITS[ones] : 0)
 }
 
+/**
+ * Extracts a valid one-to-ninety-nine season number from Arabic or Chinese
+ * season text; malformed or unsupported values are represented by `-1`.
+ */
 export function seasonNumber(value) {
   const match = String(value ?? '').match(/第(\d+|[一二三四五六七八九十]+)[季期]/)
   if (!match) return -1
@@ -31,6 +35,7 @@ export function seasonNumber(value) {
   return Number.isInteger(number) && number >= 1 && number <= 99 ? number : -1
 }
 
+/** Converts a validated season number into the canonical label used by the UI. */
 export function formatSeason(number) {
   if (!Number.isInteger(number) || number < 1 || number > 99) return null
 
@@ -44,14 +49,17 @@ export function formatSeason(number) {
   return `第${chineseNumber}季`
 }
 
+/** Normalizes accepted season input through the parser and canonical formatter. */
 export function normalizeSeason(value) {
   return formatSeason(seasonNumber(value))
 }
 
+/** Sort comparator for season labels; invalid labels retain their parser ordering. */
 export function compareSeasons(a, b) {
   return seasonNumber(a) - seasonNumber(b)
 }
 
+/** Returns the latest valid season in an iterable, or `null` when none exists. */
 export function latestSeason(values) {
   const seasons = Array.from(values || [])
     .map(seasonNumber)

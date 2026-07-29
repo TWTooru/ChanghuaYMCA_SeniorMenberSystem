@@ -3,6 +3,10 @@ function normalizeStudentId(value) {
   return String(value)
 }
 
+/**
+ * Finds a student by string-normalized `student_id` so row-like sources with
+ * numeric or string IDs resolve consistently; invalid lookup input yields null.
+ */
 export function getStudentById(students, studentId) {
   const normalizedId = normalizeStudentId(studentId)
   if (!Array.isArray(students) || normalizedId === null) return null
@@ -12,6 +16,7 @@ export function getStudentById(students, studentId) {
   )) || null
 }
 
+/** Filters enrollment-like records by the same normalized `student_id` rule. */
 export function getEnrollmentsForStudent(enrollments, studentId) {
   const normalizedId = normalizeStudentId(studentId)
   if (!Array.isArray(enrollments) || normalizedId === null) return []

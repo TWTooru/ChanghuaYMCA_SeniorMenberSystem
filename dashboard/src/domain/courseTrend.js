@@ -1,5 +1,9 @@
 import { compareSeasons } from './season'
 
+/**
+ * Aggregates a student's non-refunded enrollment timeline into per-course
+ * attendance counts, de-duplicating courses within each season or enrollment.
+ */
 export function buildStudentCourseTrend(timeline = []) {
   const trendsByCourse = new Map()
 
