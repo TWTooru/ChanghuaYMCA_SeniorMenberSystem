@@ -118,6 +118,7 @@ describe('useAdminUsers', () => {
     expect(result.current.errorCode).toBe('FORBIDDEN')
   })
 
+  // 這組案例鎖定授權失效後的競態，避免舊 request 把已清除的帳號資料寫回畫面。
   it('does not restore sensitive data from an older refresh after a forbidden refresh', async () => {
     let resolveOlderUsers
     let resolveOlderAuditLogs
@@ -202,6 +203,7 @@ describe('useAdminUsers', () => {
     expect(result.current.mutation).toBeNull()
   })
 
+  // 這組案例驗證 busy state 跟隨最後一個仍在執行的 mutation，而不是最後一個啟動的 mutation。
   it('keeps the newer mutation state while an earlier mutation finishes', async () => {
     listUsers.mockResolvedValue({ users: [] })
     listAuditLogs.mockResolvedValue({ auditLogs: [] })

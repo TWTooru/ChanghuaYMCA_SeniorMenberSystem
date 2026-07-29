@@ -1,6 +1,10 @@
 import { useMemo } from 'react'
 import { normalizeEducation } from '../domain/studentFields'
 
+/**
+ * 從目前學員與報名快照計算純顯示統計，不讀寫遠端資料。
+ * 回傳物件供 overview 卡片與圖表共用，避免各元件重複定義分組規則。
+ */
 export default function useStats(students, enrollments) {
   return useMemo(() => {
     if (!students || students.length === 0) {

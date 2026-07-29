@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { fetchDashboardData } from '../services/dashboardDataService'
 
+/**
+ * 依登入 session 與 `refreshCount` 載入 dashboard 快照。
+ * 失敗時清空個資陣列並回報 `offline`，避免畫面繼續顯示可能過期的資料。
+ */
 export default function useApiData(session, refreshCount) {
   const [dbData, setDbData] = useState({ students: [], enrollments: [] })
   const [dbStatus, setDbStatus] = useState('connecting')
