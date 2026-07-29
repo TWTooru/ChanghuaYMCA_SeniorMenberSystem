@@ -17,7 +17,7 @@ export default function CoursePopularityChart({ popularCourses = [] }) {
   ]
 
   const radius = 25
-  const circumference = 2 * Math.PI * radius // ~157.08
+  const circumference = 2 * Math.PI * radius
 
   const courseList = popularCourses || []
   const courseTotal = courseList.reduce((acc, c) => acc + c.count, 0)
@@ -30,7 +30,7 @@ export default function CoursePopularityChart({ popularCourses = [] }) {
     const length = percentage * 157.08
     const offset = courseTotal > 0 ? -(accumulatedCourseCount / courseTotal) * 157.08 : 0
 
-    // 文字標籤依扇形中點定位，避免與圖例重複呈現同一門課的報名人次。
+    // 百分比標籤依扇形中點定位，避免與相鄰扇形重疊。
     const startPct = accumulatedCourseCount / courseTotal
     const endPct = (accumulatedCourseCount + count) / courseTotal
     const midPct = (startPct + endPct) / 2

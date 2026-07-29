@@ -34,7 +34,6 @@ describe('OverviewTab Donut Chart', () => {
   it('renders the donut chart component with total count', () => {
     const { container } = render(<OverviewTab students={mockStudents} stats={mockStats} />)
     
-    // Verify total count shows in the center
     expect(container.querySelector('.donut-center-label').textContent).toBe('學員總數')
     expect(container.querySelector('.donut-center-val').textContent).toBe('4人')
   })
@@ -48,15 +47,12 @@ describe('OverviewTab Donut Chart', () => {
   })
 
   it('handles missing stats gracefully and renders empty states', () => {
-    // Render with missing stats completely
     const { container, rerender } = render(<OverviewTab students={mockStudents} />)
     expect(container.querySelector('.donut-center-val').textContent).toBe('0人')
 
-    // Render with empty stats object
     rerender(<OverviewTab students={mockStudents} stats={{}} />)
     expect(container.querySelector('.donut-center-val').textContent).toBe('0人')
 
-    // Render with missing ageGroups in stats
     rerender(<OverviewTab students={mockStudents} stats={{ totalStudents: 0, totalRegistrations: 0, totalRefunds: 0, eduCounts: {}, popularCourses: [] }} />)
     expect(container.querySelector('.donut-center-val').textContent).toBe('0人')
   })
@@ -69,35 +65,27 @@ describe('OverviewTab Donut Chart', () => {
     expect(container.querySelector('.donut-center-val').textContent).toBe('4人')
     expect(container.querySelector('.donut-center-pct').textContent).toBe('年齡層分佈')
 
-    // Hover over the slice for '50歲以下' (using data-testid)
     const slice50 = screen.getByTestId('slice-50歲以下')
     fireEvent.mouseEnter(slice50)
 
-    // Verify center text updates
     expect(container.querySelector('.donut-center-label').textContent).toBe('50歲以下')
     expect(container.querySelector('.donut-center-val').textContent).toBe('1人')
     expect(container.querySelector('.donut-center-pct').textContent).toBe('25.0%')
 
-    // Mouse leave slice
     fireEvent.mouseLeave(slice50)
 
-    // Reverts to overall
     expect(container.querySelector('.donut-center-label').textContent).toBe('學員總數')
     expect(container.querySelector('.donut-center-val').textContent).toBe('4人')
 
-    // Find legend item for '50-59歲'
     const legendItem50_59 = screen.getByText('50-59歲').closest('.donut-legend-item')
     fireEvent.mouseEnter(legendItem50_59)
 
-    // Verify center text updates
     expect(container.querySelector('.donut-center-label').textContent).toBe('50-59歲')
     expect(container.querySelector('.donut-center-val').textContent).toBe('1人')
     expect(container.querySelector('.donut-center-pct').textContent).toBe('25.0%')
 
-    // Mouse leave legend item
     fireEvent.mouseLeave(legendItem50_59)
 
-    // Reverts to overall
     expect(container.querySelector('.donut-center-label').textContent).toBe('學員總數')
     expect(container.querySelector('.donut-center-val').textContent).toBe('4人')
   })
@@ -128,7 +116,6 @@ describe('OverviewTab Donut Chart', () => {
     fireEvent.mouseEnter(legendItem)
     expect(legendItem.className).toContain('active')
 
-    // Leave
     fireEvent.mouseLeave(legendItem)
     expect(legendItem.className).not.toContain('active')
   })

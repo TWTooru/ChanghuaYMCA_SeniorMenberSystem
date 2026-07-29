@@ -1,4 +1,4 @@
-/* 應用程式 shell：提供頁首、頁籤、內容與 modal 共享的外層視覺基礎。 */
+/* 應用程式 shell：統整頁首、頁籤、內容與 modal 的外層版面。 */
 .app-container {
   display: flex;
   flex-direction: column;
@@ -299,7 +299,7 @@
   to { transform: rotate(360deg); }
 }
 
-/* 離線提示：在資料同步不可用時保留明顯且不影響版面的狀態訊息。 */
+/* 離線提示：固定在 header 下方，顯示資料同步不可用的狀態訊息。 */
 .offline-banner {
   background: rgba(245, 158, 11, 0.15);
   border-bottom: 1px solid rgba(245, 158, 11, 0.3);
