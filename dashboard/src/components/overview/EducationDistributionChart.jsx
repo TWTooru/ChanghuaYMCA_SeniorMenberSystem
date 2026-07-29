@@ -12,6 +12,9 @@ const EDUCATION_ORDER = [
   '未知'
 ]
 
+/**
+ * 將教育程度統計依既定學制順序呈現，未列入的分類固定排在最後。
+ */
 export default function EducationDistributionChart({ eduCounts = {}, totalStudents = 0 }) {
   return (
     <div className="panel-card" style={{ flex: 1 }}>

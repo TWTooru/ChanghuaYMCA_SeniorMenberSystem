@@ -5,6 +5,9 @@ import CoursePopularityChart from './CoursePopularityChart'
 import EducationDistributionChart from './EducationDistributionChart'
 import SeniorsMetricCard from './SeniorsMetricCard'
 
+/**
+ * 整合上層 useStats 產生的 KPI 與統計分布，讓各卡片共用同一份學生快照資料。
+ */
 export default function OverviewTab({ students, stats = {} }) {
   return (
     <div>

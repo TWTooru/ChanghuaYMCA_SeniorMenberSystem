@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { TrendingUp } from 'lucide-react'
 
+/**
+ * 以年齡分組資料繪製 donut；hover state 同步控制中心資訊與其他切片的淡化效果。
+ */
 export default function AgeDistributionChart({ ageGroups }) {
   const [hoveredGroup, setHoveredGroup] = useState(null)
 
@@ -31,7 +34,7 @@ export default function AgeDistributionChart({ ageGroups }) {
     }
   })
 
-  // Active details for central text
+  // hover 後以目前分組取代總覽資訊；離開切片或圖例後恢復整體統計。
   const displayLabel = hoveredGroup ? hoveredGroup : '學員總數'
   const displayCount = hoveredGroup ? ((ageGroups || {})[hoveredGroup] || 0) : total
   const displayPct = hoveredGroup

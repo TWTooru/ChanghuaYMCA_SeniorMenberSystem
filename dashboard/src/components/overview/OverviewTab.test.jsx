@@ -64,7 +64,7 @@ describe('OverviewTab Donut Chart', () => {
   it('updates the center text when hovering over chart slices or legend items', () => {
     const { container } = render(<OverviewTab students={mockStudents} stats={mockStats} />)
 
-    // Initially displays the overall stats
+    // 未 hover 時顯示總覽，hover slice/legend 後才切換為該分組的明細。
     expect(container.querySelector('.donut-center-label').textContent).toBe('學員總數')
     expect(container.querySelector('.donut-center-val').textContent).toBe('4人')
     expect(container.querySelector('.donut-center-pct').textContent).toBe('年齡層分佈')
@@ -124,7 +124,7 @@ describe('OverviewTab Donut Chart', () => {
     const legendItem = screen.getByText('活力有氧').closest('.donut-legend-item')
     expect(legendItem.className).not.toContain('active')
 
-    // Hover legend item
+    // 課程圖例與扇形共用 hover state，因此圖例也應標示 active。
     fireEvent.mouseEnter(legendItem)
     expect(legendItem.className).toContain('active')
 

@@ -1,5 +1,6 @@
 import { Users, BookOpen, DollarSign } from 'lucide-react'
 
+/** 顯示 dashboard 的學生、報名與退費 KPI 摘要。 */
 export default function KpiCards({ stats }) {
   return (
     <div className="kpi-grid">

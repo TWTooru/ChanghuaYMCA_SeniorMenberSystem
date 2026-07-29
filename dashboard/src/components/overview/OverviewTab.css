@@ -1,4 +1,4 @@
-/* KPI Panel */
+/* KPI 卡片：在各視窗寬度維持可掃讀的摘要網格。 */
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -78,7 +78,7 @@
   color: var(--text-secondary);
 }
 
-/* Charts & Overview Section */
+/* 概覽圖表卡片：兩欄內容在窄螢幕時改為單欄。 */
 .overview-grid {
   display: grid;
   grid-template-columns: 2fr 1fr;
@@ -111,7 +111,7 @@
   color: var(--text-primary);
 }
 
-/* Donut Chart Styling */
+/* Donut 圖表與 hover 狀態：切片、中心摘要與圖例共用視覺語言。 */
 .donut-chart-layout {
   display: flex;
   align-items: center;
@@ -286,7 +286,7 @@
   color: var(--text-primary);
 }
 
-/* Seniors Metric Panel */
+/* 60 歲以上學生占比：以數值與進度條呈現同一項快照統計。 */
 .seniors-metric-divider {
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08) 20%, rgba(255, 255, 255, 0.08) 80%, transparent);

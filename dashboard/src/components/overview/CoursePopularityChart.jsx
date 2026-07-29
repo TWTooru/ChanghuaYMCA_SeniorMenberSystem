@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { FileText } from 'lucide-react'
 
+/**
+ * 依報名人次排序的熱門課程資料繪製 donut；切片與圖例共享同一個 hover course。
+ */
 export default function CoursePopularityChart({ popularCourses = [] }) {
   const [hoveredCourse, setHoveredCourse] = useState(null)
 
@@ -27,6 +30,7 @@ export default function CoursePopularityChart({ popularCourses = [] }) {
     const length = percentage * 157.08
     const offset = courseTotal > 0 ? -(accumulatedCourseCount / courseTotal) * 157.08 : 0
 
+    // 文字標籤依扇形中點定位，避免與圖例重複呈現同一門課的報名人次。
     const startPct = accumulatedCourseCount / courseTotal
     const endPct = (accumulatedCourseCount + count) / courseTotal
     const midPct = (startPct + endPct) / 2

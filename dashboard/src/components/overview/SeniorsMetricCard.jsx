@@ -1,5 +1,8 @@
 import { Heart } from 'lucide-react'
 
+/**
+ * 以學生快照計算 60 歲以上占比；age 與 is_60_plus 皆可識別既有資料來源的高齡學生。
+ */
 export default function SeniorsMetricCard({ students = [] }) {
   const seniorsCount = (students || []).filter(s => s.age >= 60 || s.is_60_plus === '是').length
   const seniorsPercentage = (students || []).length > 0 ? (seniorsCount / students.length) * 100 : 0
