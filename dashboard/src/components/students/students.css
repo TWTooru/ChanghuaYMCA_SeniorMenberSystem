@@ -1,4 +1,4 @@
-/* Search Filters Box */
+/* 學員清單的篩選與搜尋區塊。 */
 .filters-panel {
   background: var(--panel-bg, rgba(17, 24, 39, 0.4));
   border: 1px solid var(--border-color);
@@ -83,7 +83,7 @@
   color: var(--text-primary);
 }
 
-/* Data Table Styling */
+/* 學員清單表格與可捲動欄位。 */
 .table-wrapper {
   background: var(--panel-bg, rgba(31, 41, 55, 0.2));
   border: 1px solid var(--border-color);
@@ -153,7 +153,7 @@
   color: var(--text-muted);
 }
 
-/* Badges */
+/* 學員屬性的狀態標籤。 */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -183,7 +183,7 @@
   color: var(--text-secondary);
 }
 
-/* Pagination & Table Footer */
+/* 篩選結果的分頁資訊與操作按鈕。 */
 .table-footer {
   display: flex;
   justify-content: space-between;
@@ -227,7 +227,7 @@
   cursor: not-allowed;
 }
 
-/* Student Detail Side Modal */
+/* 學員詳細資料的側邊對話框與遮罩。 */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -315,7 +315,7 @@
   gap: 28px;
 }
 
-/* Detail Info Grid */
+/* 詳細資料檢視的欄位網格。 */
 .detail-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -350,7 +350,7 @@
   word-break: break-all;
 }
 
-/* Edit mode buttons in modal header */
+/* 側邊對話框的學員編輯操作。 */
 .modal-header-actions {
   display: flex;
   gap: 8px;

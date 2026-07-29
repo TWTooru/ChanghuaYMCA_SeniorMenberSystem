@@ -20,6 +20,7 @@ export default function StudentTable({
   onPageChange,
   totalFilteredCount
 }) {
+  /** 表格只呈現目前頁面的學員；列點擊與修課紀錄操作由父層處理選取狀態。 */
   const itemsPerPage = 10
 
   const pageNumbers = useMemo(() => {
@@ -120,7 +121,7 @@ export default function StudentTable({
         </table>
       </div>
 
-      {/* Table Pagination */}
+      {/* 目前篩選結果的分頁控制項。 */}
       <div className="table-footer">
         <div className="footer-info">
           顯示第 {totalFilteredCount > 0 ? (studentPage - 1) * itemsPerPage + 1 : 0} 至 {Math.min(studentPage * itemsPerPage, totalFilteredCount)} 筆學員（共 {totalFilteredCount} 筆）

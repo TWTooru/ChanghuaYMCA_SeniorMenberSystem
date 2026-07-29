@@ -12,6 +12,7 @@ export default function StudentFilters({
   permissions,
   onShowAddStudent
 }) {
+  /** 所有篩選欄位皆為受控輸入，實際篩選與頁碼重設由父元件集中管理。 */
   return (
     <div>
       {permissions?.canAddStudent && (

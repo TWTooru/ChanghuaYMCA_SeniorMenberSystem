@@ -21,6 +21,7 @@ function getFocusableElements(container) {
 }
 
 export default function StudentDetailModal({ student, enrollments, initialTab = 'history', isTabbed = true, onClose, onAddEnrollment, onRefresh, onStudentUpdated }) {
+  /** 對話框統一管理焦點、未儲存變更保護與分頁切換；儲存後先更新選取學員，再要求外層重新整理快照。 */
   const { role } = useAuth()
   const permissions = usePermissions(role)
   const [isEditing, setIsEditing] = useState(false)
@@ -52,6 +53,7 @@ export default function StudentDetailModal({ student, enrollments, initialTab = 
   }, [student?.student_id, initialTab, setHasUnsavedStudentChanges])
 
   useEffect(() => {
+    // 開啟時聚焦第一個可操作元件，卸載時將焦點還給啟動對話框的元素。
     previousFocusRef.current = document.activeElement
     const dialog = dialogRef.current
     if (!dialog) return undefined
@@ -73,6 +75,7 @@ export default function StudentDetailModal({ student, enrollments, initialTab = 
   const handleStudentSaved = updatedStudent => {
     setIsEditing(false)
     setHasUnsavedStudentChanges(false)
+    // 先同步外層選取的學員，再重新整理資料快照，避免詳細資料顯示舊值。
     onStudentUpdated?.(updatedStudent)
     onRefresh?.()
   }
@@ -112,6 +115,7 @@ export default function StudentDetailModal({ student, enrollments, initialTab = 
   }
 
   const handleKeyDown = event => {
+    // Escape 交由未儲存變更守衛處理；Tab 則限制焦點留在 dialog 內。
     if (event.key === 'Escape') {
       requestClose()
       return
@@ -140,6 +144,7 @@ export default function StudentDetailModal({ student, enrollments, initialTab = 
   const deleteStudentMessage = `確定要刪除學員「${student.name}」（${student.student_id}）嗎？此操作無法復原，該學員的所有選課紀錄也會一併刪除。`
 
   const requestTab = tab => {
+    // 覆蓋層、Escape 與分頁切換皆透過相同守衛，避免未儲存內容被直接捨棄。
     if (tab === activeDetailTab) return
     requestAction(() => {
       setIsEditing(false)

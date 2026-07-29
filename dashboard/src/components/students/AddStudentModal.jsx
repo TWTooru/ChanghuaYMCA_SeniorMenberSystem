@@ -7,6 +7,7 @@ import { STUDENT_ID_VALIDATION_MESSAGE, normalizeStudentId } from '../../domain/
 import '../common/common.css'
 
 export default function AddStudentModal({ students, onClose, onRefresh }) {
+  /** 建立學員時以既有數字 ID 推算下一個建議值；無法正規化的舊版 ID 不參與計算。 */
   const [newStudent, setNewStudent] = useState({
     student_id: '', name: '', gender: '男', birth_date: '', age: '',
     address: '', mobile_phone: '', home_phone: '', emergency_contact: '',
@@ -19,7 +20,8 @@ export default function AddStudentModal({ students, onClose, onRefresh }) {
       try {
         const value = BigInt(normalizeStudentId(student.student_id));
         if (value > maximum) maximum = value;
-      } catch { /* Existing legacy IDs are intentionally ignored. */ }
+      // 無法正規化的舊版 ID 會略過，避免舊資料阻斷新學員編號的建議值。
+      } catch { /* 無法正規化的舊版 ID 會略過。 */ }
     }
     return String(maximum + 1n);
   }, [students]);

@@ -11,6 +11,7 @@ const fields = [
 ]
 
 export default function StudentEditForm({ student, onSave, onCancel, onDirtyChange = () => {} }) {
+  /** 編輯表單以初始快照判定 dirty 狀態，並透過 onDirtyChange 讓外層對話框保護未儲存內容。 */
   const initialForm = useMemo(() => ({ ...student }), [student])
   const [editForm, setEditForm] = useState(initialForm)
   const [isSaving, setIsSaving] = useState(false)

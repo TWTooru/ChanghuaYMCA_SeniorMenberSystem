@@ -11,6 +11,7 @@ vi.mock('../../contexts/AuthContext', () => ({
 }))
 
 const student = {
+  // 共用 fixture 以固定學員資料，讓焦點與未儲存變更測試能專注驗證對話框生命週期。
   student_id: 'S-001',
   name: '王小明',
   birth_date: '1960-01-01',

@@ -1,6 +1,7 @@
 import { User } from 'lucide-react'
 
 export default function StudentInfoView({ student, onEdit }) {
+  /** 此檢視直接顯示 canonical 學員欄位；編輯權限與開啟編輯表單的決策由父元件透過回呼提供。 */
   return (
     <div>
       <h3 className="panel-title" style={{ marginBottom: '12px' }}>

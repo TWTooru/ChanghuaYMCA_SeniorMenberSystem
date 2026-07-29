@@ -16,6 +16,7 @@ vi.mock('../../services/courseCatalogService', () => ({
 }))
 
 vi.mock('../../lib/supabaseClient', () => ({
+  // 服務層 mock 僅模擬表單所需的回應，不載入實際的 Supabase 用戶端。
   supabase: {
     rpc: async () => ({ data: null, error: updateStudentResult.error }),
     from: () => ({

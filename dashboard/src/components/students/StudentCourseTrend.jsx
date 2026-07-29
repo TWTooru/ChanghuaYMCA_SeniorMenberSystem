@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { buildStudentCourseTrend } from '../../domain/courseTrend'
 
 export default function StudentCourseTrend({ timeline = [] }) {
+  /** 趨勢計算委派給 domain 層，元件僅將已彙整的課程次數與季度資料呈現為可存取的摘要。 */
   const trends = useMemo(() => buildStudentCourseTrend(timeline), [timeline])
 
   return (

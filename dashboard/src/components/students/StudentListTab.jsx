@@ -6,6 +6,7 @@ import StudentTable from './StudentTable'
 import './students.css'
 
 export default function StudentListTab({ students, enrollments, onSelectStudent, onShowAddStudent }) {
+  /** 此容器保留篩選、排序與分頁狀態，並將列的呈現與操作委派給 StudentTable。 */
   const { role } = useAuth()
   const permissions = usePermissions(role)
   const [studentSearch, setStudentSearch] = useState('')
@@ -49,7 +50,7 @@ export default function StudentListTab({ students, enrollments, onSelectStudent,
       return matchesSearch && matchesGender && matchesAge && matchesEdu
     })
     
-    // Apply sorting
+    // 以可安全比較的學員 ID 排序，讓數字與字串格式的 ID 都維持穩定順序。
     result.sort((a, b) => {
       // Convert to string safely in case they are numbers, and compare numerically if possible
       const idA = String(a.student_id);
