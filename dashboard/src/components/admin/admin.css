@@ -28,7 +28,7 @@
 .admin-danger-copy { grid-column: 1 / -1; margin: 0; color: #fca5a5; }
 @media (max-width: 760px) { .admin-page { padding: 20px 16px; } .admin-page-header { align-items: flex-start; flex-direction: column; } .admin-summary-grid { grid-template-columns: 1fr; } .admin-user-table { overflow-x: auto; } .admin-audit-item time { width: 100%; margin-left: 0; } }
 
-/* 稽核時間軸的操作按鈕配置，讓 mutation 前後的可追溯資訊維持清楚層次。 */
+/* 課程報名時間軸的操作按鈕配置，供編輯與刪除動作使用。 */
 .timeline-actions {
   display: flex;
   gap: 4px;
