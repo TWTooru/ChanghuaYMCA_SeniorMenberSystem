@@ -120,7 +120,7 @@ begin
       v_assigned := v_assigned || pg_catalog.jsonb_build_array(pg_catalog.jsonb_build_object('source_row', v_source_row, 'student_id', v_student_id));
     end if;
 
-    -- 指定 ID 走更新、未指定 ID 走新建；空白欄位不覆寫既有補充資料。
+    -- 指定 ID 更新既有學生；僅 legacy-total 模式可為不存在的指定 ID 建立學生；未指定 ID 則自動新建，空白欄位不覆寫既有補充資料。
     insert into public.students as current_student (
       student_id, name, gender, birth_date, age, is_60_plus, address,
       home_phone, mobile_phone, emergency_contact, relationship,
