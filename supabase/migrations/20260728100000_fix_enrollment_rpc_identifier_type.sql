@@ -1,9 +1,11 @@
--- Production enrollments use UUID identifiers, while early local schemas used bigint.
--- Accept a textual identifier so the dashboard RPC remains compatible with both.
+-- 正式環境的 enrollments 使用 UUID，早期本機 schema 則使用 bigint。
+-- RPC 改收文字識別碼，並以 ::text 比對，讓 dashboard 能同時相容兩種歷史 schema。
+-- 移除舊 bigint 簽章，避免呼叫端在不同環境選到不相容的函式多載。
 drop function if exists public.update_enrollment_with_courses(
   bigint, text, text, text, text, integer, text, text[]
 );
 
+-- 在單一交易中更新報名及課程，且禁止移除已有收據的課程。
 create function public.update_enrollment_with_courses(
   p_enrollment_id text,
   p_season text,
@@ -74,5 +76,6 @@ begin
 end;
 $$;
 
+-- 預設撤銷所有角色的 RPC 權限，只讓 authenticated 使用者呼叫；函式內另驗證 app role。
 revoke all on function public.update_enrollment_with_courses(text, text, text, text, text, integer, text, text[]) from public;
 grant execute on function public.update_enrollment_with_courses(text, text, text, text, text, integer, text, text[]) to authenticated;
