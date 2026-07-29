@@ -1,3 +1,4 @@
+/* 課程收據與舊制帳單同置於明細視窗；收據列採巢狀資訊排列以對應每門已報名課程。 */
 .enrollment-billing-dialog {
   width: min(760px, calc(100vw - 32px));
   max-height: calc(100vh - 48px);

@@ -15,6 +15,7 @@ const DUPLICATE_RECEIPT_ERROR = '此課程已有收據，請重新整理後再�
 const MISSING_COURSE_ID_ERROR = '課程資料已更新，請重新載入後再試'
 const DELETE_CONFIRMATION = '確定刪除此課程的收據？金額與發票編號將無法復原。'
 
+// 新制以每門已報名課程各自管理收據；舊制帳單僅供讀取，完成異動後以 `onRefresh` 回填服務端資料。
 function isValidId(value) {
   return Number.isSafeInteger(value) && value > 0
 }

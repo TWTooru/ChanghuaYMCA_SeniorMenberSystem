@@ -1,3 +1,4 @@
+/* 課程標籤選擇器與管理 overlay 共用焦點樣式，讓鍵盤操作在彈出管理視窗時仍可辨識目前位置。 */
 .course-tag-picker {
   display: flex;
   flex-direction: column;

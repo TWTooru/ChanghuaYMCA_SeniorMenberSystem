@@ -1,4 +1,4 @@
-/* Timeline */
+/* 報名歷程與篩選結果共用此區塊樣式，確保在不同學生資料量下仍維持可閱讀的時間軸層級。 */
 .timeline-section {
   display: flex;
   flex-direction: column;

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
+// 對話框開啟時將焦點留在可互動項目中，關閉後還原至 `returnFocusRef`，避免 `pending` 狀態讓鍵盤焦點遺失。
 function getFocusableElements(container) {
   return Array.from(container.querySelectorAll(
     'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'

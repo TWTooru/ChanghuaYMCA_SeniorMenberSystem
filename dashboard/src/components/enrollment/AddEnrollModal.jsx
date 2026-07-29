@@ -6,6 +6,7 @@ import { normalizeSeason } from '../../domain/season'
 import CourseTagPicker from './CourseTagPicker'
 import '../common/common.css'
 
+// 新增報名會連同課程以同一個 `createEnrollmentWithCourses` 請求儲存，成功後再透過 `onRefresh` 同步外層資料。
 export default function AddEnrollModal({ student, onClose, onRefresh, defaultSeason = '第十五季' }) {
   const [newEnroll, setNewEnroll] = useState({
     season: defaultSeason, reg_type: '續', pre_test: '', post_test: '',

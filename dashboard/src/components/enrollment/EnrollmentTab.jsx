@@ -17,6 +17,7 @@ export default function EnrollmentTab({ students, enrollments, onSelectEnrollmen
   const [historyPage, setHistoryPage] = useState(1)
   const itemsPerPage = 10
 
+  // 篩選、排序與分頁皆由同一份 `enrollments` 推導，避免各區塊使用不同條件而顯示不一致的報名歷程。
   const seasonsList = useMemo(() => {
     if (!enrollments) return []
     const set = new Set(enrollments.map(e => e.season))

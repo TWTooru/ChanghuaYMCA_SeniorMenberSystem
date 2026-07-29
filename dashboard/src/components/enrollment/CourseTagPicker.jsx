@@ -57,6 +57,7 @@ export default function CourseTagPicker({
 
   const selectedSet = new Set(selectedCourseNames)
   const lockedSet = new Set(lockedCourseNames)
+  // 停用課程仍須保留既有選取值；沒有 catalog 對應的舊資料則以 `legacy:` 項目呈現，讓編輯不會遺失歷史課程。
   const visibleCatalog = catalog.filter(course => course.active || selectedSet.has(course.courseName))
   const legacySelections = selectedCourseNames
     .filter(name => !catalog.some(course => course.courseName === name))

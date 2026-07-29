@@ -55,6 +55,7 @@ function renderModal(overrides = {}) {
   return { ...render(<EnrollmentBillingDetailModal {...props} />), props }
 }
 
+// 此 helper 依序選擇課程並開啟內嵌編輯器，讓建立、忙碌狀態與重新整理相關測試共用相同互動流程。
 function beginCreatingReceipt(courseName = '書法') {
   fireEvent.click(screen.getByRole('button', { name: '新增收據' }))
   fireEvent.click(screen.getByRole('button', { name: courseName }))

@@ -15,6 +15,7 @@ export default function EnrollmentEditForm({ enrollment, onSave, onCancel }) {
     courses: enrollment.courses || [],
   })
   const [saveError, setSaveError] = useState('')
+  // 已建立收據的課程不可在編輯表單移除；`updateEnrollmentWithCourses` 需保留這些課程才能維持收據關聯。
   const lockedCourseNames = (enrollment.courseDetails || [])
     .filter(course => course.receipt)
     .map(course => course.courseName)

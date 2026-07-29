@@ -9,6 +9,7 @@ export default function EnrollmentTimeline({ timeline, onDelete, onAddEnrollment
     if (!onEditEnrollment) setEditingEnrollId(null)
   }, [onEditEnrollment])
 
+  // 表單儲存後先收起內嵌編輯器，再交由外層 `onRefresh` 重新取得最新的報名時間軸。
   const handleSave = () => {
     setEditingEnrollId(null)
     if (onRefresh) onRefresh()
