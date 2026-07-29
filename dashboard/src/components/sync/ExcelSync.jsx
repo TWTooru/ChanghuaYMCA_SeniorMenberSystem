@@ -67,7 +67,7 @@ export default function ExcelSync({ onSyncComplete }) {
         <span>{isReading ? '讀取中...' : isImporting ? '匯入中...' : '匯入季度 CSV'}</span>
       </button>
       {preview && <ImportPreviewDialog preview={preview} isImporting={isImporting} onConfirm={handleConfirm} onCancel={() => setPreview(null)} />}
-      // 指派 ID 必須在資料刷新後仍可抄錄，因此使用獨立於 preview 的結果狀態。
+      {/* 指派 ID 必須在資料刷新後仍可抄錄，因此使用獨立於 preview 的結果狀態。 */}
       {assignedIds.length > 0 && createPortal(
         <div
           className="modal-overlay-center"
