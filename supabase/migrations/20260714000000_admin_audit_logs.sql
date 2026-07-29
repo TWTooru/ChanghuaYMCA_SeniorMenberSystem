@@ -1,3 +1,6 @@
+-- 建立管理員操作 audit table，並以 protect_last_auth_admin trigger 防止 Auth metadata
+-- 的並行更新或刪除移除最後一位管理員。Edge Function guard 不是此競態的最終防線。
+
 create table public.admin_audit_logs (
   id uuid primary key default gen_random_uuid(),
   actor_user_id uuid,
@@ -24,11 +27,13 @@ create index admin_audit_logs_created_at_idx
 
 alter table public.admin_audit_logs enable row level security;
 
+-- audit table 不直接開放 authenticated CRUD，只能由持 service-role 的 Edge Function 寫入與讀取。
 revoke all on table public.admin_audit_logs from anon, authenticated;
 
 comment on table public.admin_audit_logs is
   'Permanent snapshots of privileged Auth account-management actions; accessed only by the service key.';
 
+-- trigger 在 Auth row mutation 的同一資料庫交易中重新計數管理員，封住兩個 request 同時降級的競態。
 create or replace function public.protect_last_auth_admin()
 returns trigger
 language plpgsql

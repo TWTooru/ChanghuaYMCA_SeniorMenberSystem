@@ -1,3 +1,6 @@
+-- 將核心表從「所有 authenticated 使用者可寫」收斂為 viewer／editor／admin 角色權限。
+-- current_app_role() 只讀 JWT app_metadata；前端 usePermissions 不參與資料庫授權。
+
 create or replace function public.current_app_role()
 returns text
 language sql
@@ -24,6 +27,7 @@ drop policy if exists "authenticated users can insert courses" on public.courses
 drop policy if exists "authenticated users can update courses" on public.courses;
 drop policy if exists "authenticated users can delete courses" on public.courses;
 
+-- viewer 只讀、editor 可新增更新、admin 才可刪除；policy 與 table grant 必須同時允許操作。
 create policy "role users can select students"
 on public.students for select
 to authenticated
