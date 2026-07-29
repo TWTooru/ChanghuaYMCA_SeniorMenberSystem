@@ -1,6 +1,10 @@
 // src/hooks/usePermissions.js
 import { useMemo } from 'react'
 
+/**
+ * 將角色映射為 UI 顯示與操作提示。這些旗標不是安全邊界，
+ * 後端 mutation 仍由 RLS、RPC 或 Edge Function 再次授權。
+ */
 const ROLE_PERMISSIONS = {
   viewer: {
     canViewData: true,

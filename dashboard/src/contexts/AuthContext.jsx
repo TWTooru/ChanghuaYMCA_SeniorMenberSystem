@@ -1,6 +1,10 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
+/**
+ * 集中管理 Supabase session 與邀請／密碼重設流程。
+ * `role` 供前端控制顯示；真正授權仍必須由 RLS 或 Edge Function 驗證。
+ */
 const AuthContext = createContext({
     session: null,
     user: null,
@@ -11,11 +15,16 @@ const AuthContext = createContext({
     completePasswordFlow: () => {},
 });
 
+/**
+ * 從 session metadata 解析 UI 使用的角色；legacy metadata 僅為相容舊帳號。
+ * 缺少或未知角色時一律降級為 `viewer`。
+ */
 export function extractRole(session) {
     if (!session?.user) return 'viewer';
     return (
         session.user.app_metadata?.app_role ||
         session.user.app_metadata?.role ||
+        // `app_metadata` 由可信任後端維護；`user_metadata` 只保留舊帳號相容性，不能作為後端授權依據。
         session.user.user_metadata?.role ||
         'viewer'
     );

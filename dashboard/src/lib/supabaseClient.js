@@ -1,5 +1,9 @@
 import { createClient } from '@supabase/supabase-js'
 
+/**
+ * 驗證 Vite 注入的 Supabase public 設定並建立瀏覽器共用 client。
+ * production 禁止沿用本機預設值，避免正式環境默默連到錯誤專案。
+ */
 const DEFAULT_SUPABASE_URL = 'http://localhost:54321'
 const DEFAULT_SUPABASE_ANON_KEY = 'dummy-key'
 

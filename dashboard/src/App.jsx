@@ -23,6 +23,11 @@ import usePermissions from './hooks/usePermissions'
 import useTheme from './hooks/useTheme'
 import AppHeader from './components/common/AppHeader'
 
+/**
+ * 應用程式組合根節點：依認證流程切換登入／設密碼畫面，登入後再串接
+ * dashboard 資料、頁籤與跨頁共用 modal。`refreshCount` 是所有成功 mutation
+ * 通知 `useApiData` 重新讀取 Supabase 快照的唯一入口。
+ */
 function AuthenticatedDashboard() {
   const { session, user, role, signOut } = useAuth()
   const permissions = usePermissions(role)
@@ -34,6 +39,7 @@ function AuthenticatedDashboard() {
   const [selectedBillingRecord, setSelectedBillingRecord] = useState(null)
   const [refreshCount, setRefreshCount] = useState(0)
 
+  // 角色可能在 session 更新後降級；立即退出管理頁，避免保留已失效的管理介面。
   useEffect(() => {
     if (role !== 'admin' && activeTab === 'admin') setActiveTab('overview')
   }, [role, activeTab])
