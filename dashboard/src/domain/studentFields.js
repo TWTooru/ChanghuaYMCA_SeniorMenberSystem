@@ -11,8 +11,8 @@ export const EDUCATION_OPTIONS = [
 ]
 
 /**
- * Maps loose spreadsheet and form education values into the UI's canonical
- * categories while retaining non-empty values that do not match a known rule.
+ * 將試算表與表單中寬鬆的學歷值對應至 UI 的標準分類，
+ * 並保留不符合既有規則的非空白值。
  */
 export function normalizeEducation(value) {
   const edu = typeof value === 'string' ? value.trim() : ''
@@ -30,8 +30,8 @@ export function normalizeEducation(value) {
 }
 
 /**
- * Calculates completed age using a caller-provided `today` when deterministic
- * import or display behavior is required.
+ * 在需要可重現的匯入或顯示結果時，使用呼叫端傳入的 `today`
+ * 計算已滿年齡。
  */
 export function calculateAgeFromBirthDate(value, today = new Date()) {
   if (!value) return null
@@ -54,7 +54,7 @@ export function calculateAgeFromBirthDate(value, today = new Date()) {
   return age >= 0 ? age : null
 }
 
-/** Converts a numeric age into the display label used for the sixty-plus group. */
+/** 將數值年齡轉換為六十歲以上群組使用的顯示標籤。 */
 export function formatSixtyPlus(age) {
   return Number(age) >= 60 ? '是' : '否'
 }

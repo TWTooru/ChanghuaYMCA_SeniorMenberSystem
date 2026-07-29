@@ -1,8 +1,8 @@
 export const STUDENT_ID_VALIDATION_MESSAGE = '學生 ID 必須是大於 0 的整數'
 
 /**
- * Converts a supplied student ID to its canonical non-zero-padded form.
- * Blank input is only accepted when callers explicitly opt into `allowBlank`.
+ * 將輸入的學生 ID 轉換為不含前導零的標準形式。
+ * 僅在呼叫端明確啟用 `allowBlank` 時接受空白輸入。
  */
 export function normalizeStudentId(value, { allowBlank = false } = {}) {
   const text = String(value ?? '').trim()
@@ -15,8 +15,8 @@ export function normalizeStudentId(value, { allowBlank = false } = {}) {
 }
 
 /**
- * Converts valid calendar dates from accepted input forms into the stable
- * identity-date representation used when matching student records.
+ * 將可接受輸入格式中的有效曆法日期轉換為穩定的身分日期表示，
+ * 供比對學生資料時使用。
  */
 export function normalizeIdentityDate(value) {
   const text = String(value ?? '').trim()
@@ -37,8 +37,8 @@ export function normalizeIdentityDate(value) {
 }
 
 /**
- * Builds the fallback identity key when a record cannot be matched by
- * `student_id`; all three identifying fields must be present.
+ * 當資料無法以 `student_id` 比對時建立備援身分鍵；
+ * 三個識別欄位都必須存在。
  */
 export function buildStudentIdentityKey(student) {
   const name = String(student?.name ?? '').trim()

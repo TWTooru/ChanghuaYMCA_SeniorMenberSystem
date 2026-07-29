@@ -4,8 +4,8 @@ function firstReceipt(value) {
 }
 
 /**
- * Converts nested course and receipt rows into the UI's stable `courseDetails`
- * shape, handling relationship results returned as either arrays or objects.
+ * 將巢狀課程與收據列轉換為 UI 穩定使用的 `courseDetails` 形狀，
+ * 並處理關聯結果可能以陣列或物件傳回的情況。
  */
 export function normalizeCourseDetails(courseRows = []) {
   return courseRows.map(course => {
@@ -25,8 +25,8 @@ export function normalizeCourseDetails(courseRows = []) {
 }
 
 /**
- * Summarizes receipt-backed billing when present, otherwise preserves the
- * legacy enrollment `amount` and `invoice_number` fields as a fallback.
+ * 有收據時彙整以收據為準的帳務；否則保留舊版報名資料的
+ * `amount` 與 `invoice_number` 欄位作為備援。
  */
 export function summarizeEnrollmentBilling(enrollment) {
   const receipts = (enrollment.courseDetails || [])
@@ -34,7 +34,7 @@ export function summarizeEnrollmentBilling(enrollment) {
     .filter(Boolean)
 
   if (receipts.length === 0) {
-    // Older enrollment rows predate course receipts, so their own fields remain the source of truth.
+    // 舊版報名列早於課程收據機制，其自身欄位仍是資料依據。
     const invoice = String(enrollment.invoice_number ?? '').trim()
     return {
       amount: enrollment.amount == null ? null : enrollment.amount,

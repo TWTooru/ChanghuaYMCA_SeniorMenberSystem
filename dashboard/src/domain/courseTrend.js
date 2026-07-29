@@ -1,8 +1,8 @@
 import { compareSeasons } from './season'
 
 /**
- * Aggregates a student's non-refunded enrollment timeline into per-course
- * attendance counts, de-duplicating courses within each season or enrollment.
+ * 將學生未退款的報名時間軸彙整為各課程的修課次數，
+ * 並在每個季別或報名資料內去除重複課程。
  */
 export function buildStudentCourseTrend(timeline = []) {
   const trendsByCourse = new Map()
