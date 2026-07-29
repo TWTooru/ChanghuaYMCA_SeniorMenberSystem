@@ -1,3 +1,4 @@
+-- 若仍有重複的學生／季別報名，先失敗而不是在建立唯一索引時留下不明確的修復結果。
 do $$
 begin
   if exists (
@@ -10,9 +11,11 @@ begin
 end;
 $$;
 
+-- 這個自然鍵是 enrollment upsert 的衝突目標，也防止未來重新出現同季重複報名。
 create unique index if not exists enrollments_student_season_uidx
 on public.enrollments (student_id, season);
 
+-- 維持 CSV 匯入期待的 YYYY/MM/DD 生日字串；僅在舊欄位仍為 date 時轉換。
 do $$
 begin
   if exists (
@@ -26,6 +29,7 @@ begin
 end;
 $$;
 
+-- 此版移除 legacy-total 的限制，讓指定 student_id 可用於新增或更新的相容匯入流程。
 create or replace function public.import_season_data(p_payload jsonb)
 returns jsonb
 language plpgsql
@@ -43,6 +47,7 @@ declare
   v_birth_text text; v_birth_date date; v_age integer; v_sixty_plus text;
   v_pre_test text; v_post_test text; v_reg_type text;
 begin
+  -- SECURITY DEFINER 僅代替獲授權的 editor/admin 執行，角色不足時立即拒絕。
   if public.current_app_role() not in ('editor', 'admin') then
     raise exception 'IMPORT_FORBIDDEN' using errcode = '42501';
   end if;
@@ -50,6 +55,7 @@ begin
     raise exception 'INVALID_IMPORT_PAYLOAD';
   end if;
 
+  -- 在同一交易內序列化 ID 配發，避免兩次未指定 ID 匯入讀到相同最大值。
   perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtext('public.import_season_data'));
   select coalesce(max(student_id::bigint), 0) into v_next_id
   from public.students where student_id ~ '^[0-9]+$';
@@ -62,6 +68,7 @@ begin
       raise exception 'ROW_%:NAME_REQUIRED', v_source_row;
     end if;
 
+    -- 生日格式驗證後再計算衍生欄位，避免把不合法 CSV 值寫入學生資料。
     v_birth_text := nullif(pg_catalog.btrim(v_student ->> 'birth_date'), '');
     v_birth_date := null; v_age := null; v_sixty_plus := null;
     if v_birth_text is not null then
@@ -74,6 +81,7 @@ begin
       v_sixty_plus := case when v_age >= 60 then '是' else '否' end;
     end if;
 
+    -- 指定 ID 可直接 upsert；同一批不可重複使用，避免 payload 內部的覆寫順序影響結果。
     if v_provided_id is not null then
       if v_provided_id = any(v_seen_ids) then
         raise exception 'ROW_%:DUPLICATE_STUDENT_ID:%', v_source_row, v_provided_id;
@@ -88,6 +96,7 @@ begin
         if v_provided_id ~ '^[0-9]+$' then v_next_id := greatest(v_next_id, v_provided_id::bigint); end if;
       end if;
     else
+      -- 沒有指定 ID 才自動配發，並以姓名搭配生日或手機攔截疑似重複學生。
       if exists (
         select 1 from public.students s
         where pg_catalog.lower(pg_catalog.btrim(s.name)) = pg_catalog.lower(pg_catalog.btrim(v_student ->> 'name'))
@@ -107,6 +116,7 @@ begin
       v_assigned := v_assigned || pg_catalog.jsonb_build_array(pg_catalog.jsonb_build_object('source_row', v_source_row, 'student_id', v_student_id));
     end if;
 
+    -- 保留資料庫中 payload 未提供的欄位，使提供 ID 的補登不會清空既有資料。
     insert into public.students as current_student (
       student_id, name, gender, birth_date, age, is_60_plus, address,
       home_phone, mobile_phone, emergency_contact, relationship,
@@ -152,6 +162,7 @@ begin
         or pg_catalog.to_char(pg_catalog.to_date(v_post_test, 'YYYY/MM/DD'), 'YYYY/MM/DD') <> v_post_test
       ) then raise exception 'ROW_%:INVALID_DATE:後測', v_source_row; end if;
 
+      -- 以學生與季別 upsert，重送同一批資料時更新同一筆報名而非新增重複列。
       select exists(select 1 from public.enrollments where student_id = v_student_id and season = v_enrollment ->> 'season') into v_exists;
       insert into public.enrollments as current_enrollment (student_id, season, reg_type, pre_test, post_test)
       values (v_student_id, v_enrollment ->> 'season', v_reg_type, v_pre_test, v_post_test)
@@ -162,6 +173,7 @@ begin
       returning enrollment_id into v_enrollment_id;
       if v_exists then v_enrollments_updated := v_enrollments_updated + 1; else v_enrollments_inserted := v_enrollments_inserted + 1; end if;
 
+      -- 課程以 payload 全量取代，確保已移除的課程關聯不會殘留。
       delete from public.courses where enrollment_id = v_enrollment_id;
       insert into public.courses (enrollment_id, course_name)
       select v_enrollment_id, course_name
@@ -182,5 +194,6 @@ begin
 end;
 $$;
 
+-- 執行權限只給 authenticated；函式內仍以 current_app_role() 執行更細的授權。
 revoke all on function public.import_season_data(jsonb) from public;
 grant execute on function public.import_season_data(jsonb) to authenticated;
