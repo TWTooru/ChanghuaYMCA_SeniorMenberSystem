@@ -1,5 +1,6 @@
 import { AlertCircle } from 'lucide-react'
 
+/** 可重用的破壞性操作確認層；是否允許操作仍由呼叫端與後端決定。 */
 export default function ConfirmDialog({ isOpen, title, message, confirmLabel = '確認刪除', cancelLabel = '取消', tone = 'danger', onConfirm, onCancel }) {
   if (!isOpen) return null
 

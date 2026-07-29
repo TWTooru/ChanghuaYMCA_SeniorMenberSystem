@@ -1,4 +1,4 @@
-/* Custom Form Modals for Add Student & Add Enrollment */
+/* 新增學員、報名與確認流程共用的 modal 基礎樣式。 */
 .modal-overlay-center {
   position: fixed;
   top: 0;

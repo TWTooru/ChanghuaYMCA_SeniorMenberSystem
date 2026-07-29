@@ -4,6 +4,10 @@ import './auth.css'
 
 const UPDATE_ERROR = '密碼設定失敗，請重新開啟連結後再試一次。'
 
+/**
+ * 處理 invite 與 recovery 共用的首次設密碼表單。
+ * 成功後呼叫 `onComplete` 清除 URL flow，避免重新整理再次進入設定畫面。
+ */
 export default function PasswordSetup({ session, flow, onComplete }) {
   const [password, setPassword] = useState('')
   const [confirmation, setConfirmation] = useState('')
