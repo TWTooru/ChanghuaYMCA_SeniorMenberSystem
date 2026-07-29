@@ -136,6 +136,7 @@ function fakeDeps({
 }
 
 Deno.test('rejects a stale admin JWT when the fresh actor is editor', async () => {
+  // 每個請求都必須以 fresh actor 授權，避免過期 JWT 的 admin 權限繼續有效。
   const deps = fakeDeps({ actorRole: 'editor' })
   const response = await createAdminUsersHandler(deps)(request({ action: 'list_users' }))
   assertEquals(response.status, 403)
@@ -315,6 +316,7 @@ Deno.test('rejects a forged role update before an invited account first signs in
 })
 
 Deno.test('failed role updates complete their pending audit with the fixed Auth error code', async () => {
+  // Auth mutation 失敗時，已建立的 pending audit 必須完成為 failure 並使用穩定錯誤碼。
   const deps = fakeDeps({ updateError: true })
   deps.users = [signedInUser('target', 'target@example.com', 'viewer')]
   const response = await createAdminUsersHandler(deps)(request({
@@ -433,6 +435,7 @@ Deno.test('failed resend and password reset attempts complete their pending audi
 })
 
 Deno.test('audit insertion failures hide underlying errors and prevent Auth mutation', async () => {
+  // pending audit 無法建立時，不得執行後續特權 mutation。
   const insertFailure = fakeDeps({ insertAuditError: true })
   insertFailure.users = [authUser('target', 'target@example.com', 'viewer')]
   let response = await createAdminUsersHandler(insertFailure)(request({
@@ -443,6 +446,7 @@ Deno.test('audit insertion failures hide underlying errors and prevent Auth muta
 })
 
 Deno.test('a successful mutation leaves its audit pending when completion transiently fails', async () => {
+  // mutation 成功但 audit 完成失敗時，回傳穩定錯誤碼並保留 pending 狀態供後續處理。
   const completionFailure = fakeDeps({ completeAuditFailures: 1 })
   completionFailure.users = [authUser('target', 'target@example.com', 'viewer')]
   const response = await createAdminUsersHandler(completionFailure)(request({

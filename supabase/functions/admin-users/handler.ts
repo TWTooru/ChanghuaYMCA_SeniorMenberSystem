@@ -11,6 +11,10 @@ import {
   type AppRole,
 } from './domain.ts'
 
+/**
+ * HTTP use-case：從 bearer token 讀取 fresh actor，驗證 action 後才呼叫特權 adapter。
+ * 所有 mutation 先建立 pending audit，再以 success 或 failure 完成，使成功與失敗都有可追溯紀錄。
+ */
 export type HandlerDeps = {
   getActor(token: string): Promise<any>
   listUsers(): Promise<any[]>
@@ -61,6 +65,7 @@ const errorCode = (caught: unknown) =>
   caught instanceof ApiError ? caught.code : 'SUPABASE_AUTH_ERROR'
 
 async function startAudit(deps: HandlerDeps, row: Record<string, unknown>) {
+  // audit 建立失敗時直接停止，避免沒有可追溯紀錄的特權 mutation。
   try {
     return await deps.insertAudit(row)
   } catch {
@@ -74,6 +79,7 @@ async function completeAudit(
   status: 'success' | 'failure',
   code?: keyof typeof ERROR_STATUS,
 ) {
+  // 將 pending audit 收束為穩定的 success/failure；完成失敗會以固定錯誤碼回應。
   try {
     await deps.completeAudit(id, status, code)
   } catch {
@@ -85,14 +91,17 @@ export function createAdminUsersHandler(deps: HandlerDeps) {
   return async (request: Request) => {
     try {
       if (request.method !== 'POST') throw new ApiError('INVALID_INPUT')
+      // 由 Auth 重新取得 actor；不以 JWT 內舊的 role 作為授權依據。
       const actor = await deps.getActor(bearer(request))
       assertAdminActor(actor)
+      // 先驗證 body 的 action 與允許欄位，再 dispatch 到特權 adapter。
       const body = await requestBody(request)
       assertActionBody(body)
       const action = body.action
 
       if (action === 'list_users') {
         const users = await deps.listUsers()
+        // 僅回傳 UI 需要的 user 投影，避免完整 Auth metadata 離開 handler。
         return json(200, { users: users.map(summarizeUser) })
       }
       if (action === 'list_audit_logs') {
@@ -116,7 +125,9 @@ async function handleMutation(
   switch (action) {
     case 'invite_user': {
       const email = normalizeEmail(body.email)
+      // 邀請一律建立 viewer，忽略用戶端提供的角色以避免權限提升。
       const role: AppRole = 'viewer'
+      // 在 Auth mutation 前建立 pending audit，使後續成功或失敗皆能完成同一筆紀錄。
       const audit = await startAudit(deps, {
         actor_user_id: actor.id, actor_email: actor.email, action,
         target_email: email, new_role: role, status: 'pending',
