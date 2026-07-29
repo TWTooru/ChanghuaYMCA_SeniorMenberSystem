@@ -4,6 +4,7 @@ const ACTION_LABELS = {
 }
 const STATUS_LABELS = { pending: '處理中', success: '成功', failure: '失敗' }
 
+/** 稽核列呈現操作前後的可追溯資訊，讓管理者辨識 mutation 的操作者、目標與結果。 */
 export default function AdminAuditLog({ auditLogs }) {
   return (
     <section className="admin-audit-list" aria-label="管理操作紀錄">

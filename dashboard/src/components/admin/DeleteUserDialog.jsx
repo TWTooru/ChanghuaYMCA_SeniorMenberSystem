@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 
+/** 刪除前要求輸入目標 Email，降低不可復原操作因誤點或誤選造成的風險。 */
 export default function DeleteUserDialog({ user, open, busy, onCancel, onConfirm }) {
   const [confirmation, setConfirmation] = useState('')
   useEffect(() => { setConfirmation('') }, [user?.id])

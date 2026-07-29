@@ -2,6 +2,7 @@ import { useState } from 'react'
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+/** 邀請流程只提交 Email；帳號預設為瀏覽者，後續角色調整由帳號管理頁另行處理。 */
 export default function InviteUserModal({ open, busy, onCancel, onSubmit }) {
   const [email, setEmail] = useState('')
   if (!open) return null

@@ -1,4 +1,4 @@
-/* Admin account management */
+/* 帳號管理頁的版面與元件間距，讓帳號、角色與操作資訊易於掃讀。 */
 .admin-page { max-width: 1200px; margin: 0 auto; padding: 32px 24px; color: var(--text-primary); }
 .admin-page-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
 .admin-page-header h1 { margin: 0; font-size: 24px; }
@@ -28,7 +28,7 @@
 .admin-danger-copy { grid-column: 1 / -1; margin: 0; color: #fca5a5; }
 @media (max-width: 760px) { .admin-page { padding: 20px 16px; } .admin-page-header { align-items: flex-start; flex-direction: column; } .admin-summary-grid { grid-template-columns: 1fr; } .admin-user-table { overflow-x: auto; } .admin-audit-item time { width: 100%; margin-left: 0; } }
 
-/* Timeline action buttons */
+/* 稽核時間軸的操作按鈕配置，讓 mutation 前後的可追溯資訊維持清楚層次。 */
 .timeline-actions {
   display: flex;
   gap: 4px;
