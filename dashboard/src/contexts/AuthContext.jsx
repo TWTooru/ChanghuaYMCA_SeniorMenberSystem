@@ -17,7 +17,7 @@ const AuthContext = createContext({
 
 /**
  * 從 session metadata 解析 UI 使用的角色；legacy metadata 僅為相容舊帳號。
- * 缺少或未知角色時一律降級為 `viewer`。
+ * 缺少角色時降級為 `viewer`；未知值在此不會正規化。
  */
 export function extractRole(session) {
     if (!session?.user) return 'viewer';
