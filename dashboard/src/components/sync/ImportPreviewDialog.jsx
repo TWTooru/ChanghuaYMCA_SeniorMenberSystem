@@ -8,6 +8,10 @@ function getFocusableElements(container) {
     .filter(element => !element.hasAttribute('disabled'))
 }
 
+/**
+ * 顯示匯入前的新增／更新摘要、學生編號處理結果與警告。
+ * dialog 不重新解析資料；確認時把原 preview 交回上層提交。
+ */
 export default function ImportPreviewDialog({ preview, isImporting = false, onConfirm, onCancel }) {
   const { summary, studentResolutions = [], warnings = [], errors = [], hasBlockingErrors } = preview
   const confirmationDisabled = hasBlockingErrors || isImporting
@@ -48,7 +52,7 @@ export default function ImportPreviewDialog({ preview, isImporting = false, onCo
     }
   }
 
-  // Process warnings
+  // 將 parser 與 snapshot 警告整理成單一顯示序列，不改動 preview 原始資料。
   const displayWarnings = []
   
   warnings.forEach(w => {
@@ -63,7 +67,7 @@ export default function ImportPreviewDialog({ preview, isImporting = false, onCo
     }
   })
 
-  // If there's no database empty check warning, add the general reminder at the beginning
+  // 若沒有更精確的空資料庫警告，補上一般覆寫提醒並置於最前方。
   if (!warnings.some(w => (w.message || '').includes('請確認新增與更新筆數'))) {
     displayWarnings.unshift('請確認新增與更新筆數資料，一次僅能夠輸入一季報表，並確認檔案格式為.csv')
   }

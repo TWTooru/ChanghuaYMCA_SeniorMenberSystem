@@ -30,7 +30,7 @@ describe('ExportOptionsDialog', () => {
     render(<ExportOptionsDialog enrollments={enrollments} onExport={onExport} onCancel={vi.fn()} />)
 
     fireEvent.click(screen.getByLabelText('依特定季度篩選'))
-    fireEvent.click(screen.getByLabelText('統計摘要')) // uncheck
+    fireEvent.click(screen.getByLabelText('統計摘要'))
 
     fireEvent.click(screen.getByRole('button', { name: '確認下載' }))
     expect(onExport).toHaveBeenCalledWith({
@@ -45,6 +45,7 @@ describe('ExportOptionsDialog', () => {
     })
   })
 
+  // 以首尾 focusable element 驗證 Tab／Shift+Tab 循環。
   it('traps keyboard focus when Tab key is pressed', () => {
     render(
       <ExportOptionsDialog enrollments={enrollments} onExport={vi.fn()} onCancel={vi.fn()} />
@@ -54,17 +55,14 @@ describe('ExportOptionsDialog', () => {
     const firstInput = inputs[0]
     const lastButton = inputs[inputs.length - 1]
 
-    // Initially focus moves to first element
     expect(document.activeElement).toBe(firstInput)
 
-    // Shift + Tab on first element should wrap to last element
     fireEvent.keyDown(document.querySelector('.form-modal-content'), {
       key: 'Tab',
       shiftKey: true
     })
     expect(document.activeElement).toBe(lastButton)
 
-    // Tab on last element should wrap to first element
     fireEvent.keyDown(document.querySelector('.form-modal-content'), {
       key: 'Tab',
       shiftKey: false

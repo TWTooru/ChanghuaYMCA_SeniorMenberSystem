@@ -41,6 +41,7 @@ describe('ExcelSync', () => {
     expect(screen.getByRole('button').disabled).toBe(false)
   })
 
+  // preview 與 commit 分開 mock，確保讀檔階段不會提前寫入。
   it('opens a preview and commits only after confirmation', async () => {
     const preview = {
       summary: { fileRows: 1, oldStudents: 0, newStudents: 1, enrollmentsToInsert: 1, enrollmentsToUpdate: 0, courses: 1, currentStudents: 0, currentEnrollments: 0, currentCourses: 0 },

@@ -7,6 +7,10 @@ function getFocusableElements(container) {
     .filter(element => !element.hasAttribute('disabled'))
 }
 
+/**
+ * 收集匯出範圍與工作表選項，將季度篩選結果交給上層匯出 hook。
+ * 自行管理 focus trap，避免鍵盤焦點離開 modal。
+ */
 export default function ExportOptionsDialog({ 
   enrollments, 
   onExport, 
@@ -15,15 +19,14 @@ export default function ExportOptionsDialog({
   const dialogRef = useRef(null)
   const previousFocusRef = useRef(null)
 
-  // 1. Get unique sorted seasons list
+  // 依季度字串排序產生清單，讓選項呈現順序固定。
   const seasonsList = useMemo(() => {
     if (!enrollments) return []
     const set = new Set(enrollments.map(e => e.season).filter(Boolean))
     return Array.from(set).sort((a, b) => b.localeCompare(a, undefined, { numeric: true }))
   }, [enrollments])
 
-  // 2. States
-  const [exportScope, setExportScope] = useState('all') // 'all' or 'season'
+  const [exportScope, setExportScope] = useState('all') // 僅可選擇全部資料或單一季度。
   const [selectedSeason, setSelectedSeason] = useState(seasonsList[0] || '')
   
   const [includeStats, setIncludeStats] = useState(true)
@@ -31,7 +34,7 @@ export default function ExportOptionsDialog({
   const [includeEnrollments, setIncludeEnrollments] = useState(true)
   const [includeCourses, setIncludeCourses] = useState(true)
 
-  // 3. Focus Trap & Key handling
+  // focus trap 只在 dialog 存在期間處理鍵盤事件，關閉後不再攔截焦點。
   useEffect(() => {
     previousFocusRef.current = document.activeElement
     const dialog = dialogRef.current

@@ -9,6 +9,10 @@ import './sync.css'
 
 const MySwal = withReactContent(Swal)
 
+/**
+ * CSV 匯入協調元件：選檔後只建立 preview，使用者確認後才提交 RPC。
+ * 成功回傳的 `assigned_ids` 另以 portal 顯示，避免刷新資料時遺失新 ID 對照。
+ */
 export default function ExcelSync({ onSyncComplete }) {
   const fileInputRef = useRef(null)
   const [isReading, setIsReading] = useState(false)
@@ -29,11 +33,13 @@ export default function ExcelSync({ onSyncComplete }) {
     setAssignedIds([])
     setIsReading(true)
     try {
+      // preview 成功不代表已寫入；只有 `handleConfirm` 會呼叫 mutation RPC。
       setPreview(await prepareImport(file))
     } catch (error) {
       await MySwal.fire({ icon: 'error', title: '讀取失敗', text: error.message })
     } finally {
       setIsReading(false)
+      // 重設原生 input，讓使用者選取同一檔案時仍會觸發下一次 `change`。
       if (fileInputRef.current) fileInputRef.current.value = null
     }
   }
@@ -61,6 +67,7 @@ export default function ExcelSync({ onSyncComplete }) {
         <span>{isReading ? '讀取中...' : isImporting ? '匯入中...' : '匯入季度 CSV'}</span>
       </button>
       {preview && <ImportPreviewDialog preview={preview} isImporting={isImporting} onConfirm={handleConfirm} onCancel={() => setPreview(null)} />}
+      // 指派 ID 必須在資料刷新後仍可抄錄，因此使用獨立於 preview 的結果狀態。
       {assignedIds.length > 0 && createPortal(
         <div
           className="modal-overlay-center"

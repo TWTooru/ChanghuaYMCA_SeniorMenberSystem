@@ -96,6 +96,7 @@ describe('ImportPreviewDialog', () => {
     expect(screen.getByText(/第 2 列/)).not.toBeNull()
   })
 
+  // 警告呈現與匯入期間的確認按鈕禁用必須同步驗證。
   it('renders warnings and disables confirmation while importing', () => {
     render(
       <ImportPreviewDialog
