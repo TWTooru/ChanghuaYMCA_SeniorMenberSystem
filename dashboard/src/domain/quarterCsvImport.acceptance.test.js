@@ -6,6 +6,7 @@ import { parseQuarterCsvRows } from './quarterCsvImport'
 
 describe('quarter CSV acceptance', () => {
   it('converts the approved real CSV fixture', () => {
+    // 此 fixture 代表已核准的實際匯出檔結構，鎖定 `parser` 對標頭、日期與課程欄位的轉換結果。
     const csv = fs.readFileSync(path.resolve(process.cwd(), 'src/fixtures/quarter-import-sample.csv'), 'utf8')
     const workbook = XLSX.read(csv, { type: 'string', raw: true })
     const sheet = workbook.Sheets[workbook.SheetNames[0]]

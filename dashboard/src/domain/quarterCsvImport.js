@@ -24,6 +24,10 @@ export function normalizeCsvDate(value) {
   return `${yearText}/${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}`
 }
 
+/**
+ * 將 `CSV` 欄位與資料列轉換為單季匯入 `payload`，並只回報檔案內即可判定的格式與重複資料問題。
+ * 空白 `student_id` 會保留給後續預覽以 `identity key` 對照既有學生；資料庫中的對應結果不在此解析階段決定。
+ */
 export function parseQuarterCsvRows(rows, { headers = [], today = new Date() } = {}) {
   const cleanHeaders = headers.map(header => String(header ?? '').trim()).filter(Boolean)
   const errors = []

@@ -1,5 +1,9 @@
 export { seasonNumber as extractSeasonNum } from './season'
 
+/**
+ * 將 `workbook` 儲存格值正規化為匯入流程共用的型別與空值語意。
+ * 空白一律轉成 `null`，讓後續驗證與 `RPC` payload 不會把同一種缺值視為不同資料。
+ */
 export function cleanStr(value) {
   if (value === undefined || value === null) return null
   const cleaned = String(value).trim()
@@ -72,6 +76,10 @@ export const EXCEL_IMPORT_LIMITS = {
   maxRowsPerSheet: 10000
 }
 
+/**
+ * 逐一檢查 `rows` 的數量，於解析前限制單一工作表的資料量，避免異常檔案耗用過多資源。
+ * 此檢查只讀取 `workbook`，不會修改其內容或工作表順序。
+ */
 export function validateWorkbookForImport({ fileSize, workbook, getRows }, limits = EXCEL_IMPORT_LIMITS) {
   if (fileSize > limits.maxFileBytes) {
     throw new Error(`Excel file is too large. Maximum size is ${Math.round(limits.maxFileBytes / 1024 / 1024)} MB.`)

@@ -3,6 +3,10 @@ import { buildStudentIdentityKey } from '../domain/studentIdentity'
 const enrollmentKey = value => `${String(value.student_id)}\u0000${value.season}`
 const SNAPSHOT_PAGE_SIZE = 1000
 
+/**
+ * 以解析結果與資料庫 `snapshot` 分類新增、更新及衝突資料，產生僅供審閱的預覽結果。
+ * 比對使用 `student_id` 優先，空白識別碼才使用 `identity key`；此服務不寫入資料，提交時仍由 `RPC` 重新驗證。
+ */
 export function classifyImport(parsed, snapshot) {
   const errors = [...(parsed.errors || [])]
   const warnings = [...(parsed.warnings || [])]

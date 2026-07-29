@@ -14,6 +14,10 @@ export function mapImportError(error) {
   return error
 }
 
+/**
+ * `prepareImport` 讀取、解析與預覽檔案，將格式驗證與既有資料比對集中在提交前完成。
+ * 它不會寫入資料庫，呼叫端可先依預覽中的錯誤、警告與分類結果要求使用者確認。
+ */
 export async function prepareImport(file, client = supabase) {
   if (!file?.name?.toLowerCase().endsWith('.csv')) throw new Error('只接受 CSV 檔案')
   if (file.size > 5 * 1024 * 1024) throw new Error('CSV 檔案不可超過 5 MiB')
@@ -36,6 +40,10 @@ export async function prepareImport(file, client = supabase) {
   return loadImportPreview(client, parseQuarterCsvRows(rows, { headers }))
 }
 
+/**
+ * `commitImport` 只接受已完成預覽且無阻擋錯誤的結果，並將其 `payload` 交給 `import_season_data` `RPC`。
+ * 實際寫入與最終一致性檢查由資料庫端負責，避免預覽與提交使用不同的匯入資料。
+ */
 export async function commitImport(preview, client = supabase) {
   if (preview.hasBlockingErrors) throw new Error('匯入資料仍有錯誤，無法寫入')
 
