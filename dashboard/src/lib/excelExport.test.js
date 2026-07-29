@@ -52,7 +52,7 @@ describe('excelExport', () => {
 
   it('aborts early and does not call writeFile if no sheets are included', () => {
     vi.clearAllMocks()
-    // Mock the sheet list length to 0 to simulate empty workbook
+    // 讓模擬的 `workbook` 沒有工作表，以驗證空白活頁簿的防護流程。
     const _originalSheetNames = XLSX.utils.book_new().SheetNames
     XLSX.utils.book_new.mockImplementationOnce(() => ({ SheetNames: [] }))
     
