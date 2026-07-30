@@ -41,6 +41,12 @@
   margin: 0;
 }
 
+.enrollment-billing-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .course-receipt-list {
   display: flex;
   flex-direction: column;

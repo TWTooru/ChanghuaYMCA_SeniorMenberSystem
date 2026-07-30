@@ -408,6 +408,14 @@ describe('EnrollmentBillingDetailModal', () => {
     expect(screen.queryByRole('button', { name: '取消退費' })).toBeNull()
   })
 
+  it('groups the normal-status badge with the refund action for editors', () => {
+    renderModal({ enrollment: { ...enrollment, refunded: false } })
+
+    const actionGroup = screen.getByRole('button', { name: '標記退費' })
+      .closest('.enrollment-billing-actions')
+    expect(actionGroup?.querySelector('.badge.success')?.textContent).toBe('正常')
+  })
+
   it('shows a cancel-refund button for editors when enrollment is refunded', () => {
     renderModal({ enrollment: { ...enrollment, refunded: true } })
 

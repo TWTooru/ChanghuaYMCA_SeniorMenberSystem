@@ -242,20 +242,22 @@ export default function EnrollmentBillingDetailModal({
           <section className="enrollment-billing-receipts" aria-labelledby="course-receipts-title">
             <div className="enrollment-billing-heading">
               <h3 id="course-receipts-title">課程收據</h3>
-              <span className={`badge ${enrollment.refunded ? 'danger' : 'success'}`}>
-                {enrollment.refunded ? '退費' : '正常'}
-              </span>
-              {permissions.canEditEnrollment && (
-                <button
-                  type="button"
-                  className={enrollment.refunded ? 'btn-secondary' : 'btn-danger'}
-                  style={{ padding: '2px 8px', fontSize: '12px', marginLeft: '4px' }}
-                  disabled={isSaving}
-                  onClick={handleRefundToggle}
-                >
-                  {enrollment.refunded ? '取消退費' : '標記退費'}
-                </button>
-              )}
+              <div className="enrollment-billing-actions">
+                <span className={`badge ${enrollment.refunded ? 'danger' : 'success'}`}>
+                  {enrollment.refunded ? '退費' : '正常'}
+                </span>
+                {permissions.canEditEnrollment && (
+                  <button
+                    type="button"
+                    className={enrollment.refunded ? 'btn-secondary' : 'btn-danger'}
+                    style={{ padding: '2px 8px', fontSize: '12px' }}
+                    disabled={isSaving}
+                    onClick={handleRefundToggle}
+                  >
+                    {enrollment.refunded ? '取消退費' : '標記退費'}
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="course-receipt-list">
