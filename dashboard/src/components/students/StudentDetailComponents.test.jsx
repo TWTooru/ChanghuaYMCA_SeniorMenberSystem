@@ -1,12 +1,15 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { readFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import StudentInfoView from './StudentInfoView'
 import EnrollmentTimeline from '../enrollment/EnrollmentTimeline'
 import StudentDetailModal from './StudentDetailModal'
 
-const commonStyles = readFileSync('src/components/common/common.css', 'utf8')
-const studentStyles = readFileSync('src/components/students/students.css', 'utf8')
+const testDirectory = dirname(fileURLToPath(import.meta.url))
+const commonStyles = readFileSync(resolve(testDirectory, '../common/common.css'), 'utf8')
+const studentStyles = readFileSync(resolve(testDirectory, './students.css'), 'utf8')
 
 const authState = vi.hoisted(() => ({ role: 'viewer' }))
 
