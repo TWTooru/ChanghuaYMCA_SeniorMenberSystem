@@ -8,6 +8,7 @@ import {
   deleteCourseReceipt,
   updateCourseReceipt,
 } from '../../services/courseReceiptService'
+import { updateEnrollmentRefundStatus } from '../../services/enrollmentService'
 import StudentInfoView from '../students/StudentInfoView'
 import './enrollmentBillingDetail.css'
 
@@ -65,6 +66,25 @@ export default function EnrollmentBillingDetailModal({
   const clearMessages = () => {
     setError('')
     setSuccess('')
+  }
+
+  const handleRefundToggle = async () => {
+    if (!permissions.canEditEnrollment || saveInFlight.current) return
+
+    const newRefunded = !enrollment.refunded
+    saveInFlight.current = true
+    setIsSaving(true)
+    clearMessages()
+    try {
+      await updateEnrollmentRefundStatus(supabase, enrollmentId, newRefunded, null)
+      setSuccess(newRefunded ? '已標記為退費' : '已恢復為正常')
+      onRefresh?.()
+    } catch (toggleError) {
+      setError('退費狀態更新失敗')
+    } finally {
+      saveInFlight.current = false
+      setIsSaving(false)
+    }
   }
 
   const toggleCourseOptions = () => {
@@ -225,6 +245,17 @@ export default function EnrollmentBillingDetailModal({
               <span className={`badge ${enrollment.refunded ? 'danger' : 'success'}`}>
                 {enrollment.refunded ? '退費' : '正常'}
               </span>
+              {permissions.canEditEnrollment && (
+                <button
+                  type="button"
+                  className={enrollment.refunded ? 'btn-secondary' : 'btn-danger'}
+                  style={{ padding: '2px 8px', fontSize: '12px', marginLeft: '4px' }}
+                  disabled={isSaving}
+                  onClick={handleRefundToggle}
+                >
+                  {enrollment.refunded ? '取消退費' : '標記退費'}
+                </button>
+              )}
             </div>
 
             <div className="course-receipt-list">

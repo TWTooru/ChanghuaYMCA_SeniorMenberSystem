@@ -6,6 +6,7 @@ import {
   deleteCourseReceipt,
   updateCourseReceipt,
 } from '../../services/courseReceiptService'
+import { updateEnrollmentRefundStatus } from '../../services/enrollmentService'
 
 const authState = { role: 'editor' }
 
@@ -16,6 +17,9 @@ vi.mock('../../services/courseReceiptService', () => ({
   createCourseReceipt: vi.fn(),
   deleteCourseReceipt: vi.fn(),
   updateCourseReceipt: vi.fn(),
+}))
+vi.mock('../../services/enrollmentService', () => ({
+  updateEnrollmentRefundStatus: vi.fn(),
 }))
 
 const student = {
@@ -72,6 +76,7 @@ describe('EnrollmentBillingDetailModal', () => {
     vi.mocked(createCourseReceipt).mockReset()
     vi.mocked(deleteCourseReceipt).mockReset()
     vi.mocked(updateCourseReceipt).mockReset()
+    vi.mocked(updateEnrollmentRefundStatus).mockReset()
   })
 
   it('renders course receipts, legacy billing, and student details in order', () => {
@@ -394,5 +399,82 @@ describe('EnrollmentBillingDetailModal', () => {
     const heading = container.querySelector('.enrollment-billing-heading')
     expect(heading?.querySelector('h3')?.textContent).toBe('課程收據')
     expect(heading?.querySelector('.badge.success')?.textContent).toBe('正常')
+  })
+
+  it('shows a refund toggle button for editors when enrollment is not refunded', () => {
+    renderModal({ enrollment: { ...enrollment, refunded: false } })
+
+    expect(screen.getByRole('button', { name: '標記退費' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: '取消退費' })).toBeNull()
+  })
+
+  it('shows a cancel-refund button for editors when enrollment is refunded', () => {
+    renderModal({ enrollment: { ...enrollment, refunded: true } })
+
+    expect(screen.getByRole('button', { name: '取消退費' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: '標記退費' })).toBeNull()
+  })
+
+  it('hides refund toggle for viewers', () => {
+    authState.role = 'viewer'
+    renderModal()
+
+    expect(screen.queryByRole('button', { name: '標記退費' })).toBeNull()
+    expect(screen.queryByRole('button', { name: '取消退費' })).toBeNull()
+  })
+
+  it('marks enrollment as refunded and refreshes on toggle click', async () => {
+    vi.mocked(updateEnrollmentRefundStatus).mockResolvedValue(undefined)
+    const { props } = renderModal({ enrollment: { ...enrollment, refunded: false } })
+
+    fireEvent.click(screen.getByRole('button', { name: '標記退費' }))
+
+    await waitFor(() => {
+      expect(updateEnrollmentRefundStatus).toHaveBeenCalledWith(
+        expect.anything(),
+        42,
+        true,
+        null
+      )
+    })
+    expect(props.onRefresh).toHaveBeenCalled()
+  })
+
+  it('cancels refund and refreshes on toggle click', async () => {
+    vi.mocked(updateEnrollmentRefundStatus).mockResolvedValue(undefined)
+    const { props } = renderModal({
+      enrollment: { ...enrollment, refunded: true, refund_info: '舊備註' },
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: '取消退費' }))
+
+    await waitFor(() => {
+      expect(updateEnrollmentRefundStatus).toHaveBeenCalledWith(
+        expect.anything(),
+        42,
+        false,
+        null
+      )
+    })
+    expect(props.onRefresh).toHaveBeenCalled()
+  })
+
+  it('shows error message when refund toggle fails', async () => {
+    vi.mocked(updateEnrollmentRefundStatus).mockRejectedValue(new Error('update denied'))
+    renderModal({ enrollment: { ...enrollment, refunded: false } })
+
+    fireEvent.click(screen.getByRole('button', { name: '標記退費' }))
+
+    expect((await screen.findByRole('alert')).textContent).toContain('退費狀態更新失敗')
+  })
+
+  it('disables refund toggle while a save is in progress', () => {
+    vi.mocked(updateEnrollmentRefundStatus).mockReturnValue(new Promise(() => {}))
+    renderModal({ enrollment: { ...enrollment, refunded: false } })
+
+    const toggleButton = screen.getByRole('button', { name: '標記退費' })
+    fireEvent.click(toggleButton)
+
+    expect(toggleButton.disabled).toBe(true)
   })
 })
