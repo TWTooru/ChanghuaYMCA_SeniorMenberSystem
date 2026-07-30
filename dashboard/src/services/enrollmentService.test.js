@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   createEnrollmentWithCourses,
   deleteEnrollment,
+  updateEnrollmentRefundStatus,
   updateEnrollmentWithCourses,
 } from './enrollmentService'
 
@@ -255,6 +256,66 @@ describe('deleteEnrollment', () => {
     }
 
     await expect(deleteEnrollment(client, 1)).rejects.toThrow('delete denied')
+  })
+})
+
+describe('updateEnrollmentRefundStatus', () => {
+  function createUpdateClient(result = { error: null }) {
+    const calls = []
+    return {
+      calls,
+      client: {
+        from(table) {
+          calls.push({ table })
+          return {
+            update(values) {
+              calls.push({ operation: 'update', values })
+              return {
+                eq: async (column, value) => {
+                  calls.push({ operation: 'eq', column, value })
+                  return result
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  it('marks an enrollment refunded with null refund info', async () => {
+    const { client, calls } = createUpdateClient()
+
+    await expect(updateEnrollmentRefundStatus(client, 42, true, null)).resolves.toBeUndefined()
+
+    expect(calls).toEqual([
+      { table: 'enrollments' },
+      { operation: 'update', values: { refunded: 1, refund_info: null } },
+      { operation: 'eq', column: 'enrollment_id', value: 42 },
+    ])
+  })
+
+  it('unmarks a refund and clears the refund info', async () => {
+    const { client, calls } = createUpdateClient()
+
+    await updateEnrollmentRefundStatus(client, 43, false, null)
+
+    expect(calls).toContainEqual({ operation: 'update', values: { refunded: 0, refund_info: null } })
+  })
+
+  it('retains supplied refund info when marking an enrollment refunded', async () => {
+    const { client, calls } = createUpdateClient()
+
+    await updateEnrollmentRefundStatus(client, 44, true, 'Customer request')
+
+    expect(calls).toContainEqual({ operation: 'update', values: { refunded: 1, refund_info: 'Customer request' } })
+  })
+
+  it('throws update errors', async () => {
+    const updateError = new Error('update denied')
+    const { client } = createUpdateClient({ error: updateError })
+
+    await expect(updateEnrollmentRefundStatus(client, 45, true, null)).rejects.toBe(updateError)
   })
 })
 

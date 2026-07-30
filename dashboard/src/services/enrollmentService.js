@@ -93,3 +93,12 @@ export async function deleteEnrollment(client, enrollmentId) {
   if (error) throw error
 }
 
+export async function updateEnrollmentRefundStatus(client, enrollmentId, refunded, refundInfo) {
+  const { error } = await client
+    .from('enrollments')
+    .update({ refunded: refunded ? 1 : 0, refund_info: refundInfo || null })
+    .eq('enrollment_id', enrollmentId)
+
+  if (error) throw error
+}
+
