@@ -1,8 +1,12 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import StudentInfoView from './StudentInfoView'
 import EnrollmentTimeline from '../enrollment/EnrollmentTimeline'
 import StudentDetailModal from './StudentDetailModal'
+
+const commonStyles = readFileSync('src/components/common/common.css', 'utf8')
+const studentStyles = readFileSync('src/components/students/students.css', 'utf8')
 
 const authState = vi.hoisted(() => ({ role: 'viewer' }))
 
@@ -22,7 +26,16 @@ const student = {
 const enrollment = { enrollment_id: 1, student_id: student.student_id, season: '第十五季', courses: ['電腦課'] }
 
 describe('Student detail components', () => {
+  let styleElement
+
+  beforeEach(() => {
+    styleElement = document.createElement('style')
+    styleElement.textContent = `${commonStyles}\n${studentStyles}`
+    document.head.append(styleElement)
+  })
+
   afterEach(() => {
+    styleElement.remove()
     authState.role = 'viewer'
     cleanup()
   })
@@ -49,6 +62,20 @@ describe('Student detail components', () => {
 
     expect(screen.getByText('基本聯絡資料')).not.toBeNull()
     expect(screen.queryByText('第十五季')).toBeNull()
+  })
+
+  it('uses the student detail body as the only vertical scroll container while editing', () => {
+    authState.role = 'admin'
+    const { container } = render(
+      <StudentDetailModal student={student} enrollments={[]} initialTab="profile" onClose={vi.fn()} />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /編輯/ }))
+
+    const detailBody = container.querySelector('.student-detail-body')
+    const editGrid = detailBody.querySelector('.form-grid')
+    expect(getComputedStyle(detailBody).overflowY).toBe('auto')
+    expect(getComputedStyle(editGrid).overflowY).toBe('visible')
   })
 
   it('closes with Escape and restores focus to the opener', () => {

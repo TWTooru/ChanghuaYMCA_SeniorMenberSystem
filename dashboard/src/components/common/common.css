@@ -70,6 +70,10 @@
   min-height: 0;
 }
 
+.student-detail-body .form-grid {
+  overflow-y: visible;
+}
+
 @media (max-width: 700px) {
   .student-detail-overlay { padding: 8px; }
   .student-detail-dialog { width: 100%; height: calc(100dvh - 16px); max-height: calc(100dvh - 16px); border-radius: 12px; }
