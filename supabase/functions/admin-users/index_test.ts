@@ -17,6 +17,15 @@ Deno.test('requiredEnv reads the hosted secret-key map', () => {
   assertEquals(env.secret, 'sb_secret_test')
 })
 
+Deno.test('requiredEnv prioritizes the legacy service-role key for Auth Admin calls', () => {
+  const env = requiredEnv({
+    SUPABASE_URL: 'http://localhost',
+    SUPABASE_SERVICE_ROLE_KEY: 'legacy-service-role-key',
+    SUPABASE_SECRET_KEYS: JSON.stringify({ default: 'sb_secret_test' }),
+  })
+  assertEquals(env.secret, 'legacy-service-role-key')
+})
+
 Deno.test('cors never exposes credentials wildcard', () => {
   const corsHeaders = createCorsHeaders('https://dashboard.example.com')
   assertEquals(corsHeaders['Access-Control-Allow-Origin'] === '*' && corsHeaders['Access-Control-Allow-Credentials'] === 'true', false)
@@ -43,6 +52,21 @@ Deno.test('adapter maps the database last-admin sentinel to a stable API error',
   } as any, {})
   await assertRejects(() => deps.updateUser('user-1', {}), Error, 'LAST_ADMIN_PROTECTED')
   await assertRejects(() => deps.deleteUser('user-1'), Error, 'LAST_ADMIN_PROTECTED')
+})
+
+Deno.test('adapter maps the Auth email rate limit to a stable API error', async () => {
+  const rateLimitError = Object.assign(new Error('email rate limit exceeded'), { status: 429 })
+  const deps = createSupabaseDeps({
+    auth: { getUser: async () => ({ data: { user: null }, error: null }), admin: {
+      listUsers: async () => ({ data: { users: [] }, error: null }),
+      inviteUserByEmail: async () => ({ data: { user: null }, error: rateLimitError }),
+      updateUserById: async () => ({ data: { user: null }, error: null }),
+      deleteUser: async () => ({ data: {}, error: null }),
+    }, resetPasswordForEmail: async () => ({ data: {}, error: null }) },
+    from: () => ({ insert: () => ({ select: () => ({ single: async () => ({ data: null, error: null }) }) }), update: () => ({ eq: async () => ({ error: null }) }), select: () => ({ order: () => ({ limit: async () => ({ data: [], error: null }) }) }) }),
+  } as any, {})
+
+  await assertRejects(() => deps.inviteUser('person@example.com'), Error, 'EMAIL_RATE_LIMITED')
 })
 
 Deno.test('adapter sends invite without app role metadata', async () => {

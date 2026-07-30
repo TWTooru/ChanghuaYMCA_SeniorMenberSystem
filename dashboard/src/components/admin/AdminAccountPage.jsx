@@ -14,6 +14,7 @@ const ERROR_MESSAGES = {
   INVALID_INPUT: '輸入資料格式不正確。', USER_EXISTS: '此 Email 已有帳號。',
   USER_NOT_FOUND: '找不到指定的帳號。', SELF_MUTATION_FORBIDDEN: '不能變更自己的角色或刪除自己的帳號。',
   LAST_ADMIN_PROTECTED: '至少保留一位管理員帳號。', EMAIL_CONFIRMATION_MISMATCH: '確認 Email 與目標帳號不一致。',
+  EMAIL_RATE_LIMITED: '邀請信寄送額度已滿，帳號可能已建立，請稍後從列表重新寄送邀請。',
   SUPABASE_AUTH_ERROR: '帳號服務暫時無法使用，請稍後再試。', AUDIT_WRITE_ERROR: '無法寫入操作紀錄，操作未完成。',
 }
 
@@ -34,7 +35,8 @@ function AuthorizedAdminAccountPage() {
   const deleteBusy = mutation === `delete:${deleteTarget?.id}`
 
   const submitInvite = async email => {
-    if (await invite(email)) setInviteOpen(false)
+    await invite(email)
+    setInviteOpen(false)
   }
   const submitDelete = async email => {
     if (await remove(deleteTarget.id, email)) setDeleteTarget(null)
@@ -82,7 +84,7 @@ function AuthorizedAdminAccountPage() {
         })}
       </tbody></table></div>}
       <AdminAuditLog auditLogs={auditLogs} />
-      <InviteUserModal open={inviteOpen} busy={mutation === 'invite'} onCancel={() => setInviteOpen(false)} onSubmit={submitInvite} />
+      {inviteOpen && <InviteUserModal open busy={mutation === 'invite'} onCancel={() => setInviteOpen(false)} onSubmit={submitInvite} />}
       <DeleteUserDialog user={deleteTarget} open={Boolean(deleteTarget)} busy={deleteBusy} onCancel={() => setDeleteTarget(null)} onConfirm={submitDelete} />
     </main>
   )

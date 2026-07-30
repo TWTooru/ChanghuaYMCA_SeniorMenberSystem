@@ -16,12 +16,15 @@ export function requiredEnv(env: Environment) {
   } catch {
     hostedSecret = undefined
   }
-  const secret = hostedSecret || env.SUPABASE_SECRET_KEY || env.SUPABASE_SERVICE_ROLE_KEY
+  const secret = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SECRET_KEY || hostedSecret
   if (!url || !secret) throw new Error('Missing Supabase admin environment')
   return { url, secret }
 }
 
 function throwForError(error: unknown): never {
+  const status = error && typeof error === 'object'
+    ? (error as { status?: number }).status
+    : undefined
   const message = error instanceof Error
     ? error.message
     : [
@@ -31,6 +34,9 @@ function throwForError(error: unknown): never {
       (error as any)?.hint,
     ].filter(Boolean).join(' ')
   if (message.includes('LAST_ADMIN_PROTECTED')) throw new ApiError('LAST_ADMIN_PROTECTED')
+  if (status === 429 && message.toLowerCase().includes('email rate limit exceeded')) {
+    throw new ApiError('EMAIL_RATE_LIMITED')
+  }
   throw new ApiError('SUPABASE_AUTH_ERROR')
 }
 

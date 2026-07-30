@@ -120,15 +120,17 @@ describe('AdminAccountPage', () => {
     await waitFor(() => expect(screen.getByText('角色變更後，該使用者需要重新登入。')).toBeTruthy())
   })
 
-  it('keeps the invite dialog and entered email open when inviting fails', async () => {
+  it('closes the invite dialog after a failed request and clears the email before reopening', async () => {
     adminState.invite.mockResolvedValueOnce(false)
     render(<AdminAccountPage />)
     fireEvent.click(screen.getByRole('button', { name: '邀請帳號' }))
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'failed@example.com' } })
     fireEvent.click(screen.getByRole('button', { name: '送出邀請' }))
     await waitFor(() => expect(adminState.invite).toHaveBeenCalledWith('failed@example.com'))
-    expect(screen.getByRole('dialog', { name: '邀請帳號' })).toBeTruthy()
-    expect(screen.getByLabelText('Email').value).toBe('failed@example.com')
+    expect(screen.queryByRole('dialog', { name: '邀請帳號' })).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: '邀請帳號' }))
+    expect(screen.getByLabelText('Email').value).toBe('')
   })
 
   it('keeps the delete dialog open when deletion fails', async () => {
@@ -166,5 +168,12 @@ describe('AdminAccountPage', () => {
     adminState.errorCode = 'LAST_ADMIN_PROTECTED'
     rerender(<AdminAccountPage />)
     expect(screen.getByText('至少保留一位管理員帳號。')).toBeTruthy()
+  })
+
+  it('explains that the invitation email limit was reached', () => {
+    adminState.errorCode = 'EMAIL_RATE_LIMITED'
+    render(<AdminAccountPage />)
+
+    expect(screen.getByText('邀請信寄送額度已滿，帳號可能已建立，請稍後從列表重新寄送邀請。')).toBeTruthy()
   })
 })
