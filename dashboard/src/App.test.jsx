@@ -60,6 +60,7 @@ vi.mock('./components/sync/ExcelSync', () => ({ default: () => <div data-testid=
 vi.mock('./components/auth/Login', () => ({ default: () => null }))
 vi.mock('./components/auth/PasswordSetup', () => ({ default: () => <div data-testid="password-setup" /> }))
 vi.mock('./components/admin/AdminAccountPage', () => ({ default: () => <div data-testid="admin-account-page" /> }))
+vi.mock('./components/courses/CourseManagementTab', () => ({ default: () => <div data-testid="course-management-tab" /> }))
 vi.mock('./lib/excelExport', () => ({ exportToExcel: vi.fn() }))
 vi.mock('./components/sync/ExportOptionsDialog', () => ({ default: ({ onExport }) => <div data-testid="export-modal" onClick={() => onExport({ exportScope: 'all', selectedSeason: null, options: {} })} /> }))
 
@@ -109,15 +110,31 @@ describe('App header access controls', () => {
     expect(document.querySelector('.btn-refresh-inline')).toBeTruthy()
   })
 
-  it('shows account management navigation only to admins', () => {
+  it('shows account and course management navigation only to admins', () => {
     const { rerender } = render(<App />)
 
     expect(document.querySelector('#tab-admin')).toBeNull()
+    expect(document.querySelector('#tab-courses')).toBeNull()
 
     authState.role = 'admin'
     rerender(<App />)
 
     expect(document.querySelector('#tab-admin')).toBeTruthy()
+    expect(document.querySelector('#tab-courses')).toBeTruthy()
+  })
+
+  it('leaves course management immediately after role downgrade', () => {
+    authState.role = 'admin'
+    const { rerender } = render(<App />)
+
+    fireEvent.click(document.querySelector('#tab-courses'))
+    expect(screen.getByTestId('course-management-tab')).toBeTruthy()
+
+    authState.role = 'viewer'
+    rerender(<App />)
+
+    expect(screen.queryByTestId('course-management-tab')).toBeNull()
+    expect(document.querySelector('#tab-overview')?.classList.contains('active')).toBe(true)
   })
 
   it('leaves account management immediately after role downgrade', () => {

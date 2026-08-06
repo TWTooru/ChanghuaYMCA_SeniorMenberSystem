@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import './App.css'
-import { Activity, Users, Calendar, AlertCircle, ShieldCheck } from 'lucide-react'
+import { Activity, Users, Calendar, AlertCircle, ShieldCheck, BookOpen } from 'lucide-react'
 
 import useApiData from './hooks/useApiData'
 import useStats from './hooks/useStats'
@@ -18,6 +18,7 @@ import ExportOptionsDialog from './components/sync/ExportOptionsDialog'
 import Login from './components/auth/Login'
 import PasswordSetup from './components/auth/PasswordSetup'
 import AdminAccountPage from './components/admin/AdminAccountPage'
+import CourseManagementTab from './components/courses/CourseManagementTab'
 import { useAuth } from './contexts/AuthContext'
 import usePermissions from './hooks/usePermissions'
 import useTheme from './hooks/useTheme'
@@ -41,7 +42,7 @@ function AuthenticatedDashboard() {
 
   // 角色可能在 session 更新後降級；立即退出管理頁，避免保留已失效的管理介面。
   useEffect(() => {
-    if (role !== 'admin' && activeTab === 'admin') setActiveTab('overview')
+    if (role !== 'admin' && (activeTab === 'admin' || activeTab === 'courses')) setActiveTab('overview')
   }, [role, activeTab])
 
   const { dbData, dbStatus, dbError } = useApiData(session, refreshCount)
@@ -100,6 +101,11 @@ function AuthenticatedDashboard() {
             <Calendar size={18} /><span>歷年選課歷程</span>
           </button>
           {role === 'admin' && (
+            <button className={`tab-btn ${activeTab === 'courses' ? 'active' : ''}`} onClick={() => setActiveTab('courses')} id="tab-courses">
+              <BookOpen size={18} /><span>課程管理</span>
+            </button>
+          )}
+          {role === 'admin' && (
             <button className={`tab-btn ${activeTab === 'admin' ? 'active' : ''}`} onClick={() => setActiveTab('admin')} id="tab-admin">
               <ShieldCheck size={18} /><span>帳號管理</span>
             </button>
@@ -129,6 +135,7 @@ function AuthenticatedDashboard() {
             }}
           />
         )}
+        {activeTab === 'courses' && role === 'admin' && <CourseManagementTab />}
         {activeTab === 'admin' && role === 'admin' && <AdminAccountPage />}
       </main>
 
