@@ -38,3 +38,41 @@ describe('season domain helpers', () => {
     expect(latestSeason(['未知'])).toBeNull()
   })
 })
+
+describe('parseChineseNumber edge cases', () => {
+  it.each([
+    ['第十一季', 11],
+    ['第十五季', 15],
+    ['第二十季', 20],
+    ['第二十一季', 21],
+    ['第三十季', 30],
+    ['第三十九季', 39],
+  ])('seasonNumber("%s") returns %s', (input, expected) => {
+    expect(seasonNumber(input)).toBe(expected)
+  })
+})
+
+describe('compareSeasons ordering', () => {
+  it('sorts seasons in chronological order including double-digit seasons', () => {
+    const seasons = [
+      '第二十一季', '第三季', '第十五季', '第一季',
+      '第十季', '第二季', '第二十季', '第九季',
+    ]
+    const sorted = [...seasons].sort(compareSeasons)
+    expect(sorted).toEqual([
+      '第一季', '第二季', '第三季', '第九季',
+      '第十季', '第十五季', '第二十季', '第二十一季',
+    ])
+  })
+})
+
+describe('normalizeSeason edge cases', () => {
+  it.each([
+    ['第20季', '第二十季'],
+    ['第21季', '第二十一季'],
+    ['第15季', '第十五季'],
+  ])('normalizeSeason("%s") returns "%s"', (input, expected) => {
+    expect(normalizeSeason(input)).toBe(expected)
+  })
+})
+
