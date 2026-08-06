@@ -94,6 +94,22 @@ describe('deleteEnrollment', () => {
 
     await expect(deleteEnrollment(client, 1)).rejects.toThrow('delete denied')
   })
+
+  it('maps foreign key violation to a user-friendly receipt error', async () => {
+    const client = {
+      from: vi.fn().mockReturnValue({
+        delete: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({
+            error: { code: '23503', message: 'violates foreign key constraint "course_receipts_course_id_fkey"' },
+          }),
+        }),
+      }),
+    }
+
+    await expect(deleteEnrollment(client, 1)).rejects.toThrow(
+      '此選課紀錄的課程仍有收據，請先刪除所有課程收據後再刪除選課'
+    )
+  })
 })
 
 describe('updateEnrollmentRefundStatus', () => {

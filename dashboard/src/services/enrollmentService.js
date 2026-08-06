@@ -63,10 +63,15 @@ export async function updateEnrollmentWithCourses(client, enrollmentId, form) {
   throw new Error(mappedMessage || error.message)
 }
 
-/** 依 `enrollment_id` 刪除選課；關聯的 `courses` 由資料庫級聯規則處理。 */
+/** 依 `enrollment_id` 刪除選課；若課程仍有收據則拒絕刪除。 */
 export async function deleteEnrollment(client, enrollmentId) {
   const { error } = await client.from('enrollments').delete().eq('enrollment_id', enrollmentId)
-  if (error) throw error
+  if (!error) return
+
+  if (error.code === '23503' && error.message?.includes('course_receipts')) {
+    throw new Error('此選課紀錄的課程仍有收據，請先刪除所有課程收據後再刪除選課')
+  }
+  throw error
 }
 
 export async function updateEnrollmentRefundStatus(client, enrollmentId, refunded, refundInfo) {
