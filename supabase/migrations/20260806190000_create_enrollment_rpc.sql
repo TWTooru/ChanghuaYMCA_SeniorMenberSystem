@@ -15,7 +15,6 @@ set search_path = public
 as $$
 declare
   v_enrollment_id bigint;
-  v_course_name text;
   v_course_names text[];
 begin
   -- 檢查是否已存在同學員同季度的選課
