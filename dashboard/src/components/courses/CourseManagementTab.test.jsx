@@ -70,14 +70,21 @@ describe('CourseManagementTab', () => {
     })
   })
 
-  it('allows reactivating an inactive course', async () => {
+  it('clears stale error on successful reactivation', async () => {
+    saveCourseCatalogEntry.mockRejectedValueOnce(new Error('舊的錯誤'))
     render(<CourseManagementTab />)
     await waitFor(() => expect(screen.getByText('太極拳')).toBeTruthy())
 
+    // Trigger an error first
     fireEvent.click(screen.getByText('重新啟用'))
+    await waitFor(() => expect(screen.getByText('舊的錯誤')).toBeTruthy())
 
+    // Successful reactivation should clear the error
+    saveCourseCatalogEntry.mockResolvedValueOnce({ courseCatalogId: 2, courseName: '太極拳', active: true })
+    fireEvent.click(screen.getByText('重新啟用'))
     await waitFor(() => {
-      expect(saveCourseCatalogEntry).toHaveBeenCalledWith(expect.anything(), '太極拳')
+      expect(screen.queryByText('舊的錯誤')).toBeNull()
     })
   })
 })
+

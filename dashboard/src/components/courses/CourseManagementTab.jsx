@@ -100,7 +100,7 @@ export default function CourseManagementTab() {
       {confirmingCourse && (
         <div className="course-catalog-confirmation" role="status">
           <p>確定要停用「{confirmingCourse.courseName}」嗎？停用後不會刪除既有歷史資料。</p>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div className="course-catalog-confirmation-actions">
             <button className="btn-secondary" onClick={() => setConfirmingCourse(null)} disabled={pending}>取消</button>
             <button className="btn-danger" onClick={handleDeactivate} disabled={pending}>
               {pending ? '處理中…' : '確認停用'}
@@ -157,6 +157,7 @@ export default function CourseManagementTab() {
                       className="btn-secondary"
                       onClick={async () => {
                         setPending(true)
+                        setError('')
                         try {
                           await saveCourseCatalogEntry(supabase, course.courseName)
                           await refreshCatalog()

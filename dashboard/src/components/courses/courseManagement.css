@@ -72,3 +72,21 @@
   background: var(--color-primary, #3b82f6);
   color: white;
 }
+
+.course-catalog-confirmation {
+  padding: 10px;
+  border-left: 3px solid var(--color-danger, #dc2626);
+  background: var(--bg-secondary, #f8fafc);
+  margin-bottom: 16px;
+}
+
+.course-catalog-confirmation p {
+  margin: 0 0 8px;
+}
+
+.course-catalog-confirmation-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
