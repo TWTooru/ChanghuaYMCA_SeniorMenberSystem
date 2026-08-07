@@ -10,7 +10,7 @@ import '../common/common.css'
 export default function AddEnrollModal({ student, onClose, onRefresh, defaultSeason = '第十五季' }) {
   const [newEnroll, setNewEnroll] = useState({
     season: defaultSeason, reg_type: '續', pre_test: '', post_test: '',
-    refunded: false, refund_info: '', courses: []
+    refunded: false, refund_info: '', paid: false, amount: '', invoice_number: '', courses: []
   });
 
   const handleAddEnrollSubmit = (e) => {
@@ -139,6 +139,16 @@ export default function AddEnrollModal({ student, onClose, onRefresh, defaultSea
             />
             <label className="form-label" htmlFor="refunded-checkbox" style={{ cursor: 'pointer' }}>是否已退費</label>
           </div>
+          <div className="form-group form-checkbox-group">
+            <input 
+              type="checkbox" 
+              className="form-checkbox"
+              id="paid-checkbox"
+              checked={newEnroll.paid} 
+              onChange={e => setNewEnroll({...newEnroll, paid: e.target.checked})} 
+            />
+            <label className="form-label" htmlFor="paid-checkbox" style={{ cursor: 'pointer' }}>是否已繳費</label>
+          </div>
           <div className="form-group">
             {newEnroll.refunded && (
               <>
@@ -153,6 +163,33 @@ export default function AddEnrollModal({ student, onClose, onRefresh, defaultSea
               </>
             )}
           </div>
+          {newEnroll.paid && (
+            <>
+              <div className="form-group">
+                <label className="form-label" htmlFor="paid-amount">繳費金額</label>
+                <input 
+                  id="paid-amount"
+                  type="number" 
+                  className="form-input" 
+                  value={newEnroll.amount} 
+                  onChange={e => setNewEnroll({...newEnroll, amount: e.target.value})} 
+                  placeholder="例如: 3000"
+                  min="0"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="paid-invoice-number">發票編號</label>
+                <input 
+                  id="paid-invoice-number"
+                  type="text" 
+                  className="form-input" 
+                  value={newEnroll.invoice_number} 
+                  onChange={e => setNewEnroll({...newEnroll, invoice_number: e.target.value})} 
+                  placeholder="例如: AB12345678"
+                />
+              </div>
+            </>
+          )}
           <div className="form-footer full-width">
             <button 
               type="button" 

@@ -15,9 +15,12 @@ export function normalizeSelectedCourseNames(courses = []) {
  * 取代原本的前端補償式交易（先 INSERT 再手動 DELETE 回滾）。
  */
 export async function createEnrollmentWithCourses(client, studentId, form) {
-  const { season, reg_type, pre_test, post_test, refunded, refund_info, courses } = form
+  const { season, reg_type, pre_test, post_test, refunded, refund_info, paid, amount, invoice_number, courses } = form
   const courseNames = normalizeSelectedCourseNames(courses)
   if (courseNames.length === 0) throw new Error('請至少選擇一門課程')
+
+  const parsedAmount = paid && amount !== '' ? Number(amount) : null
+  const parsedInvoice = paid && invoice_number ? invoice_number : null
 
   const { data, error } = await client.rpc('create_enrollment_with_courses', {
     p_student_id: studentId,
@@ -27,6 +30,8 @@ export async function createEnrollmentWithCourses(client, studentId, form) {
     p_post_test: post_test,
     p_refunded: refunded ? 1 : 0,
     p_refund_info: refund_info,
+    p_amount: parsedAmount,
+    p_invoice_number: parsedInvoice,
     p_course_names: courseNames,
   })
 

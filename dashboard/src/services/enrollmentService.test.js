@@ -25,6 +25,8 @@ describe('createEnrollmentWithCourses', () => {
       p_post_test: '',
       p_refunded: 0,
       p_refund_info: '',
+      p_amount: null,
+      p_invoice_number: null,
       p_course_names: ['瑜珈', '太極拳'],
     })
     expect(result).toEqual({ enrollment_id: 42 })
