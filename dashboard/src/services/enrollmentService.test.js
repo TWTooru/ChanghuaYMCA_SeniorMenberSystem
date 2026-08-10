@@ -7,29 +7,46 @@ import {
 } from './enrollmentService'
 
 describe('createEnrollmentWithCourses', () => {
-  it('calls the create_enrollment_with_courses RPC with normalized course names', async () => {
+  it('sends normalized grouped payment records to the enrollment RPC', async () => {
     const client = {
-      rpc: vi.fn().mockResolvedValue({ data: 42, error: null }),
+      rpc: vi.fn().mockResolvedValue({ data: 'enrollment-42', error: null }),
     }
 
     const result = await createEnrollmentWithCourses(client, '1', {
-      season: '第十五季', reg_type: '續', pre_test: '', post_test: '',
-      refunded: false, refund_info: '', courses: ['瑜珈', ' 太極拳 ', '瑜珈', ''],
+      season: 'Spring', reg_type: 'New', pre_test: '', post_test: '',
+      refunded: false, refund_info: '', courses: ['A', ' B ', 'A', 'C'],
+      paymentRecords: [
+        { localId: 'p1', courseNames: ['A'], amount: '1000', invoiceNumber: ' A001 ' },
+        { localId: 'p2', courseNames: ['B', 'C'], amount: '2000', invoiceNumber: '' },
+      ],
     })
 
     expect(client.rpc).toHaveBeenCalledWith('create_enrollment_with_courses', {
       p_student_id: '1',
-      p_season: '第十五季',
-      p_reg_type: '續',
+      p_season: 'Spring',
+      p_reg_type: 'New',
       p_pre_test: '',
       p_post_test: '',
       p_refunded: 0,
       p_refund_info: '',
-      p_amount: null,
-      p_invoice_number: null,
-      p_course_names: ['瑜珈', '太極拳'],
+      p_course_names: ['A', 'B', 'C'],
+      p_payment_records: [
+        { course_names: ['A'], amount: 1000, invoice_number: 'A001' },
+        { course_names: ['B', 'C'], amount: 2000, invoice_number: null },
+      ],
     })
-    expect(result).toEqual({ enrollment_id: 42 })
+    expect(result).toEqual({ enrollment_id: 'enrollment-42' })
+  })
+
+  it('maps enrollment creation RPC errors to user-facing messages', async () => {
+    const client = {
+      rpc: vi.fn().mockResolvedValue({ data: null, error: { message: 'ENROLLMENT_ALREADY_EXISTS' } }),
+    }
+
+    await expect(createEnrollmentWithCourses(client, '1', {
+      season: 'Spring', reg_type: 'New', pre_test: '', post_test: '',
+      refunded: false, refund_info: '', courses: ['A'], paymentRecords: [],
+    })).rejects.toThrow('該學生在這個學期已經有相同的報名紀錄')
   })
 
   it('throws when no courses are selected', async () => {
