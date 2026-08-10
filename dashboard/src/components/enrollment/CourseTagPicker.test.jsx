@@ -85,13 +85,12 @@ describe('CourseTagPicker', () => {
     expect(await screen.findByRole('button', { name: '肌力訓練' })).toBeTruthy()
   })
 
-  it('preserves catalog management without treating canManage as authorization', async () => {
+  it('preserves catalog management without a picker-level authorization prop', async () => {
     render(
       <CourseTagPicker
         selectedCourseNames={[]}
         lockedCourseNames={[]}
         onChange={vi.fn()}
-        canManage={false}
       />,
     )
 
