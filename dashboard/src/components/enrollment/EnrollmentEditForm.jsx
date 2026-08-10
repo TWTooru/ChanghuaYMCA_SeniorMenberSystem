@@ -52,7 +52,6 @@ export default function EnrollmentEditForm({ enrollment, onSave, onCancel }) {
           selectedCourseNames={form.courses}
           lockedCourseNames={lockedCourseNames}
           onChange={courses => setForm(current => ({ ...current, courses }))}
-          canManage
         />
       </div>
       <div className="form-group form-checkbox-group" style={{ gridColumn: 'span 2' }}><input type="checkbox" id={`edit-refunded-${enrollment.enrollment_id}`} className="form-checkbox" checked={!!form.refunded} onChange={e => setForm({ ...form, refunded: e.target.checked })} /><label htmlFor={`edit-refunded-${enrollment.enrollment_id}`} className="form-label" style={{ cursor: 'pointer' }}>標記為已退費</label></div>

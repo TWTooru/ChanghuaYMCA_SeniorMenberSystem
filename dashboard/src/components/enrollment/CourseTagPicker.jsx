@@ -1,25 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../../lib/supabaseClient'
-import {
-  deactivateCourseCatalogEntry,
-  fetchCourseCatalog,
-  saveCourseCatalogEntry,
-} from '../../services/courseCatalogService'
-import CourseCatalogManager from './CourseCatalogManager'
+import { fetchCourseCatalog } from '../../services/courseCatalogService'
 import './coursePicker.css'
 
 export default function CourseTagPicker({
   selectedCourseNames = [],
   lockedCourseNames = [],
   onChange,
-  canManage,
 }) {
   const [catalog, setCatalog] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
-  const [managerOpen, setManagerOpen] = useState(false)
   const requestGenerationRef = useRef(0)
-  const manageButtonRef = useRef(null)
 
   const refreshCatalog = useCallback(async () => {
     const requestGeneration = ++requestGenerationRef.current
@@ -29,7 +21,7 @@ export default function CourseTagPicker({
       const nextCatalog = await fetchCourseCatalog(supabase)
       if (requestGeneration !== requestGenerationRef.current) return
       setCatalog(nextCatalog)
-    } catch (_loadError) {
+    } catch {
       if (requestGeneration !== requestGenerationRef.current) return
       setError(true)
     } finally {
@@ -40,20 +32,6 @@ export default function CourseTagPicker({
   useEffect(() => {
     refreshCatalog()
   }, [refreshCatalog])
-
-  const closeManager = () => {
-    setManagerOpen(false)
-  }
-
-  const handleSaveCourse = async courseName => {
-    await saveCourseCatalogEntry(supabase, courseName)
-    await refreshCatalog()
-  }
-
-  const handleDeactivateCourse = async course => {
-    await deactivateCourseCatalogEntry(supabase, course.courseCatalogId)
-    await refreshCatalog()
-  }
 
   const selectedSet = new Set(selectedCourseNames)
   const lockedSet = new Set(lockedCourseNames)
@@ -76,16 +54,6 @@ export default function CourseTagPicker({
     <section className="course-tag-picker" aria-label="課程選擇">
       <div className="course-tag-picker-header">
         <span className="form-label">課程</span>
-        {canManage && (
-          <button
-            ref={manageButtonRef}
-            type="button"
-            className="btn-secondary course-tag-picker-manage"
-            onClick={() => setManagerOpen(true)}
-          >
-            管理課程
-          </button>
-        )}
       </div>
 
       {loading && <p className="course-tag-picker-message" role="status">載入課程中…</p>}
@@ -118,15 +86,6 @@ export default function CourseTagPicker({
         </div>
       )}
 
-      {managerOpen && canManage && (
-        <CourseCatalogManager
-          catalog={catalog}
-          onSaveCourse={handleSaveCourse}
-          onDeactivateCourse={handleDeactivateCourse}
-          onClose={closeManager}
-          returnFocusRef={manageButtonRef}
-        />
-      )}
     </section>
   )
 }
