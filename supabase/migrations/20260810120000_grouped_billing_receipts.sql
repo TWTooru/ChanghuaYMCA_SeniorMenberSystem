@@ -33,9 +33,61 @@ create policy "role users can select billing receipt courses"
 on public.billing_receipt_courses for select to authenticated
 using (public.current_app_role() in ('viewer', 'editor', 'admin'));
 
+revoke all on public.billing_receipts, public.billing_receipt_courses
+from public, anon, authenticated;
 grant select on public.billing_receipts, public.billing_receipt_courses to authenticated;
-revoke insert, update, delete on public.billing_receipts, public.billing_receipt_courses
-from anon, authenticated;
+
+create or replace function private.enforce_billing_receipt_single_enrollment()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_enrollment_id_text text;
+begin
+  perform 1
+  from public.billing_receipts receipt
+  where receipt.receipt_id = new.receipt_id
+  for update;
+
+  select course.enrollment_id::text
+  into v_enrollment_id_text
+  from public.courses course
+  where course.course_id = new.course_id
+  for share;
+
+  if not found then
+    return new;
+  end if;
+
+  perform 1
+  from public.billing_receipt_courses link
+  join public.courses linked_course on linked_course.course_id = link.course_id
+  where link.receipt_id = new.receipt_id
+  order by linked_course.course_id
+  for share of linked_course;
+
+  if exists (
+    select 1
+    from public.billing_receipt_courses link
+    join public.courses linked_course on linked_course.course_id = link.course_id
+    where link.receipt_id = new.receipt_id
+      and linked_course.enrollment_id::text is distinct from v_enrollment_id_text
+  ) then
+    raise exception 'PAYMENT_CROSS_ENROLLMENT';
+  end if;
+
+  return new;
+end;
+$$;
+
+revoke all on function private.enforce_billing_receipt_single_enrollment()
+from public, anon, authenticated;
+
+create trigger billing_receipt_courses_enforce_single_enrollment
+before insert on public.billing_receipt_courses
+for each row execute function private.enforce_billing_receipt_single_enrollment();
 
 create or replace function private.migrate_legacy_billing_receipts()
 returns void
@@ -291,6 +343,15 @@ begin
       raise exception 'PAYMENT_COURSE_REQUIRED';
     end if;
 
+    if exists (
+      select 1
+      from pg_catalog.jsonb_array_elements(v_payment -> 'course_names') as element(value)
+      where pg_catalog.jsonb_typeof(element.value) <> 'string'
+         or nullif(pg_catalog.btrim(element.value #>> '{}'), '') is null
+    ) then
+      raise exception 'PAYMENT_COURSE_REQUIRED';
+    end if;
+
     select pg_catalog.array_agg(value #>> '{}')
     into v_payment_course_names
     from pg_catalog.jsonb_array_elements(v_payment -> 'course_names');
@@ -298,10 +359,19 @@ begin
       raise exception 'PAYMENT_COURSE_REQUIRED';
     end if;
 
-    v_amount_text := nullif(pg_catalog.btrim(v_payment ->> 'amount'), '');
-    if v_amount_text is null then
+    if v_payment ? 'invoice_number'
+       and pg_catalog.jsonb_typeof(v_payment -> 'invoice_number') not in ('string', 'null') then
+      raise exception 'PAYMENT_RECORDS_INVALID';
+    end if;
+
+    if not (v_payment ? 'amount')
+       or pg_catalog.jsonb_typeof(v_payment -> 'amount') = 'null' then
       raise exception 'PAYMENT_AMOUNT_REQUIRED';
     end if;
+    if pg_catalog.jsonb_typeof(v_payment -> 'amount') <> 'number' then
+      raise exception 'PAYMENT_AMOUNT_INVALID';
+    end if;
+    v_amount_text := v_payment ->> 'amount';
     if v_amount_text !~ '^\d+$' then
       raise exception 'PAYMENT_AMOUNT_INVALID';
     end if;
@@ -398,6 +468,12 @@ begin
   if coalesce(pg_catalog.cardinality(p_course_ids), 0) = 0 then
     raise exception 'PAYMENT_COURSE_REQUIRED';
   end if;
+
+  perform 1
+  from public.courses c
+  where c.course_id = any(p_course_ids)
+  order by c.course_id
+  for update;
 
   select count(*)::integer, count(distinct c.enrollment_id)::integer
   into v_course_count, v_enrollment_count
@@ -525,7 +601,7 @@ create or replace function public.update_enrollment_with_courses(
 )
 returns void
 language plpgsql
-security invoker
+security definer
 set search_path = ''
 as $$
 declare
@@ -595,6 +671,13 @@ begin
     );
 end;
 $$;
+
+revoke all on function public.update_enrollment_with_courses(
+  text, text, text, text, text, integer, text, text[]
+) from public, anon, authenticated;
+grant execute on function public.update_enrollment_with_courses(
+  text, text, text, text, text, integer, text, text[]
+) to authenticated;
 
 drop policy if exists "role editors can delete unbilled courses" on public.courses;
 
