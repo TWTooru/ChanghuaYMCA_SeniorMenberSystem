@@ -355,3 +355,323 @@
   border-radius: 4px;
   transition: width 0.6s ease;
 }
+
+/* KPI 附標題與差異變化 */
+.kpi-subtitle {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.kpi-delta {
+  font-weight: 500;
+}
+
+.kpi-delta-green, .kpi-rate-green {
+  color: var(--color-success);
+}
+
+.kpi-delta-red, .kpi-rate-red {
+  color: #ef4444; /* red */
+}
+
+.kpi-rate-amber {
+  color: var(--color-warning);
+}
+
+/* 性別分佈圖表 */
+.gender-dist-chart-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.gender-dist-empty {
+  color: var(--text-muted);
+  font-size: 14px;
+  text-align: center;
+  padding: 20px 0;
+}
+
+.gender-dist-bar {
+  display: flex;
+  height: 12px;
+  border-radius: 999px;
+  overflow: hidden;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.gender-dist-segment {
+  height: 100%;
+}
+
+.gender-dist-segment.male {
+  background-color: #3b82f6;
+}
+
+.gender-dist-segment.female {
+  background-color: #ec4899;
+}
+
+.gender-dist-segment.unknown {
+  background-color: #6b7280;
+}
+
+.gender-dist-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gender-dist-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.gender-dist-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.gender-dist-dot.male {
+  background-color: #3b82f6;
+}
+
+.gender-dist-dot.female {
+  background-color: #ec4899;
+}
+
+.gender-dist-dot.unknown {
+  background-color: #6b7280;
+}
+
+.gender-dist-label {
+  color: var(--text-secondary);
+  width: 32px;
+}
+
+.gender-dist-value {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.gender-dist-total {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: right;
+  margin-top: 4px;
+}
+
+/* 各季選課趨勢 */
+.season-trend-card {
+  /* panel-card styling applied via class composition */
+}
+
+.season-trend-empty {
+  padding: 32px 0;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.season-trend-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.season-trend-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: var(--table-row-hover, rgba(255, 255, 255, 0.02));
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.season-trend-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.season-trend-latest {
+  background: rgba(99, 102, 241, 0.05);
+  border: 1px solid rgba(99, 102, 241, 0.1);
+}
+
+.season-trend-latest:hover {
+  background: rgba(99, 102, 241, 0.08);
+  border-color: rgba(99, 102, 241, 0.15);
+}
+
+.season-trend-label {
+  width: 70px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.season-trend-bar-container {
+  flex: 1;
+  height: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.season-trend-bars {
+  height: 100%;
+  display: flex;
+}
+
+.season-trend-bar-net {
+  height: 100%;
+  background: var(--color-accent, #6366f1);
+  transition: width 0.6s ease;
+}
+
+.season-trend-bar-refund {
+  height: 100%;
+  background: #f97316;
+  transition: width 0.6s ease;
+}
+
+.season-trend-numbers {
+  width: 100px;
+  font-size: 13px;
+  text-align: right;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.season-trend-net-text {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.season-trend-refund-text {
+  color: #f97316;
+  font-size: 12px;
+}
+
+/* Season Summary Card */
+.season-summary-card {
+  border-left: 3px solid var(--color-accent);
+  background: linear-gradient(90deg, rgba(99, 102, 241, 0.05) 0%, transparent 100%), var(--panel-bg, rgba(31, 41, 55, 0.4));
+  margin-bottom: 32px;
+}
+
+.season-summary-card.empty {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 120px;
+}
+
+.season-summary-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.season-summary-icon {
+  color: var(--color-accent);
+}
+
+.season-summary-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.season-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .season-summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .season-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.season-summary-stat {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.season-summary-stat .stat-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.season-summary-stat .stat-value-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.season-summary-stat .stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  font-family: var(--font-heading);
+  color: var(--text-primary);
+}
+
+.season-summary-stat .stat-unit {
+  font-size: 13px;
+  font-weight: normal;
+  color: var(--text-muted);
+}
+
+.season-summary-delta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.season-summary-delta.good {
+  color: var(--color-success);
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.season-summary-delta.bad {
+  color: var(--color-danger, #ef4444);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.season-summary-delta.neutral {
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.05);
+}
