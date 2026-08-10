@@ -113,7 +113,8 @@ export default function CourseCatalogManager({
             value={courseName}
             onChange={event => setCourseName(event.target.value)}
             onKeyDown={event => {
-              if (event.key === 'Enter') handleSave(event)
+              const isComposing = event.isComposing || event.nativeEvent?.isComposing
+              if (event.key === 'Enter' && !isComposing) handleSave(event)
             }}
             disabled={controlsDisabled}
           />

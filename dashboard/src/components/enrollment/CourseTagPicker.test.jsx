@@ -210,6 +210,19 @@ describe('CourseTagPicker', () => {
     expect(saveCourseCatalogEntry).toHaveBeenCalledWith(expect.anything(), '伸展課')
   })
 
+  it('does not submit while Enter confirms a Chinese IME candidate', async () => {
+    render(<CourseTagPicker selectedCourseNames={[]} lockedCourseNames={[]} onChange={vi.fn()} />)
+    await screen.findByRole('button', { name: '肌力訓練' })
+    fireEvent.click(screen.getByRole('button', { name: '管理課程' }))
+    const input = screen.getByLabelText('新增課程名稱')
+    fireEvent.change(input, { target: { value: '伸展' } })
+
+    fireEvent.keyDown(input, { key: 'Enter', isComposing: true })
+
+    expect(saveCourseCatalogEntry).not.toHaveBeenCalled()
+    expect(input.value).toBe('伸展')
+  })
+
   it('confirms deactivation, refreshes the catalog, and retains a selected historical tag', async () => {
     vi.mocked(deactivateCourseCatalogEntry).mockResolvedValue(undefined)
     vi.mocked(fetchCourseCatalog)
