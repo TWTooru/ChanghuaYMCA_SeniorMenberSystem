@@ -128,6 +128,7 @@ export default function AddEnrollModal({ student, onClose, onRefresh, defaultSea
         tabIndex={-1}
         aria-modal="true"
         aria-labelledby="add-enrollment-title"
+        aria-describedby="add-enrollment-description"
         onClick={event => event.stopPropagation()}
         onKeyDown={handleKeyDown}
       >
@@ -144,6 +145,7 @@ export default function AddEnrollModal({ student, onClose, onRefresh, defaultSea
             <X size={20} />
           </button>
         </div>
+        <p id="add-enrollment-description">選擇課程，並視需要新增繳費紀錄。</p>
         <form onSubmit={handleAddEnrollSubmit} className="form-grid">
           <div className="form-group">
             <label className="form-label">學員姓名</label>
@@ -172,6 +174,7 @@ export default function AddEnrollModal({ student, onClose, onRefresh, defaultSea
               type="text"
               className="form-input"
               value={newEnroll.season}
+              disabled={isSubmitting}
               onChange={event => setNewEnroll(current => ({ ...current, season: event.target.value }))}
               required
               placeholder="例如：第十六季"
@@ -182,6 +185,7 @@ export default function AddEnrollModal({ student, onClose, onRefresh, defaultSea
             <select
               className="form-select"
               value={newEnroll.reg_type}
+              disabled={isSubmitting}
               onChange={event => setNewEnroll(current => ({ ...current, reg_type: event.target.value }))}
             >
               <option value="新">新</option>
@@ -194,6 +198,7 @@ export default function AddEnrollModal({ student, onClose, onRefresh, defaultSea
               type="text"
               className="form-input"
               value={newEnroll.pre_test}
+              disabled={isSubmitting}
               onChange={event => setNewEnroll(current => ({ ...current, pre_test: event.target.value }))}
               placeholder="(分數)(年/月/日)"
             />
@@ -204,6 +209,7 @@ export default function AddEnrollModal({ student, onClose, onRefresh, defaultSea
               type="text"
               className="form-input"
               value={newEnroll.post_test}
+              disabled={isSubmitting}
               onChange={event => setNewEnroll(current => ({ ...current, post_test: event.target.value }))}
               placeholder="(分數)(年/月/日)"
             />
@@ -213,6 +219,7 @@ export default function AddEnrollModal({ student, onClose, onRefresh, defaultSea
             <CourseTagPicker
               selectedCourseNames={newEnroll.courses}
               lockedCourseNames={[]}
+              disabled={isSubmitting}
               onChange={courses => setNewEnroll(current => ({
                 ...current,
                 courses,
@@ -234,6 +241,7 @@ export default function AddEnrollModal({ student, onClose, onRefresh, defaultSea
               className="form-checkbox"
               id="refunded-checkbox"
               checked={newEnroll.refunded}
+              disabled={isSubmitting}
               onChange={event => setNewEnroll(current => ({ ...current, refunded: event.target.checked }))}
             />
             <label className="form-label" htmlFor="refunded-checkbox" style={{ cursor: 'pointer' }}>是否已退費</label>
@@ -246,6 +254,7 @@ export default function AddEnrollModal({ student, onClose, onRefresh, defaultSea
                   type="text"
                   className="form-input"
                   value={newEnroll.refund_info}
+                  disabled={isSubmitting}
                   onChange={event => setNewEnroll(current => ({ ...current, refund_info: event.target.value }))}
                   placeholder="例如: 因身體不適退費"
                 />

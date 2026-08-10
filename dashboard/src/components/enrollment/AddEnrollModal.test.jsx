@@ -6,12 +6,13 @@ import { createEnrollmentWithCourses } from '../../services/enrollmentService'
 vi.mock('../../services/enrollmentService', () => ({ createEnrollmentWithCourses: vi.fn() }))
 
 vi.mock('./CourseTagPicker', () => ({
-  default: ({ selectedCourseNames, onChange }) => (
+  default: ({ selectedCourseNames, onChange, disabled }) => (
     <section aria-label="course picker">
       {['Course A', 'Course B', 'Course C'].map(courseName => (
         <button
           key={courseName}
           type="button"
+          disabled={disabled}
           aria-pressed={selectedCourseNames.includes(courseName)}
           onClick={() => onChange(
             selectedCourseNames.includes(courseName)
@@ -120,7 +121,7 @@ describe('AddEnrollModal', () => {
 
     fireEvent.submit(screen.getByRole('button', { name: '新增選課' }).closest('form'))
 
-    expect(await screen.findByRole('alert')).toBeTruthy()
+    expect((await screen.findByRole('alert')).textContent).toBe('金額必須為 0 或正整數')
     expect(createEnrollmentWithCourses).not.toHaveBeenCalled()
     expect(window.alert).not.toHaveBeenCalled()
   })
@@ -158,6 +159,27 @@ describe('AddEnrollModal', () => {
     fireEvent.click(screen.getByRole('button', { name: '取消' }))
 
     expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('disables every editable enrollment control while submitting', async () => {
+    createEnrollmentWithCourses.mockImplementation(() => new Promise(() => {}))
+    renderModal()
+    selectCourse()
+    fireEvent.click(screen.getByLabelText('是否已退費'))
+    addPayment()
+
+    fireEvent.submit(screen.getByRole('button', { name: '新增選課' }).closest('form'))
+    await waitFor(() => expect(screen.getByRole('button', { name: '新增選課' }).disabled).toBe(true))
+
+    expect(screen.getByRole('button', { name: 'Course A' }).disabled).toBe(true)
+    expect(screen.getByLabelText('修課季度 *').disabled).toBe(true)
+    expect(screen.getByRole('combobox').disabled).toBe(true)
+    screen.getAllByPlaceholderText('(分數)(年/月/日)').forEach(field => expect(field.disabled).toBe(true))
+    expect(screen.getByLabelText('是否已退費').disabled).toBe(true)
+    expect(screen.getByPlaceholderText('例如: 因身體不適退費').disabled).toBe(true)
+    expect(screen.getByLabelText('總金額').disabled).toBe(true)
+    expect(screen.getByLabelText('發票編號').disabled).toBe(true)
+    expect(screen.getByRole('button', { name: '新增繳費紀錄' }).disabled).toBe(true)
   })
 
   it('closes with Escape while idle', () => {
@@ -220,9 +242,12 @@ describe('AddEnrollModal', () => {
 
   it('exposes an accessible close control and traps keyboard focus', () => {
     renderModal()
+    const dialog = screen.getByRole('dialog', { name: '新增選課紀錄' })
     const close = screen.getByRole('button', { name: '關閉新增選課' })
     const submit = screen.getByRole('button', { name: '新增選課' })
 
+    expect(dialog.getAttribute('aria-describedby')).toBe('add-enrollment-description')
+    expect(document.getElementById('add-enrollment-description').textContent).toContain('選擇課程')
     expect(document.activeElement).toBe(close)
     fireEvent.keyDown(close, { key: 'Tab', shiftKey: true })
     expect(document.activeElement).toBe(submit)

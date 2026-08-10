@@ -13,20 +13,22 @@ export default function CourseCatalogManager({
   onDeactivateCourse,
   onClose,
   returnFocusRef,
+  disabled = false,
 }) {
   const [courseName, setCourseName] = useState('')
   const [confirmingCourse, setConfirmingCourse] = useState(null)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState('')
   const dialogRef = useRef(null)
+  const controlsDisabled = pending || disabled
 
   useEffect(() => {
     const dialog = dialogRef.current
+    const returnFocus = returnFocusRef?.current
     const [initialFocus] = getFocusableElements(dialog)
     ;(initialFocus || dialog).focus()
 
     return () => {
-      const returnFocus = returnFocusRef?.current
       if (returnFocus?.isConnected) returnFocus.focus()
     }
   }, [returnFocusRef])
@@ -54,8 +56,9 @@ export default function CourseCatalogManager({
   }
 
   const handleSave = async event => {
-    event.preventDefault()
-    if (pending) return
+    event?.preventDefault()
+    event?.stopPropagation()
+    if (controlsDisabled) return
 
     setPending(true)
     setError('')
@@ -70,7 +73,7 @@ export default function CourseCatalogManager({
   }
 
   const handleDeactivate = async () => {
-    if (!confirmingCourse || pending) return
+    if (!confirmingCourse || controlsDisabled) return
 
     setPending(true)
     setError('')
@@ -96,12 +99,12 @@ export default function CourseCatalogManager({
     >
       <div className="course-catalog-manager-header">
         <h3 id="course-catalog-manager-title">管理課程</h3>
-        <button type="button" className="btn-secondary course-catalog-close" onClick={onClose} disabled={pending}>
+        <button type="button" className="btn-secondary course-catalog-close" onClick={onClose} disabled={controlsDisabled}>
           關閉
         </button>
       </div>
 
-      <form className="course-catalog-add-form" onSubmit={handleSave}>
+      <div className="course-catalog-add-form">
         <label className="form-label" htmlFor="new-course-name">新增課程名稱</label>
         <div className="course-catalog-add-controls">
           <input
@@ -109,13 +112,16 @@ export default function CourseCatalogManager({
             className="form-input"
             value={courseName}
             onChange={event => setCourseName(event.target.value)}
-            disabled={pending}
+            onKeyDown={event => {
+              if (event.key === 'Enter') handleSave(event)
+            }}
+            disabled={controlsDisabled}
           />
-          <button type="submit" className="btn-primary" disabled={pending}>
+          <button type="button" className="btn-primary" onClick={handleSave} disabled={controlsDisabled}>
             {pending ? '處理中…' : '新增或重新啟用'}
           </button>
         </div>
-      </form>
+      </div>
 
       {error && <p className="course-catalog-error" role="alert">{error}</p>}
 
@@ -123,10 +129,10 @@ export default function CourseCatalogManager({
         <div className="course-catalog-confirmation" role="status">
           <p>停用「{confirmingCourse.courseName}」不會刪除既有歷史資料。</p>
           <div className="course-catalog-confirmation-actions">
-            <button type="button" className="btn-secondary" onClick={() => setConfirmingCourse(null)} disabled={pending}>
+            <button type="button" className="btn-secondary" onClick={() => setConfirmingCourse(null)} disabled={controlsDisabled}>
               取消
             </button>
-            <button type="button" className="btn-danger" onClick={handleDeactivate} disabled={pending}>
+            <button type="button" className="btn-danger" onClick={handleDeactivate} disabled={controlsDisabled}>
               {pending ? '處理中…' : '確認停用'}
             </button>
           </div>
@@ -146,7 +152,7 @@ export default function CourseCatalogManager({
                   type="button"
                   className="btn-secondary course-catalog-deactivate"
                   onClick={() => setConfirmingCourse(course)}
-                  disabled={pending}
+                  disabled={controlsDisabled}
                   aria-label={`停用 ${course.courseName}`}
                 >
                   停用

@@ -1,8 +1,8 @@
 const MAX_PAYMENT_AMOUNT = 2147483647
-const INVALID_AMOUNT_ERROR = '??敹???0 ?迤?湔'
-const EMPTY_ASSIGNMENT_ERROR = '蝜唾祥蝝???撠???隤脩?'
-const UNSELECTED_ASSIGNMENT_ERROR = '蝜唾祥蝝???急?豢??玨蝔'
-const DUPLICATE_ASSIGNMENT_ERROR = '???隤脖??賢?曉憭?蝜唾祥蝝?'
+const INVALID_AMOUNT_ERROR = '金額必須為 0 或正整數'
+const EMPTY_ASSIGNMENT_ERROR = '繳費紀錄必須至少選擇一門課程'
+const UNSELECTED_ASSIGNMENT_ERROR = '繳費紀錄包含未選擇的課程'
+const DUPLICATE_ASSIGNMENT_ERROR = '同一門課不能出現在多筆繳費紀錄'
 
 export function normalizePaymentAmount(value) {
   const text = String(value ?? '').trim()

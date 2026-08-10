@@ -16,7 +16,7 @@ describe('normalizePaymentAmount', () => {
 
   it.each(['', '   ', -1, '-1', 1.5, '1.5', 'abc', 2147483648, Number.MAX_SAFE_INTEGER + 1, Infinity])(
     'rejects invalid amount %p', value => {
-      expect(() => normalizePaymentAmount(value)).toThrow(new Error('??敹???0 ?迤?湔'))
+      expect(() => normalizePaymentAmount(value)).toThrow(new Error('金額必須為 0 或正整數'))
     },
   )
 })
@@ -39,17 +39,17 @@ describe('normalizePaymentRecords', () => {
   it('rejects empty course assignment', () => {
     expect(() => normalizePaymentRecords([
       { courseNames: [], amount: 100, invoiceNumber: '' },
-    ], ['??'])).toThrow(new Error('蝜唾祥蝝???撠???隤脩?'))
+    ], ['??'])).toThrow(new Error('繳費紀錄必須至少選擇一門課程'))
   })
 
   it('rejects unselected and duplicated course assignments', () => {
     expect(() => normalizePaymentRecords([
       { courseNames: ['other'], amount: 100, invoiceNumber: '' },
-    ], ['??'])).toThrow(new Error('蝜唾祥蝝???急?豢??玨蝔'))
+    ], ['??'])).toThrow(new Error('繳費紀錄包含未選擇的課程'))
     expect(() => normalizePaymentRecords([
       { courseNames: ['??'], amount: 100, invoiceNumber: '' },
       { courseNames: ['??'], amount: 200, invoiceNumber: '' },
-    ], ['??'])).toThrow(new Error('???隤脖??賢?曉憭?蝜唾祥蝝?'))
+    ], ['??'])).toThrow(new Error('同一門課不能出現在多筆繳費紀錄'))
   })
 })
 
