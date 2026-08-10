@@ -108,10 +108,8 @@ begin
   )
   select old.amount, old.invoice_number, old.receipt_id, old.created_at, old.updated_at
   from public.course_receipts old
-  on conflict (legacy_course_receipt_id) do update
-  set amount = excluded.amount,
-      invoice_number = excluded.invoice_number,
-      updated_at = excluded.updated_at;
+  -- Existing grouped rows are authoritative after backfill; reruns only seed missing legacy rows.
+  on conflict (legacy_course_receipt_id) do nothing;
 
   insert into public.billing_receipt_courses (receipt_id, course_id)
   select current_receipt.receipt_id, old.course_id
@@ -327,13 +325,6 @@ begin
   ) then
     raise exception 'STUDENT_NOT_FOUND';
   end if;
-  if exists (
-    select 1 from public.enrollments e
-    where e.student_id = p_student_id and e.season = p_season
-  ) then
-    raise exception 'ENROLLMENT_ALREADY_EXISTS';
-  end if;
-
   for v_payment in
     select value
     from pg_catalog.jsonb_array_elements(coalesce(p_payment_records, '[]'::jsonb))
@@ -408,7 +399,13 @@ begin
     student_id, season, reg_type, pre_test, post_test, refunded, refund_info
   ) values (
     p_student_id, p_season, p_reg_type, p_pre_test, p_post_test, p_refunded, p_refund_info
-  ) returning enrollment_id into v_enrollment_id;
+  )
+  on conflict (student_id, season) do nothing
+  returning enrollment_id into v_enrollment_id;
+
+  if v_enrollment_id is null then
+    raise exception 'ENROLLMENT_ALREADY_EXISTS';
+  end if;
 
   insert into public.courses (enrollment_id, course_name)
   select v_enrollment_id, course_name

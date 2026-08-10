@@ -227,6 +227,27 @@ describe('AddEnrollModal', () => {
     expect(screen.getByLabelText('修課季度 *').value).toBe('第十六季')
   })
 
+  it('associates every enrollment field label with a stable control ID', () => {
+    renderModal()
+
+    const expectedFields = [
+      ['學員姓名', 'add-enrollment-student-name'],
+      ['學員 ID', 'add-enrollment-student-id'],
+      ['修課季度 *', 'add-enrollment-season'],
+      ['新/續生', 'add-enrollment-registration-type'],
+      ['前測分數', 'add-enrollment-pre-test'],
+      ['後測分數', 'add-enrollment-post-test'],
+      ['是否已退費', 'add-enrollment-refunded'],
+    ]
+
+    expectedFields.forEach(([label, id]) => {
+      expect(screen.getByLabelText(label).id).toBe(id)
+    })
+
+    fireEvent.click(screen.getByLabelText('是否已退費'))
+    expect(screen.getByLabelText('退費原因/備註').id).toBe('add-enrollment-refund-notes')
+  })
+
   it('reports invalid form values inline before calling the service', async () => {
     renderModal()
     fireEvent.change(screen.getByLabelText('修課季度 *'), { target: { value: '春季班' } })

@@ -89,7 +89,11 @@ export async function deleteEnrollment(client, enrollmentId) {
   const { error } = await client.from('enrollments').delete().eq('enrollment_id', enrollmentId)
   if (!error) return
 
-  if (error.code === '23503' && error.message?.includes('course_receipts')) {
+  const foreignKeyContext = `${error.message || ''} ${error.details || ''}`
+  if (
+    error.code === '23503'
+    && (foreignKeyContext.includes('course_receipts') || foreignKeyContext.includes('billing_receipt_courses'))
+  ) {
     throw new Error('此選課紀錄的課程仍有收據，請先刪除所有課程收據後再刪除選課')
   }
   throw error

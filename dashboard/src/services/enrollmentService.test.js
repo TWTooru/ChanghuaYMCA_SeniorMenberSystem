@@ -129,6 +129,25 @@ describe('deleteEnrollment', () => {
       '此選課紀錄的課程仍有收據，請先刪除所有課程收據後再刪除選課'
     )
   })
+
+  it('maps grouped billing link violations to the same paid-course deletion error', async () => {
+    const client = {
+      from: vi.fn().mockReturnValue({
+        delete: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({
+            error: {
+              code: '23503',
+              message: 'update or delete on table "courses" violates foreign key constraint "billing_receipt_courses_course_id_fkey" on table "billing_receipt_courses"',
+            },
+          }),
+        }),
+      }),
+    }
+
+    await expect(deleteEnrollment(client, 1)).rejects.toThrow(
+      '此選課紀錄的課程仍有收據，請先刪除所有課程收據後再刪除選課'
+    )
+  })
 })
 
 describe('updateEnrollmentRefundStatus', () => {

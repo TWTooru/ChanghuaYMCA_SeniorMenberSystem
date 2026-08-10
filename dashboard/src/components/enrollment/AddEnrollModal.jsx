@@ -148,8 +148,9 @@ export default function AddEnrollModal({ student, onClose, onRefresh, defaultSea
         <p id="add-enrollment-description">選擇課程，並視需要新增繳費紀錄。</p>
         <form onSubmit={handleAddEnrollSubmit} className="form-grid">
           <div className="form-group">
-            <label className="form-label">學員姓名</label>
+            <label className="form-label" htmlFor="add-enrollment-student-name">學員姓名</label>
             <input
+              id="add-enrollment-student-name"
               type="text"
               className="form-input"
               value={student.name}
@@ -158,8 +159,9 @@ export default function AddEnrollModal({ student, onClose, onRefresh, defaultSea
             />
           </div>
           <div className="form-group">
-            <label className="form-label">學員 ID</label>
+            <label className="form-label" htmlFor="add-enrollment-student-id">學員 ID</label>
             <input
+              id="add-enrollment-student-id"
               type="text"
               className="form-input"
               value={student.student_id}
@@ -168,9 +170,9 @@ export default function AddEnrollModal({ student, onClose, onRefresh, defaultSea
             />
           </div>
           <div className="form-group">
-            <label className="form-label" htmlFor="enrollment-season">修課季度 *</label>
+            <label className="form-label" htmlFor="add-enrollment-season">修課季度 *</label>
             <input
-              id="enrollment-season"
+              id="add-enrollment-season"
               type="text"
               className="form-input"
               value={newEnroll.season}
@@ -181,8 +183,9 @@ export default function AddEnrollModal({ student, onClose, onRefresh, defaultSea
             />
           </div>
           <div className="form-group">
-            <label className="form-label">新/續生</label>
+            <label className="form-label" htmlFor="add-enrollment-registration-type">新/續生</label>
             <select
+              id="add-enrollment-registration-type"
               className="form-select"
               value={newEnroll.reg_type}
               disabled={isSubmitting}
@@ -193,8 +196,9 @@ export default function AddEnrollModal({ student, onClose, onRefresh, defaultSea
             </select>
           </div>
           <div className="form-group">
-            <label className="form-label">前測分數</label>
+            <label className="form-label" htmlFor="add-enrollment-pre-test">前測分數</label>
             <input
+              id="add-enrollment-pre-test"
               type="text"
               className="form-input"
               value={newEnroll.pre_test}
@@ -204,8 +208,9 @@ export default function AddEnrollModal({ student, onClose, onRefresh, defaultSea
             />
           </div>
           <div className="form-group">
-            <label className="form-label">後測分數</label>
+            <label className="form-label" htmlFor="add-enrollment-post-test">後測分數</label>
             <input
+              id="add-enrollment-post-test"
               type="text"
               className="form-input"
               value={newEnroll.post_test}
@@ -239,18 +244,19 @@ export default function AddEnrollModal({ student, onClose, onRefresh, defaultSea
             <input
               type="checkbox"
               className="form-checkbox"
-              id="refunded-checkbox"
+              id="add-enrollment-refunded"
               checked={newEnroll.refunded}
               disabled={isSubmitting}
               onChange={event => setNewEnroll(current => ({ ...current, refunded: event.target.checked }))}
             />
-            <label className="form-label" htmlFor="refunded-checkbox" style={{ cursor: 'pointer' }}>是否已退費</label>
+            <label className="form-label" htmlFor="add-enrollment-refunded" style={{ cursor: 'pointer' }}>是否已退費</label>
           </div>
           <div className="form-group">
             {newEnroll.refunded && (
               <>
-                <label className="form-label">退費原因/備註</label>
+                <label className="form-label" htmlFor="add-enrollment-refund-notes">退費原因/備註</label>
                 <input
+                  id="add-enrollment-refund-notes"
                   type="text"
                   className="form-input"
                   value={newEnroll.refund_info}

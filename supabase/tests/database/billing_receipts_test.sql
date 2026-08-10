@@ -166,6 +166,24 @@ select ok(
   'receipt creation and link insertion retain race-closing row locks'
 );
 
+select ok(
+  (
+    select pg_catalog.lower(
+      pg_catalog.regexp_replace(
+        pg_catalog.pg_get_functiondef(
+          pg_catalog.to_regprocedure(
+            'public.create_enrollment_with_courses(text,text,text,text,text,integer,text,text[],jsonb)'
+          )
+        ),
+        '\s+',
+        ' ',
+        'g'
+      )
+    ) like '%on conflict (student_id, season) do nothing returning enrollment_id into v_enrollment_id;%'
+  ),
+  'enrollment creation resolves concurrent duplicates at the unique insert boundary'
+);
+
 select set_config('test.payment_student_id', (910000000000 + txid_current())::text, true);
 insert into public.students (student_id, name)
 values (current_setting('test.payment_student_id'), 'Payment test student');
@@ -459,6 +477,24 @@ select set_config(
   'request.jwt.claims',
   '{"app_metadata":{"app_role":"editor"}}',
   true
+);
+
+select throws_ok(
+  pg_catalog.format(
+    'select public.create_enrollment_with_courses(%L,%L,%L,%L,%L,%s,%L,array[%L]::text[],%L::jsonb)',
+    current_setting('test.payment_student_id'),
+    'Payment Test Season A',
+    '續',
+    '',
+    '',
+    0,
+    '',
+    'Duplicate Course',
+    '[]'
+  ),
+  'P0001',
+  'ENROLLMENT_ALREADY_EXISTS',
+  'duplicate enrollment creation returns the stable application error'
 );
 
 select set_config(
@@ -758,6 +794,23 @@ select set_config(
    from public.course_receipts old
    where old.invoice_number = 'LEGACY-NULL'),
   true
+);
+
+update public.billing_receipts receipt
+set amount = 4321,
+    invoice_number = 'GROUPED-EDITED'
+where receipt.legacy_course_receipt_id =
+  current_setting('test.payment_legacy_receipt_id')::bigint;
+
+select private.migrate_legacy_billing_receipts();
+
+select results_eq(
+  $$select receipt.amount, receipt.invoice_number
+    from public.billing_receipts receipt
+    where receipt.legacy_course_receipt_id =
+      current_setting('test.payment_legacy_receipt_id')::bigint$$,
+  $$values (4321::integer, 'GROUPED-EDITED'::text)$$,
+  'rerunning the legacy migration preserves grouped receipt edits'
 );
 
 set local role authenticated;
