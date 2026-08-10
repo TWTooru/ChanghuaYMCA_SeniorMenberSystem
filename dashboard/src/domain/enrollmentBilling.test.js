@@ -41,9 +41,19 @@ describe('normalizeEnrollmentBilling', () => {
       { course_id: 12, course_name: 'C', billing_receipt_courses: [] },
     ])).toEqual({
       courseDetails: [
-        { courseId: 10, courseName: 'A', billingReceiptId: 100 },
-        { courseId: 11, courseName: 'B', billingReceiptId: 100 },
-        { courseId: 12, courseName: 'C', billingReceiptId: null },
+        {
+          courseId: 10,
+          courseName: 'A',
+          billingReceiptId: 100,
+          receipt: { receiptId: 100, amount: 3000, invoiceNumber: 'R-1' },
+        },
+        {
+          courseId: 11,
+          courseName: 'B',
+          billingReceiptId: 100,
+          receipt: { receiptId: 100, amount: 3000, invoiceNumber: 'R-1' },
+        },
+        { courseId: 12, courseName: 'C', billingReceiptId: null, receipt: null },
       ],
       billingReceipts: [{
         receiptId: 100,

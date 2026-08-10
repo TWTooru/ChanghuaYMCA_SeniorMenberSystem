@@ -33,6 +33,13 @@ export function normalizeEnrollmentBilling(courseRows = []) {
       courseId: course.course_id,
       courseName: course.course_name,
       billingReceiptId: receipt?.receipt_id ?? null,
+      receipt: receipt
+        ? {
+            receiptId: receipt.receipt_id,
+            amount: receipt.amount,
+            invoiceNumber: receipt.invoice_number,
+          }
+        : null,
     }
 
     if (receipt) {

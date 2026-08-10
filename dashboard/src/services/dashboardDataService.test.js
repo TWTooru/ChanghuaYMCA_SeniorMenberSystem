@@ -60,8 +60,13 @@ describe('fetchDashboardData', () => {
         refunded: false,
         student_name: 'Student One',
         courseDetails: [
-          { courseId: 21, courseName: 'Course A', billingReceiptId: 31 },
-          { courseId: 22, courseName: 'Course B', billingReceiptId: null },
+          {
+            courseId: 21,
+            courseName: 'Course A',
+            billingReceiptId: 31,
+            receipt: { receiptId: 31, amount: 1200, invoiceNumber: 'AB12345678' },
+          },
+          { courseId: 22, courseName: 'Course B', billingReceiptId: null, receipt: null },
         ],
         billingReceipts: [{
           receiptId: 31,
