@@ -1,4 +1,4 @@
-/* 課程收據與舊制帳單同置於明細視窗；收據列採巢狀資訊排列以對應每門已報名課程。 */
+/* Grouped payment rows render once per billing receipt header, with course membership shown as tags. */
 .enrollment-billing-dialog {
   width: min(760px, calc(100vw - 32px));
   max-height: calc(100vh - 48px);
@@ -37,26 +37,21 @@
   gap: 12px;
 }
 
-.enrollment-billing-heading h3 {
+.enrollment-billing-heading h3,
+.enrollment-legacy-billing h3 {
   margin: 0;
 }
 
-.enrollment-billing-actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.course-receipt-list {
+.billing-receipt-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
   margin-top: 12px;
 }
 
-.course-receipt-row {
+.billing-receipt-row {
   display: grid;
-  grid-template-columns: minmax(120px, 0.8fr) minmax(0, 1.8fr) auto;
+  grid-template-columns: minmax(120px, 0.9fr) minmax(0, 1.8fr) auto;
   align-items: center;
   gap: 16px;
   padding: 14px;
@@ -65,38 +60,46 @@
   background: var(--bg-primary);
 }
 
-.course-receipt-values {
+.billing-receipt-courses {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.billing-receipt-values {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
-.course-receipt-values > span {
+.billing-receipt-values > span {
   display: flex;
   min-width: 0;
   flex-direction: column;
   overflow-wrap: anywhere;
 }
 
-.course-receipt-label {
+.billing-receipt-label {
   margin-bottom: 2px;
   color: var(--text-secondary);
   font-size: 12px;
 }
 
-.course-receipt-empty {
+.billing-receipt-empty {
   margin: 0;
   color: var(--text-secondary);
 }
 
-.course-receipt-row-actions {
+.billing-receipt-row-actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
 }
 
-.course-receipt-editor {
+.billing-receipt-editor {
   margin-top: 16px;
   padding: 16px;
   border: 1px solid var(--border-color);
@@ -104,37 +107,22 @@
   background: var(--bg-primary);
 }
 
-.course-receipt-editor h4,
-.enrollment-legacy-billing h3 {
-  margin: 0;
+.billing-receipt-create-editor .payment-records-header {
+  display: none;
 }
 
-.course-receipt-course-options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 12px;
+.billing-receipt-editor .payment-records-record {
+  padding: 0;
+  border: 0;
 }
 
-.course-receipt-course-option {
-  min-height: 34px;
-  padding: 6px 12px;
-  border: 1px solid var(--border-color);
-  border-radius: 999px;
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  cursor: pointer;
+.billing-receipt-editor .payment-records-record legend {
+  display: none;
 }
 
-.course-receipt-course-option:hover {
-  border-color: var(--color-accent);
-  background: var(--color-accent-glow);
-}
-
-.course-receipt-course-option:focus-visible,
-.course-receipt-row button:focus-visible,
-.course-receipt-editor button:focus-visible,
-.course-receipt-editor input:focus-visible {
+.billing-receipt-row button:focus-visible,
+.billing-receipt-editor button:focus-visible,
+.billing-receipt-editor input:focus-visible {
   outline: 3px solid var(--color-accent);
   outline-offset: 2px;
 }
@@ -148,7 +136,7 @@
   background: var(--bg-primary);
 }
 
-.enrollment-legacy-billing .course-receipt-values {
+.enrollment-legacy-billing .billing-receipt-values {
   margin-top: 12px;
 }
 
@@ -161,9 +149,14 @@
 
 .enrollment-billing-actions {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
   gap: 8px;
   margin-top: 16px;
+}
+
+.enrollment-billing-heading .enrollment-billing-actions {
+  margin-top: 0;
 }
 
 .enrollment-billing-message {
@@ -180,17 +173,17 @@
 }
 
 @media (max-width: 640px) {
-  .course-receipt-row,
-  .course-receipt-values,
+  .billing-receipt-row,
+  .billing-receipt-values,
   .enrollment-billing-fields {
     grid-template-columns: 1fr;
   }
 
-  .course-receipt-row {
+  .billing-receipt-row {
     align-items: start;
   }
 
-  .course-receipt-row-actions {
+  .billing-receipt-row-actions {
     justify-self: start;
     justify-content: flex-start;
   }
