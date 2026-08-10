@@ -1,5 +1,5 @@
 begin;
-select plan(8);
+select plan(9);
 
 select has_column(
   'public',
@@ -26,6 +26,15 @@ select col_type_is(
   'invoice_number',
   'text',
   'invoice number is stored as text'
+);
+select is(
+  (select count(*)::integer
+   from information_schema.columns
+   where table_schema = 'public'
+     and table_name = 'enrollments'
+     and column_name in ('amount', 'invoice_number')),
+  2,
+  'legacy enrollment billing fields remain until dashboard cutover'
 );
 
 select set_config(

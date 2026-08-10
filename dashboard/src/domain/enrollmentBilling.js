@@ -24,14 +24,52 @@ export function normalizeCourseDetails(courseRows = []) {
   })
 }
 
+export function normalizeEnrollmentBilling(courseRows = []) {
+  const receiptMap = new Map()
+  const courseDetails = courseRows.map(course => {
+    const link = firstReceipt(course.billing_receipt_courses)
+    const receipt = firstReceipt(link?.billing_receipts)
+    const courseDetail = {
+      courseId: course.course_id,
+      courseName: course.course_name,
+      billingReceiptId: receipt?.receipt_id ?? null,
+      receipt: receipt
+        ? {
+            receiptId: receipt.receipt_id,
+            amount: receipt.amount,
+            invoiceNumber: receipt.invoice_number,
+          }
+        : null,
+    }
+
+    if (receipt) {
+      const normalizedReceipt = receiptMap.get(receipt.receipt_id) || {
+        receiptId: receipt.receipt_id,
+        amount: receipt.amount,
+        invoiceNumber: receipt.invoice_number,
+        courses: [],
+      }
+      normalizedReceipt.courses.push({
+        courseId: course.course_id,
+        courseName: course.course_name,
+      })
+      receiptMap.set(receipt.receipt_id, normalizedReceipt)
+    }
+
+    return courseDetail
+  })
+
+  return { courseDetails, billingReceipts: [...receiptMap.values()] }
+}
+
 /**
  * 有收據時彙整以收據為準的帳務；否則保留舊版報名資料的
  * `amount` 與 `invoice_number` 欄位作為備援。
  */
 export function summarizeEnrollmentBilling(enrollment) {
-  const receipts = (enrollment.courseDetails || [])
-    .map(course => course.receipt)
-    .filter(Boolean)
+  const receipts = Array.isArray(enrollment.billingReceipts)
+    ? enrollment.billingReceipts
+    : (enrollment.courseDetails || []).map(course => course.receipt).filter(Boolean)
 
   if (receipts.length === 0) {
     // 舊版報名列早於課程收據機制，其自身欄位仍是資料依據。

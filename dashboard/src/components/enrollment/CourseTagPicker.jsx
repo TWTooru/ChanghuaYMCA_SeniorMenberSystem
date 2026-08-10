@@ -12,7 +12,7 @@ export default function CourseTagPicker({
   selectedCourseNames = [],
   lockedCourseNames = [],
   onChange,
-  canManage,
+  disabled = false,
 }) {
   const [catalog, setCatalog] = useState([])
   const [loading, setLoading] = useState(true)
@@ -29,7 +29,7 @@ export default function CourseTagPicker({
       const nextCatalog = await fetchCourseCatalog(supabase)
       if (requestGeneration !== requestGenerationRef.current) return
       setCatalog(nextCatalog)
-    } catch (_loadError) {
+    } catch {
       if (requestGeneration !== requestGenerationRef.current) return
       setError(true)
     } finally {
@@ -76,23 +76,22 @@ export default function CourseTagPicker({
     <section className="course-tag-picker" aria-label="課程選擇">
       <div className="course-tag-picker-header">
         <span className="form-label">課程</span>
-        {canManage && (
-          <button
-            ref={manageButtonRef}
-            type="button"
-            className="btn-secondary course-tag-picker-manage"
-            onClick={() => setManagerOpen(true)}
-          >
-            管理課程
-          </button>
-        )}
+        <button
+          ref={manageButtonRef}
+          type="button"
+          className="btn-secondary course-tag-picker-manage"
+          onClick={() => setManagerOpen(true)}
+          disabled={disabled}
+        >
+          管理課程
+        </button>
       </div>
 
       {loading && <p className="course-tag-picker-message" role="status">載入課程中…</p>}
       {error && (
         <div className="course-tag-picker-error" role="alert">
           <span>課程名單載入失敗</span>
-          <button type="button" className="btn-secondary" onClick={refreshCatalog}>重試</button>
+          <button type="button" className="btn-secondary" onClick={refreshCatalog} disabled={disabled}>重試</button>
         </div>
       )}
       {!loading && !error && (
@@ -106,7 +105,7 @@ export default function CourseTagPicker({
                 key={course.courseCatalogId}
                 className={`course-tag-picker-tag${selected ? ' selected' : ''}${course.active ? '' : ' inactive'}${locked ? ' locked' : ''}`}
                 aria-pressed={selected}
-                disabled={locked}
+                disabled={disabled || locked}
                 onClick={() => toggleCourse(course.courseName)}
               >
                 <span>{course.courseName}</span>
@@ -118,15 +117,17 @@ export default function CourseTagPicker({
         </div>
       )}
 
-      {managerOpen && canManage && (
+      {managerOpen && (
         <CourseCatalogManager
           catalog={catalog}
           onSaveCourse={handleSaveCourse}
           onDeactivateCourse={handleDeactivateCourse}
           onClose={closeManager}
           returnFocusRef={manageButtonRef}
+          disabled={disabled}
         />
       )}
+
     </section>
   )
 }

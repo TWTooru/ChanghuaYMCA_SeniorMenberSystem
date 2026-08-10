@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { normalizeCourseDetails, summarizeEnrollmentBilling } from './enrollmentBilling'
+import { normalizeCourseDetails, normalizeEnrollmentBilling, summarizeEnrollmentBilling } from './enrollmentBilling'
 
 describe('normalizeCourseDetails', () => {
   it('normalizes nested Supabase receipt arrays while preserving stable course IDs', () => {
@@ -21,7 +21,59 @@ describe('normalizeCourseDetails', () => {
   })
 })
 
+describe('normalizeEnrollmentBilling', () => {
+  it('groups a shared billing receipt once while retaining every linked course', () => {
+    expect(normalizeEnrollmentBilling([
+      {
+        course_id: 10,
+        course_name: 'A',
+        billing_receipt_courses: [{
+          billing_receipts: { receipt_id: 100, amount: 3000, invoice_number: 'R-1' },
+        }],
+      },
+      {
+        course_id: 11,
+        course_name: 'B',
+        billing_receipt_courses: [{
+          billing_receipts: { receipt_id: 100, amount: 3000, invoice_number: 'R-1' },
+        }],
+      },
+      { course_id: 12, course_name: 'C', billing_receipt_courses: [] },
+    ])).toEqual({
+      courseDetails: [
+        {
+          courseId: 10,
+          courseName: 'A',
+          billingReceiptId: 100,
+          receipt: { receiptId: 100, amount: 3000, invoiceNumber: 'R-1' },
+        },
+        {
+          courseId: 11,
+          courseName: 'B',
+          billingReceiptId: 100,
+          receipt: { receiptId: 100, amount: 3000, invoiceNumber: 'R-1' },
+        },
+        { courseId: 12, courseName: 'C', billingReceiptId: null, receipt: null },
+      ],
+      billingReceipts: [{
+        receiptId: 100,
+        amount: 3000,
+        invoiceNumber: 'R-1',
+        courses: [
+          { courseId: 10, courseName: 'A' },
+          { courseId: 11, courseName: 'B' },
+        ],
+      }],
+    })
+  })
+})
+
 describe('summarizeEnrollmentBilling', () => {
+  it('counts a shared receipt only once from grouped receipts', () => {
+    expect(summarizeEnrollmentBilling({
+      billingReceipts: [{ receiptId: 100, amount: 3000, invoiceNumber: 'R-1', courses: [] }],
+    })).toEqual({ amount: 3000, invoiceNumbers: ['R-1'], source: 'receipts' })
+  })
   it('sums non-null receipt amounts and deduplicates non-blank invoice numbers', () => {
     expect(summarizeEnrollmentBilling({
       amount: 9999,
