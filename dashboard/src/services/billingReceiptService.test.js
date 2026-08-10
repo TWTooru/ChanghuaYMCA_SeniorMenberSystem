@@ -40,6 +40,35 @@ describe('billing receipt service', () => {
     })
   })
 
+  it('maps a create-receipt RPC error to a user-facing message', async () => {
+    const client = {
+      rpc: vi.fn().mockResolvedValue({ data: null, error: { message: 'PAYMENT_COURSE_NOT_FOUND' } }),
+    }
+
+    await expect(createBillingReceipt(client, ['missing-course'], {
+      amount: '1200', invoiceNumber: 'INV-42',
+    })).rejects.toThrow('找不到指定的報名課程')
+  })
+
+  it('maps an update-receipt RPC error to a user-facing message', async () => {
+    const client = {
+      rpc: vi.fn().mockResolvedValue({ data: null, error: { message: 'PAYMENT_NOT_FOUND' } }),
+    }
+
+    await expect(updateBillingReceipt(client, 'missing-receipt', {
+      amount: '1200', invoiceNumber: 'INV-42',
+    })).rejects.toThrow('找不到指定的付款資料')
+  })
+
+  it('rejects an invalid receipt amount before calling the RPC', async () => {
+    const rpc = vi.fn()
+
+    await expect(createBillingReceipt({ rpc }, ['course-1'], {
+      amount: '-1', invoiceNumber: 'INV-42',
+    })).rejects.toThrow()
+    expect(rpc).not.toHaveBeenCalled()
+  })
+
   it('deletes a receipt through the grouped receipt RPC', async () => {
     const client = { rpc: vi.fn().mockResolvedValue({ error: null }) }
 
