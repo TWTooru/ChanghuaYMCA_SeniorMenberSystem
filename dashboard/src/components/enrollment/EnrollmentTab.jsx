@@ -21,7 +21,7 @@ export default function EnrollmentTab({ students, enrollments, onSelectEnrollmen
   const seasonsList = useMemo(() => {
     if (!enrollments) return []
     const set = new Set(enrollments.map(e => e.season))
-    return Array.from(set)
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'zh-TW', { numeric: true }))
   }, [enrollments])
 
   const filteredHistory = useMemo(() => {
