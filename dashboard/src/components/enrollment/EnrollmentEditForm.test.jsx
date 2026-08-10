@@ -79,6 +79,23 @@ describe('EnrollmentEditForm', () => {
     expect(updateEnrollmentWithCourses.mock.calls[0][2].courses).toEqual(['電腦課'])
   })
 
+  it('locks courses linked by billingReceiptId', async () => {
+    const groupedBillingEnrollment = {
+      ...enrollment,
+      courseDetails: [
+        { courseId: 10, courseName: enrollment.courses[0], billingReceiptId: 100 },
+        { courseId: 11, courseName: enrollment.courses[1], billingReceiptId: null },
+      ],
+    }
+    const { container } = render(<EnrollmentEditForm enrollment={groupedBillingEnrollment} onSave={vi.fn()} onCancel={vi.fn()} />)
+
+    await waitFor(() => expect(container.querySelectorAll('.course-tag-picker-tag')).toHaveLength(2))
+    const [lockedCourse, removableCourse] = container.querySelectorAll('.course-tag-picker-tag')
+
+    expect(lockedCourse.disabled).toBe(true)
+    expect(removableCourse.disabled).toBe(false)
+  })
+
   it('keeps selected tags retryable and displays an inline save error', async () => {
     const onSave = vi.fn()
     vi.mocked(updateEnrollmentWithCourses).mockRejectedValueOnce(new Error('已有收據的課程不能移除'))
