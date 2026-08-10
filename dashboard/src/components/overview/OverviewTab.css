@@ -695,3 +695,8 @@
   color: var(--text-muted);
   background: rgba(255, 255, 255, 0.05);
 }
+
+/* Must follow the base .panel-card rule so collapsible panels do not inherit its outer padding. */
+.panel-card.collapsible-panel {
+  padding: 0;
+}
