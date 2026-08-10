@@ -1,11 +1,12 @@
 import { BarChart3 } from 'lucide-react'
-import { latestSeason } from '../../domain/season'
+import { compareSeasons, latestSeason } from '../../domain/season'
 
 export default function SeasonTrendChart({ seasonStats = [] }) {
   if (!seasonStats.length) return <div className="season-trend-empty">暫無報名資料</div>
-  const max = Math.max(...seasonStats.map(({ enrollments = 0 }) => enrollments), 1)
-  const latest = latestSeason(seasonStats.map(({ season }) => season))
+  const orderedSeasonStats = [...seasonStats].sort((a, b) => compareSeasons(a.season, b.season))
+  const max = Math.max(...orderedSeasonStats.map(({ enrollments = 0 }) => enrollments), 1)
+  const latest = latestSeason(orderedSeasonStats.map(({ season }) => season))
   const width = 600; const height = 220; const pad = 34
-  const points = seasonStats.map((item, index) => ({ ...item, x: pad + (index * (width - pad * 2)) / Math.max(seasonStats.length - 1, 1), y: height - pad - ((item.enrollments || 0) / max) * (height - pad * 2) }))
+  const points = orderedSeasonStats.map((item, index) => ({ ...item, x: pad + (index * (width - pad * 2)) / Math.max(orderedSeasonStats.length - 1, 1), y: height - pad - ((item.enrollments || 0) / max) * (height - pad * 2) }))
   return <div className="season-trend-chart"><div className="season-trend-chart-legend"><BarChart3 size={18} /> 報名人次</div><svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="各季報名趨勢折線圖"><path className="season-trend-axis" d={`M ${pad} ${height - pad} H ${width - pad}`} /><polyline className="season-trend-line" points={points.map(({ x, y }) => `${x},${y}`).join(' ')} fill="none" /><g>{points.map(({ season, enrollments = 0, refunds = 0, x, y }) => <g key={season}><circle className={`season-trend-point ${season === latest ? 'season-trend-latest' : ''}`} cx={x} cy={y} r="5"><title>{`${season}：${enrollments} 人次，退費 ${refunds} 人次`}</title></circle><text className="season-trend-value" x={x} y={y - 10}>{enrollments}</text><text className="season-trend-label" x={x} y={height - 12}>{season}</text></g>)}</g></svg></div>
 }

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { getStudentById } from '../../domain/studentRelations'
 import { summarizeEnrollmentBilling } from '../../domain/enrollmentBilling'
+import { compareSeasons } from '../../domain/season'
 import './enrollment.css'
 
 export default function EnrollmentTab({ students, enrollments, onSelectEnrollment }) {
@@ -21,7 +22,7 @@ export default function EnrollmentTab({ students, enrollments, onSelectEnrollmen
   const seasonsList = useMemo(() => {
     if (!enrollments) return []
     const set = new Set(enrollments.map(e => e.season))
-    return Array.from(set).sort((a, b) => a.localeCompare(b, 'zh-TW', { numeric: true }))
+    return Array.from(set).sort(compareSeasons)
   }, [enrollments])
 
   const filteredHistory = useMemo(() => {

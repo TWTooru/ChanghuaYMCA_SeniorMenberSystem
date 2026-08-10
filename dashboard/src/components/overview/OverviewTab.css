@@ -700,3 +700,18 @@
 .panel-card.collapsible-panel {
   padding: 0;
 }
+
+.season-trend-chart {
+  overflow-x: auto;
+}
+
+.season-trend-chart svg {
+  display: block;
+  min-width: 540px;
+  height: 240px;
+}
+
+.season-trend-chart .season-trend-label {
+  width: auto;
+  flex-shrink: initial;
+}
