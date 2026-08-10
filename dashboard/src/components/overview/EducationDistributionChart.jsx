@@ -1,49 +1,5 @@
-import { Award } from 'lucide-react'
+const order = ['研究所', '大專/大學', '高中/職']
 
-const EDUCATION_ORDER = [
-  '研究所',
-  '大專/大學',
-  '高中/職',
-  '國中',
-  '國小',
-  '未受正規教育但識字',
-  '不識字',
-  '未填寫',
-  '未知'
-]
-
-/**
- * 將教育程度統計依既定學制順序呈現，未列入的分類固定排在最後。
- */
-export default function EducationDistributionChart({ eduCounts = {}, totalStudents = 0 }) {
-  return (
-    <div className="panel-card" style={{ flex: 1 }}>
-      <h3 className="panel-title">
-        <Award size={18} className="header-icon" />
-        教育程度分佈
-      </h3>
-      <div className="distribution-list">
-        {Object.entries(eduCounts || {})
-          .sort((a, b) => {
-            const idxA = EDUCATION_ORDER.indexOf(a[0])
-            const idxB = EDUCATION_ORDER.indexOf(b[0])
-            const orderA = idxA === -1 ? 999 : idxA
-            const orderB = idxB === -1 ? 999 : idxB
-            return orderA - orderB
-          })
-          .map(([edu, count]) => {
-            const pct = (totalStudents || 0) > 0 ? (count / totalStudents) * 100 : 0
-            return (
-              <div className="dist-item" key={edu}>
-                <span className="dist-label">{edu}</span>
-                <div className="dist-value-group">
-                  <span className="dist-percentage-pill">{pct.toFixed(1)}%</span>
-                  <span className="dist-value">{count}人</span>
-                </div>
-              </div>
-            )
-          })}
-      </div>
-    </div>
-  )
+export default function EducationDistributionChart({ eduCounts = {}, totalStudents = 0, embedded = false }) {
+  return <div className={embedded ? 'insight-section education-insight-section' : 'panel-card'}><h4>教育程度分佈</h4><div className="distribution-list">{Object.entries(eduCounts).sort(([a], [b]) => (order.indexOf(a) === -1 ? 99 : order.indexOf(a)) - (order.indexOf(b) === -1 ? 99 : order.indexOf(b))).map(([education, count]) => <div className="dist-item" key={education}><span className="dist-label">{education}</span><div className="dist-value-group"><span className="dist-percentage-pill">{(totalStudents ? count / totalStudents * 100 : 0).toFixed(1)}%</span><span className="dist-value">{count} 人</span></div></div>)}</div></div>
 }

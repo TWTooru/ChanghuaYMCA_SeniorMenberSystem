@@ -86,6 +86,26 @@
   margin-bottom: 32px;
 }
 
+.overview-column { display: flex; flex-direction: column; gap: 24px; }
+.collapsible-panel { padding: 0; overflow: hidden; }
+.collapsible-panel-toggle { width: 100%; border: 0; background: transparent; color: var(--text-primary); display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; font-size: 16px; font-weight: 600; cursor: pointer; text-align: left; }
+.collapsible-panel-toggle svg { transition: transform .2s ease; }
+.collapsible-panel-toggle svg.collapsed { transform: rotate(-90deg); }
+.collapsible-panel-body { padding: 0 24px 24px; }
+.collapsible-panel-body > .panel-card { padding: 0; background: transparent; border: 0; box-shadow: none; }
+.collapsible-panel-body > .panel-card > .panel-title { display: none; }
+.kpi-panel { margin-bottom: 32px; }
+.insight-section + .insight-section { border-top: 1px solid var(--border-color); margin-top: 20px; padding-top: 20px; }
+.insight-section h4 { margin: 0 0 14px; color: var(--text-primary); font-size: 14px; }
+.season-trend-chart { min-height: 240px; }
+.season-trend-chart svg { width: 100%; height: auto; overflow: visible; }
+.season-trend-line { stroke: var(--color-accent, #6366f1); stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; }
+.season-trend-axis { stroke: var(--border-color); stroke-width: 1; }
+.season-trend-point { fill: var(--color-accent, #6366f1); cursor: pointer; }
+.season-trend-point.season-trend-latest { fill: var(--color-success, #10b981); stroke: var(--panel-bg); stroke-width: 3; }
+.season-trend-value, .season-trend-label { fill: var(--text-secondary); font-size: 12px; text-anchor: middle; }
+.season-trend-chart-legend { display: flex; gap: 8px; align-items: center; color: var(--text-secondary); font-size: 13px; margin-bottom: 12px; }
+
 @media (max-width: 1024px) {
   .overview-grid {
     grid-template-columns: 1fr;

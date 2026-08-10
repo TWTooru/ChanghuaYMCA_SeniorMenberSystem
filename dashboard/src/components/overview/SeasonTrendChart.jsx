@@ -1,77 +1,11 @@
-import React from 'react';
-import { BarChart3 } from 'lucide-react';
-import { latestSeason } from '../../domain/season';
+import { BarChart3 } from 'lucide-react'
+import { latestSeason } from '../../domain/season'
 
-const SeasonTrendChart = ({ seasonStats = [] }) => {
-  if (!seasonStats || seasonStats.length === 0) {
-    return (
-      <div className="panel-card season-trend-card">
-        <h2 className="panel-title">
-          <BarChart3 size={20} />
-          ?迤?貉玨頞典
-        </h2>
-        <div className="season-trend-empty">
-          ?怎?貉玨?豢?
-        </div>
-      </div>
-    );
-  }
-
-  const maxEnrollments = Math.max(...seasonStats.map(s => s.enrollments || 0), 1);
-  const latest = latestSeason(seasonStats.map(s => s.season));
-
-  return (
-    <div className="panel-card season-trend-card">
-      <h2 className="panel-title">
-        <BarChart3 size={20} />
-        ?迤?貉玨頞典
-      </h2>
-      <div className="season-trend-list">
-        {seasonStats.map(stat => {
-          const { season, enrollments = 0, refunds = 0 } = stat;
-          const net = enrollments - refunds;
-          const isLatest = season === latest;
-
-          // Width calculations relative to max enrollments
-          const netWidth = `${(net / maxEnrollments) * 100}%`;
-          const refundWidth = `${(refunds / maxEnrollments) * 100}%`;
-
-          return (
-            <div
-              key={season}
-              className={`season-trend-row ${isLatest ? 'season-trend-latest' : ''}`}
-            >
-              <div className="season-trend-label">{season}</div>
-              <div className="season-trend-bar-container">
-                <div className="season-trend-bars">
-                  {net > 0 && (
-                    <div
-                      className="season-trend-bar-net"
-                      style={{ width: netWidth }}
-                      title={`瘛典?? ${net}`}
-                    />
-                  )}
-                  {refunds > 0 && (
-                    <div
-                      className="season-trend-bar-refund"
-                      style={{ width: refundWidth }}
-                      title={`?鞎? ${refunds}`}
-                    />
-                  )}
-                </div>
-              </div>
-              <div className="season-trend-numbers">
-                <span className="season-trend-net-text">{net}鈭箸活</span>
-                {refunds > 0 && (
-                  <span className="season-trend-refund-text">(?{refunds})</span>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
-export default SeasonTrendChart;
+export default function SeasonTrendChart({ seasonStats = [] }) {
+  if (!seasonStats.length) return <div className="season-trend-empty">暫無報名資料</div>
+  const max = Math.max(...seasonStats.map(({ enrollments = 0 }) => enrollments), 1)
+  const latest = latestSeason(seasonStats.map(({ season }) => season))
+  const width = 600; const height = 220; const pad = 34
+  const points = seasonStats.map((item, index) => ({ ...item, x: pad + (index * (width - pad * 2)) / Math.max(seasonStats.length - 1, 1), y: height - pad - ((item.enrollments || 0) / max) * (height - pad * 2) }))
+  return <div className="season-trend-chart"><div className="season-trend-chart-legend"><BarChart3 size={18} /> 報名人次</div><svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="各季報名趨勢折線圖"><path className="season-trend-axis" d={`M ${pad} ${height - pad} H ${width - pad}`} /><polyline className="season-trend-line" points={points.map(({ x, y }) => `${x},${y}`).join(' ')} fill="none" /><g>{points.map(({ season, enrollments = 0, refunds = 0, x, y }) => <g key={season}><circle className={`season-trend-point ${season === latest ? 'season-trend-latest' : ''}`} cx={x} cy={y} r="5"><title>{`${season}：${enrollments} 人次，退費 ${refunds} 人次`}</title></circle><text className="season-trend-value" x={x} y={y - 10}>{enrollments}</text><text className="season-trend-label" x={x} y={height - 12}>{season}</text></g>)}</g></svg></div>
+}

@@ -1,28 +1,5 @@
-import { Heart } from 'lucide-react'
-
-/**
- * 以學生快照計算 60 歲以上占比；age 與 is_60_plus 皆可識別既有資料來源的高齡學生。
- */
-export default function SeniorsMetricCard({ students = [] }) {
-  const seniorsCount = (students || []).filter(s => s.age >= 60 || s.is_60_plus === '是').length
-  const seniorsPercentage = (students || []).length > 0 ? (seniorsCount / students.length) * 100 : 0
-
-  return (
-    <div className="panel-card" style={{ flex: 1 }}>
-      <h3 className="panel-title">
-        <Heart size={18} className="header-icon" style={{ color: 'var(--color-success)' }} />
-        樂齡學員佔比 (60歲以上)
-      </h3>
-      
-      <div className="seniors-metric-header" style={{ marginTop: '16px' }}>
-        <div className="seniors-metric-value-group">
-          <span className="seniors-metric-percentage" style={{ fontSize: '24px' }}>{seniorsPercentage.toFixed(1)}%</span>
-          <span className="seniors-metric-count">({seniorsCount}人 / 全體{students ? students.length : 0}人)</span>
-        </div>
-      </div>
-      <div className="seniors-progress-track" style={{ marginTop: '12px' }}>
-        <div className="seniors-progress-fill" style={{ width: `${seniorsPercentage}%` }}></div>
-      </div>
-    </div>
-  )
+export default function SeniorsMetricCard({ students = [], embedded = false }) {
+  const count = students.filter((student) => student.age >= 60 || student.is_60_plus === true || student.is_60_plus === '是').length
+  const percentage = students.length ? count / students.length * 100 : 0
+  return <div className={embedded ? 'insight-section seniors-insight-section' : 'panel-card'}><h4>樂齡學員佔比 (60歲以上)</h4><div className="seniors-metric-value-group"><span className="seniors-metric-percentage">{percentage.toFixed(1)}%</span><span className="seniors-metric-count">({count}人 / 全體{students.length}人)</span></div><div className="seniors-progress-track"><div className="seniors-progress-fill" style={{ width: `${percentage}%` }} /></div></div>
 }
