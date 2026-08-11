@@ -97,14 +97,25 @@
 .kpi-panel { margin-bottom: 32px; }
 .insight-section + .insight-section { border-top: 1px solid var(--border-color); margin-top: 20px; padding-top: 20px; }
 .insight-section h4 { margin: 0 0 14px; color: var(--text-primary); font-size: 14px; }
-.season-trend-chart { min-height: 240px; }
+.season-trend-chart { min-height: 260px; }
+.season-trend-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 13px; color: var(--text-secondary); }
+.season-trend-unit { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+.season-trend-legend { display: flex; gap: 16px; align-items: center; }
+.season-trend-legend .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
+.season-trend-legend .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+.season-trend-legend .legend-dot.historical { background-color: var(--color-accent, #6366f1); }
+.season-trend-legend .legend-dot.latest { background-color: var(--color-success, #10b981); }
+
 .season-trend-chart svg { width: 100%; height: auto; overflow: visible; }
 .season-trend-line { stroke: var(--color-accent, #6366f1); stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; }
-.season-trend-axis { stroke: var(--border-color); stroke-width: 1; }
-.season-trend-point { fill: var(--color-accent, #6366f1); cursor: pointer; }
-.season-trend-point.season-trend-latest { fill: var(--color-success, #10b981); stroke: var(--panel-bg); stroke-width: 3; }
-.season-trend-value, .season-trend-label { fill: var(--text-secondary); font-size: 12px; text-anchor: middle; }
-.season-trend-chart-legend { display: flex; gap: 8px; align-items: center; color: var(--text-secondary); font-size: 13px; margin-bottom: 12px; }
+.season-trend-gridline { stroke: rgba(255, 255, 255, 0.08); stroke-width: 1; stroke-dasharray: 4 4; }
+.season-trend-y-tick { fill: var(--text-muted); font-size: 11px; font-weight: 500; }
+.season-trend-axis { stroke: var(--border-color); stroke-width: 1.5; }
+.season-trend-point { fill: var(--color-accent, #6366f1); cursor: pointer; transition: r 0.2s ease; }
+.season-trend-point:hover { r: 7; }
+.season-trend-point.season-trend-latest { fill: var(--color-success, #10b981); stroke: var(--panel-bg); stroke-width: 2.5; }
+.season-trend-value, .season-trend-label { fill: var(--text-secondary); font-size: 12px; }
+.season-trend-value { text-anchor: middle; font-weight: 600; font-size: 11px; }
 
 @media (max-width: 1024px) {
   .overview-grid {
@@ -707,8 +718,8 @@
 
 .season-trend-chart svg {
   display: block;
-  min-width: 540px;
-  height: 260px;
+  min-width: 580px;
+  height: 280px;
 }
 
 .season-trend-chart .season-trend-label {
