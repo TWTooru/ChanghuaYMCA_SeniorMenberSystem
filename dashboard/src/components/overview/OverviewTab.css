@@ -708,7 +708,7 @@
 .season-trend-chart svg {
   display: block;
   min-width: 540px;
-  height: 240px;
+  height: 260px;
 }
 
 .season-trend-chart .season-trend-label {

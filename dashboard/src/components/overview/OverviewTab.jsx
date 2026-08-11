@@ -20,7 +20,7 @@ export default function OverviewTab({ students = [], stats = {} }) {
         <CollapsiblePanel title="最熱門課程項目"><CoursePopularityChart popularCourses={stats.popularCourses} /></CollapsiblePanel>
       </div>
       <div className="overview-column">
-        <CollapsiblePanel title="教育程度分佈" className="education-insights-card">
+        <CollapsiblePanel title="學員背景概覽" className="education-insights-card">
           <EducationDistributionChart eduCounts={stats.eduCounts} totalStudents={stats.totalStudents} embedded />
           <SeniorsMetricCard students={students} embedded />
           <GenderDistributionChart males={stats.males ?? 0} females={stats.females ?? 0} genderUnknown={stats.genderUnknown ?? 0} embedded />

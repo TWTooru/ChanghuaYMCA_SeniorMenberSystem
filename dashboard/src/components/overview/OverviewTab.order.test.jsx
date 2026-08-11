@@ -11,6 +11,6 @@ describe('OverviewTab', () => {
     expect(card.textContent).toContain('教育程度分佈')
     expect(card.textContent).toContain('樂齡學員佔比 (60歲以上)')
     expect(card.textContent).toContain('性別分布')
-    expect(screen.getByRole('button', { name: '收合教育程度分佈' }).getAttribute('aria-expanded')).toBe('true')
+    expect(screen.getByRole('button', { name: '收合學員背景概覽' }).getAttribute('aria-expanded')).toBe('true')
   })
 })
