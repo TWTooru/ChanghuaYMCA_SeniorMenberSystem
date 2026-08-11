@@ -100,6 +100,15 @@ describe('AdminAccountPage', () => {
     expect(screen.getByRole('combobox', { name: /member@example\.com/ }).className).toContain('admin-role-select--editor')
   })
 
+  it('keeps role selectors on the shared high-contrast select style', () => {
+    render(<AdminAccountPage />)
+
+    for (const email of ['admin@example.com', 'invitee@example.com', 'member@example.com']) {
+      expect(screen.getByRole('combobox', { name: new RegExp(email) }).className)
+        .toContain('admin-role-select')
+    }
+  })
+
   it('locks role changes for accounts that have not completed their first sign-in', () => {
     adminState.users[1] = {
       ...adminState.users[1],
