@@ -104,8 +104,8 @@ describe('AdminAccountPage', () => {
     render(<AdminAccountPage />)
 
     for (const email of ['admin@example.com', 'invitee@example.com', 'member@example.com']) {
-      expect(screen.getByRole('combobox', { name: new RegExp(email) }).className)
-        .toContain('admin-role-select')
+      expect(screen.getByRole('combobox', { name: new RegExp(email) }).classList.contains('admin-role-select'))
+        .toBe(true)
     }
   })
 
