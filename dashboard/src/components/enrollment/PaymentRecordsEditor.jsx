@@ -110,7 +110,7 @@ export default function PaymentRecordsEditor({
                   />
                 </label>
                 <label htmlFor={`${recordId}-invoice-number`}>
-                  發票編號
+                  收據編號
                   <input
                     id={`${recordId}-invoice-number`}
                     className="form-input"
@@ -123,7 +123,7 @@ export default function PaymentRecordsEditor({
 
               <button
                 type="button"
-                className="btn-danger payment-records-remove"
+                className="btn-secondary payment-records-add payment-records-remove"
                 onClick={() => onChange(records.filter(candidate => candidate.localId !== record.localId))}
                 disabled={disabled}
               >

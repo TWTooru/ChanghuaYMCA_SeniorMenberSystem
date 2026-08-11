@@ -19,6 +19,7 @@ import Login from './components/auth/Login'
 import PasswordSetup from './components/auth/PasswordSetup'
 import AdminAccountPage from './components/admin/AdminAccountPage'
 import CourseManagementTab from './components/courses/CourseManagementTab'
+import FaqTab from './components/faq/FaqTab'
 import { useAuth } from './contexts/AuthContext'
 import usePermissions from './hooks/usePermissions'
 import useTheme from './hooks/useTheme'
@@ -110,6 +111,11 @@ function AuthenticatedDashboard() {
               <ShieldCheck size={18} /><span>帳號管理</span>
             </button>
           )}
+          {role === 'admin' && (
+            <button className={`tab-btn ${activeTab === 'question' ? 'active' : ''}`} onClick={() => setActiveTab('question')} id="tab-question">
+              <ShieldCheck size={18} /><span>疑難雜症</span>
+            </button>
+          )}
         </div>
       </nav>
 
@@ -137,6 +143,7 @@ function AuthenticatedDashboard() {
         )}
         {activeTab === 'courses' && role === 'admin' && <CourseManagementTab />}
         {activeTab === 'admin' && role === 'admin' && <AdminAccountPage />}
+        {activeTab === 'question' && role === 'admin' && <FaqTab />}
       </main>
 
       <footer className="app-footer">

@@ -6,6 +6,10 @@ import DeleteUserDialog from './DeleteUserDialog'
 import InviteUserModal from './InviteUserModal'
 import './admin.css'
 
+/**
+ * 帳號管理頁僅負責呈現 UI 與 session role 的前端守門；所有 admin-users Edge Function
+ * 請求仍以伺服器端取得的最新操作者身分授權，避免僅依賴 UI 判斷。
+ */
 const ROLE_LABELS = { admin: '管理員', editor: '編輯者', viewer: '瀏覽者' }
 const ERROR_MESSAGES = {
   FIRST_LOGIN_REQUIRED: '受邀帳號必須先完成首次登入，之後才能變更角色。',
@@ -78,6 +82,8 @@ function AuthorizedAdminAccountPage() {
       </section>
       {loading ? <p>載入帳號資料中…</p> : <div className="admin-user-table"><table className="data-table"><thead><tr><th>Email</th><th>角色</th><th>狀態</th><th>操作</th></tr></thead><tbody>
         {users.map(target => {
+          // 此處 UI 保護用於避免明顯誤操作；實際資料完整性仍由資料庫 trigger 與 Edge Function 在伺服器端確保。
+          // protectedUser 僅根據目前 session metadata 判斷，不能取代伺服器端的權限與完整性驗證。
           const protectedUser = target.id === currentUser?.id || (target.role === 'admin' && adminCount <= 1)
           const firstLoginRequired = !target.lastSignInAt
           return <tr key={target.id}><td>{target.email}</td><td><select className={`admin-role-select admin-role-select--${target.role}`} aria-label={`變更 ${target.email} 的角色`} value={target.role} disabled={firstLoginRequired || protectedUser || mutation === `role:${target.id}`} onChange={event => selectRole(target, event.target.value)}>{Object.entries(ROLE_LABELS).map(([role, label]) => <option key={role} value={role}>{label}</option>)}</select></td><td><span className={`admin-status-badge ${target.status}`}>{target.status === 'active' ? '啟用中' : '已邀請'}</span></td><td className="admin-actions">{target.status === 'invited' ? <button className="btn-secondary" type="button" disabled={mutation === `resend:${target.id}`} onClick={() => resend(target.id)} aria-label={`重新寄送邀請 ${target.email}`}>重新寄送邀請</button> : <button className="btn-secondary" type="button" disabled={mutation === `reset:${target.id}`} onClick={() => resetPassword(target.id)} aria-label={`寄送密碼重設 ${target.email}`}>寄送密碼重設</button>}<button className="btn-delete" type="button" disabled={protectedUser} onClick={() => setDeleteTarget(target)} aria-label={`刪除 ${target.email}`}>刪除</button></td></tr>

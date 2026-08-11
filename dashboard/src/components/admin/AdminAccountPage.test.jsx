@@ -49,6 +49,8 @@ describe('AdminAccountPage', () => {
     useAdminUsers.mockImplementation(() => adminState)
   })
 
+  // 非管理員渲染測試僅驗證 UI guard；實際 Edge Function 請求仍由伺服器端授權判定。
+  // 前端角色資訊只能降低誤操作，資料庫 trigger 與伺服器端 mutation 才是完整保護。
   it('does not load or render account data for a non-admin', () => {
     authState.role = 'editor'
     render(<AdminAccountPage />)

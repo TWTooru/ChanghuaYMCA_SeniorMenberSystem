@@ -18,7 +18,7 @@ const DUPLICATE_PAYMENT_ERROR = '所選課程已經有付款資料'
 const MISSING_COURSE_ID_ERROR = '課程資料已更新，請重新載入後再試'
 const MISSING_RECEIPT_ID_ERROR = '繳費資料已更新，請重新載入後再試'
 const EMPTY_COURSES_ERROR = '請至少選擇一門課程'
-const DELETE_CONFIRMATION = '確定刪除此筆繳費紀錄？金額與發票編號將無法復原。'
+const DELETE_CONFIRMATION = '確定刪除此筆繳費紀錄？金額與收據編號將無法復原。'
 
 function isValidId(value) {
   return Number.isSafeInteger(value) && value > 0
@@ -319,7 +319,7 @@ export default function EnrollmentBillingDetailModal({
                       {displayAmount(receipt.amount)}
                     </span>
                     <span>
-                      <span className="billing-receipt-label">發票編號</span>
+                      <span className="billing-receipt-label">收據編號</span>
                       {displayInvoiceNumber(receipt.invoiceNumber)}
                     </span>
                   </div>
@@ -412,7 +412,7 @@ export default function EnrollmentBillingDetailModal({
                     />
                   </div>
                   <div className="form-group">
-                    <label className="form-label" htmlFor="billing-receipt-invoice-number">發票編號</label>
+                    <label className="form-label" htmlFor="billing-receipt-invoice-number">收據編號</label>
                     <input
                       id="billing-receipt-invoice-number"
                       className="form-input"
@@ -451,7 +451,7 @@ export default function EnrollmentBillingDetailModal({
                   {displayAmount(enrollment.amount)}
                 </span>
                 <span>
-                  <span className="billing-receipt-label">發票編號</span>
+                  <span className="billing-receipt-label">收據編號</span>
                   {displayInvoiceNumber(enrollment.invoice_number)}
                 </span>
               </div>

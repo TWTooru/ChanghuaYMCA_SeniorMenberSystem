@@ -50,5 +50,9 @@ end;
 $$;
 
 -- RPC 執行權限：僅限已認證使用者
-revoke all on function public.create_enrollment_with_courses from anon;
-grant execute on function public.create_enrollment_with_courses to authenticated;
+revoke all on function public.create_enrollment_with_courses(
+  text, text, text, text, text, integer, text, integer, text, text[]
+) from anon;
+grant execute on function public.create_enrollment_with_courses(
+  text, text, text, text, text, integer, text, integer, text, text[]
+) to authenticated;

@@ -95,6 +95,7 @@ describe('EnrollmentBillingDetailModal', () => {
     expect(within(row).getByText('書法')).toBeTruthy()
     expect(within(row).getAllByText('NT$ 2400')).toHaveLength(1)
     expect(within(row).getAllByText('R-100')).toHaveLength(1)
+    expect(within(row).getByText('收據編號')).toBeTruthy()
   })
 
   it('renders grouped payments, legacy billing, and student details in order', () => {
@@ -164,7 +165,7 @@ describe('EnrollmentBillingDetailModal', () => {
 
     beginCreatingReceipt(['瑜珈', '太極'])
     fireEvent.change(screen.getByLabelText('總金額'), { target: { value: '3000' } })
-    fireEvent.change(screen.getByLabelText('發票編號'), { target: { value: 'R-101' } })
+    fireEvent.change(screen.getByLabelText('收據編號'), { target: { value: 'R-101' } })
     fireEvent.click(screen.getByRole('button', { name: '儲存繳費紀錄' }))
 
     await waitFor(() => expect(createBillingReceipt).toHaveBeenCalledWith(
@@ -214,7 +215,7 @@ describe('EnrollmentBillingDetailModal', () => {
     expect(within(editor).getByText('書法')).toBeTruthy()
     expect(within(editor).queryByRole('checkbox')).toBeNull()
     fireEvent.change(screen.getByLabelText('總金額'), { target: { value: '2600' } })
-    fireEvent.change(screen.getByLabelText('發票編號'), { target: { value: ' R-UPDATED ' } })
+    fireEvent.change(screen.getByLabelText('收據編號'), { target: { value: ' R-UPDATED ' } })
     fireEvent.click(screen.getByRole('button', { name: '儲存繳費紀錄' }))
 
     await waitFor(() => expect(updateBillingReceipt).toHaveBeenCalledWith(
@@ -230,13 +231,13 @@ describe('EnrollmentBillingDetailModal', () => {
 
     beginCreatingReceipt()
     fireEvent.change(screen.getByLabelText('總金額'), { target: { value: '1600' } })
-    fireEvent.change(screen.getByLabelText('發票編號'), { target: { value: ' R-NEW ' } })
+    fireEvent.change(screen.getByLabelText('收據編號'), { target: { value: ' R-NEW ' } })
     fireEvent.click(screen.getByRole('button', { name: '儲存繳費紀錄' }))
 
     expect((await screen.findByRole('alert')).textContent).toContain('create denied')
     expect(screen.getByLabelText('瑜珈').checked).toBe(true)
     expect(screen.getByDisplayValue('1600')).toBeTruthy()
-    expect(screen.getByLabelText('發票編號').value).toBe(' R-NEW ')
+    expect(screen.getByLabelText('收據編號').value).toBe(' R-NEW ')
   })
 
   it('refreshes stale data when selected courses already have a payment', async () => {
@@ -299,7 +300,7 @@ describe('EnrollmentBillingDetailModal', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '刪除' }))
 
-    expect(confirm).toHaveBeenCalledWith('確定刪除此筆繳費紀錄？金額與發票編號將無法復原。')
+    expect(confirm).toHaveBeenCalledWith('確定刪除此筆繳費紀錄？金額與收據編號將無法復原。')
     expect(deleteBillingReceipt).not.toHaveBeenCalled()
     expect(props.onRefresh).not.toHaveBeenCalled()
   })

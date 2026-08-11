@@ -13,15 +13,18 @@ export default function useApiData(session, refreshCount) {
 
   useEffect(() => {
     if (!session) return;
+    let isCurrentRequest = true
     setDbStatus('connecting')
     
     async function fetchData() {
       try {
         const dashboardData = await fetchDashboardData(supabase)
+        if (!isCurrentRequest) return
         setDbData(dashboardData)
         setDbStatus('connected')
         setDbError(null)
       } catch (err) {
+        if (!isCurrentRequest) return
         console.warn('Supabase data source not available:', err)
         setDbData({ students: [], enrollments: [] })
         setDbStatus('offline')
@@ -30,6 +33,9 @@ export default function useApiData(session, refreshCount) {
     }
     
     fetchData()
+    return () => {
+      isCurrentRequest = false
+    }
   }, [refreshCount, session])
 
   return { dbData, dbStatus, dbError }

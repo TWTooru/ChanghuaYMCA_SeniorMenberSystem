@@ -145,8 +145,8 @@ export default function AddEnrollModal({ student, onClose, onRefresh, defaultSea
             <X size={20} />
           </button>
         </div>
-        <p id="add-enrollment-description">選擇課程，並視需要新增繳費紀錄。</p>
-        <form onSubmit={handleAddEnrollSubmit} className="form-grid">
+        <p id="add-enrollment-description" className="visually-hidden">新增選課紀錄表單。</p>
+        <form onSubmit={handleAddEnrollSubmit} className="form-grid add-enrollment-form">
           <div className="form-group">
             <label className="form-label" htmlFor="add-enrollment-student-name">學員姓名</label>
             <input

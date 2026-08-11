@@ -46,7 +46,7 @@ function addPayment({ courses = ['Course A'], amount = '3000', invoiceNumber = '
   fireEvent.click(screen.getByRole('button', { name: '新增繳費紀錄' }))
   courses.forEach(courseName => fireEvent.click(screen.getByLabelText(courseName)))
   fireEvent.change(screen.getByLabelText('總金額'), { target: { value: amount } })
-  fireEvent.change(screen.getByLabelText('發票編號'), { target: { value: invoiceNumber } })
+  fireEvent.change(screen.getByLabelText('收據編號'), { target: { value: invoiceNumber } })
 }
 
 describe('AddEnrollModal', () => {
@@ -58,6 +58,12 @@ describe('AddEnrollModal', () => {
   afterEach(() => {
     cleanup()
     vi.restoreAllMocks()
+  })
+
+  it('marks the enrollment form for scoped field-card styling', () => {
+    const { container } = renderModal()
+
+    expect(container.querySelector('form.add-enrollment-form')).toBeTruthy()
   })
 
   it('submits one payment covering multiple selected courses', async () => {
@@ -178,7 +184,7 @@ describe('AddEnrollModal', () => {
     expect(screen.getByLabelText('是否已退費').disabled).toBe(true)
     expect(screen.getByPlaceholderText('例如: 因身體不適退費').disabled).toBe(true)
     expect(screen.getByLabelText('總金額').disabled).toBe(true)
-    expect(screen.getByLabelText('發票編號').disabled).toBe(true)
+    expect(screen.getByLabelText('收據編號').disabled).toBe(true)
     expect(screen.getByRole('button', { name: '新增繳費紀錄' }).disabled).toBe(true)
   })
 
@@ -200,7 +206,7 @@ describe('AddEnrollModal', () => {
 
     expect((await screen.findByRole('alert')).textContent).toContain('付款建立失敗')
     expect(screen.getByLabelText('總金額').value).toBe('3000')
-    expect(screen.getByLabelText('發票編號').value).toBe('R-1')
+    expect(screen.getByLabelText('收據編號').value).toBe('R-1')
     expect(onRefresh).not.toHaveBeenCalled()
     expect(onClose).not.toHaveBeenCalled()
     expect(window.alert).not.toHaveBeenCalled()
@@ -268,7 +274,7 @@ describe('AddEnrollModal', () => {
     const submit = screen.getByRole('button', { name: '新增選課' })
 
     expect(dialog.getAttribute('aria-describedby')).toBe('add-enrollment-description')
-    expect(document.getElementById('add-enrollment-description').textContent).toContain('選擇課程')
+    expect(document.getElementById('add-enrollment-description').textContent).toContain('新增選課紀錄表單')
     expect(document.activeElement).toBe(close)
     fireEvent.keyDown(close, { key: 'Tab', shiftKey: true })
     expect(document.activeElement).toBe(submit)

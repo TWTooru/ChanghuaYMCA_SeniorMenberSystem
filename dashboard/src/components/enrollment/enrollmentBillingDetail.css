@@ -147,6 +147,16 @@
   margin-top: 12px;
 }
 
+.enrollment-billing-fields > label {
+  min-width: 0;
+}
+
+.enrollment-billing-fields .form-input {
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
+}
+
 .enrollment-billing-actions {
   display: flex;
   align-items: center;

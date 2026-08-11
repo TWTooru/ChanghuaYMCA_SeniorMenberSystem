@@ -29,3 +29,6 @@ exports/
 .superpowers/
 docs/
 .worktrees/
+.tmp-admin-users-remote/
+superpowers-download/
+

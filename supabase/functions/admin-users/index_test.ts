@@ -17,6 +17,7 @@ Deno.test('requiredEnv reads the hosted secret-key map', () => {
   assertEquals(env.secret, 'sb_secret_test')
 })
 
+// hosted bundle 與舊版 service-role key 同時存在時，維持既有 Auth Admin 的安全相容性。
 Deno.test('requiredEnv prioritizes the legacy service-role key for Auth Admin calls', () => {
   const env = requiredEnv({
     SUPABASE_URL: 'http://localhost',
@@ -26,6 +27,7 @@ Deno.test('requiredEnv prioritizes the legacy service-role key for Auth Admin ca
   assertEquals(env.secret, 'legacy-service-role-key')
 })
 
+// CORS 不可同時回傳 wildcard origin 與 credentials，runtime 亦會拒絕 `ALLOWED_ORIGIN=*`。
 Deno.test('cors never exposes credentials wildcard', () => {
   const corsHeaders = createCorsHeaders('https://dashboard.example.com')
   assertEquals(corsHeaders['Access-Control-Allow-Origin'] === '*' && corsHeaders['Access-Control-Allow-Credentials'] === 'true', false)
@@ -54,6 +56,7 @@ Deno.test('adapter maps the database last-admin sentinel to a stable API error',
   await assertRejects(() => deps.deleteUser('user-1'), Error, 'LAST_ADMIN_PROTECTED')
 })
 
+// Supabase Auth 的暫態 email rate-limit 訊息必須收斂為 domain 可處理的穩定代碼。
 Deno.test('adapter maps the Auth email rate limit to a stable API error', async () => {
   const rateLimitError = Object.assign(new Error('email rate limit exceeded'), { status: 429 })
   const deps = createSupabaseDeps({
@@ -69,6 +72,7 @@ Deno.test('adapter maps the Auth email rate limit to a stable API error', async 
   await assertRejects(() => deps.inviteUser('person@example.com'), Error, 'EMAIL_RATE_LIMITED')
 })
 
+// 邀請流程只傳遞 redirect 環境設定，不附加會覆寫既有帳號角色模型的 app metadata。
 Deno.test('adapter sends invite without app role metadata', async () => {
   let call: unknown
   const deps = createSupabaseDeps({

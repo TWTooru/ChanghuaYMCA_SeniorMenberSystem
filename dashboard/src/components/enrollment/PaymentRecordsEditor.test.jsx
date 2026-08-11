@@ -19,6 +19,14 @@ function Harness({ selectedCourseNames = ['A', 'B', 'C'], disabled = false }) {
 afterEach(cleanup)
 
 describe('PaymentRecordsEditor', () => {
+  it('labels the optional receipt identifier consistently', () => {
+    render(<Harness />)
+
+    fireEvent.click(screen.getByRole('button', { name: '新增繳費紀錄' }))
+
+    expect(screen.getByLabelText('收據編號')).toBeTruthy()
+  })
+
   it('creates a draft and assigns multiple courses to one payment', () => {
     render(<Harness />)
 
@@ -26,7 +34,7 @@ describe('PaymentRecordsEditor', () => {
     fireEvent.click(screen.getByLabelText('A'))
     fireEvent.click(screen.getByLabelText('B'))
     fireEvent.change(screen.getByLabelText('總金額'), { target: { value: '3000' } })
-    fireEvent.change(screen.getByLabelText('發票編號'), { target: { value: 'R-1' } })
+    fireEvent.change(screen.getByLabelText('收據編號'), { target: { value: 'R-1' } })
 
     expect(screen.getByLabelText('A').checked).toBe(true)
     expect(screen.getByLabelText('B').checked).toBe(true)
@@ -78,7 +86,7 @@ describe('PaymentRecordsEditor', () => {
     expect(screen.getByRole('button', { name: '移除繳費紀錄' }).disabled).toBe(true)
     expect(screen.getByLabelText('A').disabled).toBe(true)
     expect(screen.getByLabelText('總金額').disabled).toBe(true)
-    expect(screen.getByLabelText('發票編號').disabled).toBe(true)
+    expect(screen.getByLabelText('收據編號').disabled).toBe(true)
   })
 
   it('uses readable legends and unique input IDs for each payment draft', () => {

@@ -1,11 +1,22 @@
-import { render } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { cleanup, render, screen } from '@testing-library/react'
+import { afterEach, describe, expect, it } from 'vitest'
 import GenderDistributionChart from './GenderDistributionChart'
+
+afterEach(cleanup)
 
 describe('GenderDistributionChart', () => {
   it('renders an empty state when every count is zero', () => {
     const { container } = render(<GenderDistributionChart males={0} females={0} genderUnknown={0} />)
     expect(container.querySelector('.gender-dist-empty')).toBeTruthy()
+  })
+
+  it('renders readable Chinese labels', () => {
+    render(<GenderDistributionChart males={30} females={70} />)
+
+    expect(screen.getByText('性別分布')).toBeTruthy()
+    expect(screen.getByText('男性')).toBeTruthy()
+    expect(screen.getByText('女性')).toBeTruthy()
+    expect(screen.getByText('總計：100 人')).toBeTruthy()
   })
 
   it('renders male and female segments without an unknown segment by default', () => {

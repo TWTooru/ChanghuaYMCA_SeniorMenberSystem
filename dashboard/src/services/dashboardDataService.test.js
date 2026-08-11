@@ -127,6 +127,41 @@ describe('fetchDashboardData', () => {
     ]))
   })
 
+  it('loads every dashboard record across API result pages', async () => {
+    const students = Array.from({ length: 1001 }, (_, index) => ({
+      student_id: String(index + 1),
+      name: `學員 ${index + 1}`,
+    }))
+    const enrollments = Array.from({ length: 1001 }, (_, index) => ({
+      enrollment_id: `enrollment-${index + 1}`,
+      student_id: String(index + 1),
+      season: '第十六季',
+      refunded: 0,
+      courses: [],
+    }))
+    const queryCalls = []
+
+    const result = await fetchDashboardData(createReadClient({
+      students: { data: students, error: null },
+      enrollments: { data: enrollments, error: null },
+    }, {}, queryCalls))
+
+    expect(result.students).toHaveLength(1001)
+    expect(result.enrollments).toHaveLength(1001)
+    expect(result.enrollments.at(-1)).toMatchObject({
+      enrollment_id: 'enrollment-1001',
+      student_name: '學員 1001',
+    })
+    expect(queryCalls).toEqual(expect.arrayContaining([
+      { table: 'students', column: 'student_id', from: 0, to: 499 },
+      { table: 'students', column: 'student_id', from: 500, to: 999 },
+      { table: 'students', column: 'student_id', from: 1000, to: 1499 },
+      { table: 'enrollments', column: 'enrollment_id', from: 0, to: 499 },
+      { table: 'enrollments', column: 'enrollment_id', from: 500, to: 999 },
+      { table: 'enrollments', column: 'enrollment_id', from: 1000, to: 1499 },
+    ]))
+  })
+
   it('throws the Supabase error when the students query fails', async () => {
     const error = new Error('RLS denied')
     const client = createReadClient({
