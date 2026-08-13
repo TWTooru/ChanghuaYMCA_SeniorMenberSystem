@@ -147,7 +147,7 @@ function AuthenticatedDashboard() {
       </main>
 
       <footer className="app-footer">
-        <p>© 2026 YMCA 樂齡健康活力中心 學員資訊管理系統 - 本系統供行政查詢與分析統計使用</p>
+        <p>© 2026 YMCA樂齡健康活力中心 學員資訊管理系統 - 本系統供行政查詢與分析統計使用</p>
       </footer>
 
       {selectedBillingStudent && selectedBillingEnrollment && (
