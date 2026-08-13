@@ -42,6 +42,14 @@ describe('detectPasswordFlow', () => {
     expect(detectPasswordFlow({ pathname: '/set-password', search: '?flow=invite' })).toBe('invite')
   })
 
+  it('recognizes Supabase invite callbacks from the URL fragment', () => {
+    expect(detectPasswordFlow({
+      pathname: '/',
+      search: '',
+      hash: '#access_token=invite-token&refresh_token=refresh-token&type=invite',
+    })).toBe('invite')
+  })
+
   it('recognizes recovery setup links', () => {
     expect(detectPasswordFlow({ pathname: '/set-password', search: '?flow=recovery' })).toBe('recovery')
   })

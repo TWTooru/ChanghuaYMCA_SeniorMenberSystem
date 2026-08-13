@@ -1,5 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { detectPasswordFlow } from '../lib/authFlow';
+import { initialPasswordFlow, supabase } from '../lib/supabaseClient';
+
+export { detectPasswordFlow } from '../lib/authFlow';
 
 /**
  * 集中管理 Supabase session 與邀請／密碼重設流程。
@@ -30,16 +33,10 @@ export function extractRole(session) {
     );
 }
 
-export function detectPasswordFlow(locationLike) {
-    if (locationLike?.pathname !== '/set-password') return null;
-    const flow = new URLSearchParams(locationLike.search).get('flow');
-    return flow === 'invite' || flow === 'recovery' ? flow : null;
-}
-
 export const AuthProvider = ({ children }) => {
     const [session, setSession] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [passwordFlow, setPasswordFlow] = useState(() => detectPasswordFlow(window.location));
+    const [passwordFlow, setPasswordFlow] = useState(() => initialPasswordFlow ?? detectPasswordFlow(window.location));
 
     useEffect(() => {
         supabase.auth.getSession().then(({ data: { session } }) => {

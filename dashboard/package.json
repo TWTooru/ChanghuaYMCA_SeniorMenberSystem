@@ -1,6 +1,6 @@
 {
   "name": "ymca-student-dashboard",
-  "description": "YMCA 樂齡健康活力中心 — 學員資訊管理系統前端",
+  "description": "YMCA樂齡健康活力中心 學員資訊管理系統前端",
   "private": true,
   "version": "1.0.0",
   "type": "module",

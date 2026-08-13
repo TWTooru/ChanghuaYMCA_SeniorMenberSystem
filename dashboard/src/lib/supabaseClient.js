@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { detectPasswordFlow } from './authFlow'
 
 /**
  * 驗證 Vite 注入的 Supabase public 設定並建立瀏覽器共用 client。
@@ -27,5 +28,10 @@ export function resolveSupabaseConfig(env) {
 }
 
 const { supabaseUrl, supabaseAnonKey } = resolveSupabaseConfig(import.meta.env)
+
+// Supabase 會在建立 session 後清除 callback fragment；僅保留派生出的流程，不保留 token。
+export const initialPasswordFlow = typeof window === 'undefined'
+  ? null
+  : detectPasswordFlow(window.location)
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
