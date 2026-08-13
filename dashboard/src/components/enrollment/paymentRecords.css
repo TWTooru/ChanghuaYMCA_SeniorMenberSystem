@@ -1,0 +1,109 @@
+.payment-records-editor,
+.payment-records-list,
+.payment-records-record,
+.payment-records-course-group,
+.payment-records-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.payment-records-header {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
+.payment-records-add {
+  border: 1px solid #059669;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 3px 8px rgba(5, 150, 105, 0.24);
+}
+
+.payment-records-add:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: linear-gradient(135deg, #34d399 0%, #059669 100%);
+  box-shadow: 0 5px 12px rgba(5, 150, 105, 0.32);
+}
+
+.payment-records-record {
+  min-width: 0;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-primary);
+}
+
+.payment-records-record legend {
+  padding: 0 4px;
+  font-weight: 600;
+}
+
+.payment-records-label {
+  font-weight: 600;
+}
+
+.payment-records-course-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+
+.payment-records-course-group,
+.payment-records-fields {
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.payment-records-course {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.payment-records-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.payment-records-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.payment-records-fields .form-input {
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
+}
+
+.payment-records-editor .payment-records-remove {
+  align-self: flex-start;
+  border-color: #dc2626;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  box-shadow: 0 3px 8px rgba(220, 38, 38, 0.24);
+}
+
+.payment-records-editor .payment-records-remove:hover:not(:disabled) {
+  background: linear-gradient(135deg, #f87171 0%, #dc2626 100%);
+  box-shadow: 0 5px 12px rgba(220, 38, 38, 0.32);
+}
+
+.payment-records-editor button:focus-visible,
+.payment-records-editor input:focus-visible {
+  outline: 3px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .payment-records-fields {
+    grid-template-columns: 1fr;
+  }
+}

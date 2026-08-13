@@ -1,0 +1,11 @@
+/* 邀請與密碼重設共用的設密碼畫面。 */
+.password-setup-page { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: var(--bg-primary); }
+.password-setup-card { width: min(100%, 420px); padding: 32px; border: 1px solid var(--border-color); border-radius: 16px; background: var(--bg-secondary); box-shadow: var(--shadow-lg); color: var(--text-primary); }
+.password-setup-card h1 { margin: 0 0 8px; font-size: 24px; }
+.password-setup-card > p { margin: 0 0 24px; color: var(--text-secondary); }
+.password-setup-card form { display: grid; gap: 10px; }
+.password-setup-card label { font-size: 14px; font-weight: 600; }
+.password-setup-card input { width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-tertiary); color: var(--text-primary); }
+.password-setup-card button { justify-content: center; margin-top: 12px; }
+.password-setup-error { margin: 0; color: var(--color-danger); font-size: 13px; }
+@media (max-width: 480px) { .password-setup-page { padding: 16px; } .password-setup-card { padding: 24px 20px; } }

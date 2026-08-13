@@ -1,0 +1,35 @@
+# Dependencies & build
+node_modules/
+dashboard/dist/
+.venv/
+__pycache__/
+*.pyc
+
+# Environment
+.env.local
+supabase/.temp/
+supabase/.branches/
+
+# Data files (private)
+data/
+dashboard/src/data.json
+dashboard/public/*.xlsx
+*.xlsx
+exports/
+*.export.xlsx
+*_export.xlsx
+部屬.txt
+*.db
+*.db.bak
+
+# IDE & tools
+.idea/
+.vscode/
+*.log
+*--conversation=*.txt
+.superpowers/
+docs/
+.worktrees/
+.tmp-admin-users-remote/
+superpowers-download/
+

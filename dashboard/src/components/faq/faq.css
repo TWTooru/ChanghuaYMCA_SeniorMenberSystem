@@ -1,0 +1,264 @@
+/* ──────────────────────────────────────────
+   FAQ / 疑難雜症 便利貼樣式
+────────────────────────────────────────── */
+
+.faq-tab {
+  padding: 2rem 1.5rem;
+  max-width: 900px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.faq-heading {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text-primary, #1e293b);
+  margin-bottom: 0.35rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.faq-subtitle {
+  font-size: 0.9rem;
+  color: var(--text-secondary, #64748b);
+  margin-bottom: 2rem;
+}
+
+/* grid 排列便利貼（單欄垂直排列） */
+.faq-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  width: 100%;
+}
+
+/* ── 單張便利貼 ── */
+.faq-note {
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
+  min-width: 0; /* 防止 Grid 子項目撐破容器不換行 */
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.faq-note:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+/* 顏色主題 */
+.faq-note--yellow {
+  background: linear-gradient(135deg, #fef9c3 0%, #fef08a 100%);
+  border-left: 4px solid #eab308;
+}
+
+.faq-note--blue {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  border-left: 4px solid #3b82f6;
+}
+
+.faq-note--green {
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+  border-left: 4px solid #22c55e;
+}
+
+.faq-note--pink {
+  background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
+  border-left: 4px solid #ec4899;
+}
+
+.faq-note--purple {
+  background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+  border-left: 4px solid #a855f7;
+}
+
+/* ── 標頭（點擊展開） ── */
+.faq-note-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.1rem;
+  width: 100%;
+  box-sizing: border-box;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+
+.faq-note-header:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.faq-note-title {
+  font-size: 0.97rem;
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 1.45;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+}
+
+.faq-note-chevron {
+  font-size: 0.7rem;
+  flex-shrink: 0;
+  color: #64748b;
+  transition: transform 0.2s ease;
+}
+
+.faq-note--open .faq-note-chevron {
+  transform: none;
+}
+
+/* ── 展開內容區 ── */
+.faq-note-body {
+  padding: 0 1.1rem 1rem;
+  animation: faq-slide-down 0.2s ease;
+  overflow-wrap: anywhere;
+  word-break: break-all;
+  word-wrap: break-word;
+  max-width: 100%;
+}
+
+.faq-note-body * {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-all;
+}
+
+.faq-note-body p {
+  font-size: 0.9rem;
+  color: #334155;
+  line-height: 1.7;
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-all;
+}
+
+@keyframes faq-slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Markdown 內容樣式 ── */
+.faq-note-body h1,
+.faq-note-body h2,
+.faq-note-body h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0.75rem 0 0.25rem;
+}
+
+.faq-note-body ul,
+.faq-note-body ol {
+  padding-left: 1.2rem;
+  margin: 0.4rem 0;
+}
+
+.faq-note-body li {
+  font-size: 0.88rem;
+  color: #334155;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.faq-note-body code,
+.faq-note-body pre {
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+  font-size: 0.82rem;
+}
+
+.faq-note-body a {
+  color: #2563eb;
+  text-decoration: underline;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+}
+
+.faq-note-body strong {
+  font-weight: 700;
+}
+
+.faq-note-body hr {
+  border: none;
+  border-top: 1px dashed rgba(0, 0, 0, 0.15);
+  margin: 1rem 0;
+}
+
+/* 圖片容器 */
+.faq-img-wrap {
+  margin: 0.6rem 0;
+}
+
+/* skeleton 佔位 */
+.faq-img-skeleton {
+  width: 100%;
+  height: 180px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: faq-shimmer 1.4s infinite;
+}
+
+@keyframes faq-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* 圖片本體：撐滿寬度，圓角 */
+.faq-md-img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+/* 載入中時隱藏（改用 opacity: 0 確保 onLoad 能正常觸發） */
+.faq-md-img--hidden {
+  opacity: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+/* 載入失敗提示 */
+.faq-img-error {
+  padding: 0.6rem 0.9rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: #b91c1c;
+  margin: 0.6rem 0;
+}
+
+/* ── 深色模式相容 ── */
+
+@media (prefers-color-scheme: dark) {
+  .faq-heading {
+    color: #f1f5f9;
+  }
+  .faq-note-title {
+    color: #1e293b; /* 便利貼本身仍保持淺色背景，文字維持深色 */
+  }
+}
