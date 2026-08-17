@@ -361,6 +361,26 @@ describe('Student detail components', () => {
       ],
     }
 
+    function openBillingDetail({ isTabbed = true, keyboard = true, onClose = vi.fn() } = {}) {
+      const view = render(
+        <StudentDetailModal
+          student={billingStudent}
+          enrollments={[billingEnrollment]}
+          initialTab="history"
+          isTabbed={isTabbed}
+          onClose={onClose}
+          onRefresh={vi.fn()}
+        />
+      )
+      const trigger = screen.getByText('Integration Period').closest('button')
+      if (keyboard) {
+        trigger.focus()
+        fireEvent.keyDown(trigger, { key: 'Enter' })
+      }
+      fireEvent.click(trigger)
+      return { ...view, onClose, trigger }
+    }
+
     it('opens billing details for the clicked timeline enrollment', () => {
       const { container } = render(
         <StudentDetailModal
@@ -399,6 +419,106 @@ describe('Student detail components', () => {
       expect(container.querySelector('.enrollment-billing-dialog')).toBeNull()
       expect(container.querySelector('.student-detail-dialog')).not.toBeNull()
       expect(container.querySelector('.student-detail-dialog .modal-name').textContent).toContain('Billing Student')
+    })
+
+    it.each([
+      { isTabbed: true, layout: 'tabbed' },
+      { isTabbed: false, layout: 'non-tabbed' },
+    ])('opens from the keyboard into an isolated billing dialog in the $layout layout', ({ isTabbed }) => {
+      const { container, trigger } = openBillingDetail({ isTabbed })
+      const studentDialog = container.querySelector('.student-detail-dialog')
+      const billingDialog = container.querySelector('.enrollment-billing-dialog')
+      const billingClose = screen.getByRole('button', { name: 'Close enrollment billing details' })
+
+      expect(trigger.isConnected).toBe(true)
+      expect(studentDialog.getAttribute('aria-hidden')).toBe('true')
+      expect(studentDialog.hasAttribute('inert')).toBe(true)
+      expect(studentDialog.getAttribute('aria-modal')).toBeNull()
+      expect(billingDialog.getAttribute('aria-modal')).toBe('true')
+      expect(document.activeElement).toBe(billingClose)
+    })
+
+    it.each([
+      { isTabbed: true, layout: 'tabbed' },
+      { isTabbed: false, layout: 'non-tabbed' },
+    ])('contains forward and reverse Tab navigation inside $layout billing details', ({ isTabbed }) => {
+      authState.role = 'admin'
+      const { container } = openBillingDetail({ isTabbed })
+      const billingDialog = container.querySelector('.enrollment-billing-dialog')
+      const focusableElements = Array.from(billingDialog.querySelectorAll('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'))
+      const first = focusableElements[0]
+      const last = focusableElements[focusableElements.length - 1]
+
+      last.focus()
+      fireEvent.keyDown(last, { key: 'Tab' })
+      expect(document.activeElement).toBe(first)
+
+      first.focus()
+      fireEvent.keyDown(first, { key: 'Tab', shiftKey: true })
+      expect(document.activeElement).toBe(last)
+    })
+
+    it.each([
+      { isTabbed: true, layout: 'tabbed' },
+      { isTabbed: false, layout: 'non-tabbed' },
+    ])('uses Escape to close only $layout billing details and restores trigger focus', ({ isTabbed }) => {
+      const onClose = vi.fn()
+      const { container, trigger } = openBillingDetail({ isTabbed, onClose })
+
+      fireEvent.keyDown(document.activeElement, { key: 'Escape' })
+
+      expect(container.querySelector('.enrollment-billing-dialog')).toBeNull()
+      expect(container.querySelector('.student-detail-dialog')).not.toBeNull()
+      expect(onClose).not.toHaveBeenCalled()
+      expect(document.activeElement).toBe(trigger)
+    })
+
+    it('restores focus to the pointer trigger even when the browser does not focus it on click', () => {
+      const { trigger } = openBillingDetail({ keyboard: false })
+
+      fireEvent.click(screen.getByRole('button', { name: 'Close enrollment billing details' }))
+
+      expect(document.activeElement).toBe(trigger)
+    })
+
+    it('recovers Tab containment after a focused billing editor control unmounts', () => {
+      authState.role = 'admin'
+      const { container } = openBillingDetail()
+      const billingDialog = container.querySelector('.enrollment-billing-dialog')
+
+      fireEvent.click(within(billingDialog).getByRole('button', { name: '編輯' }))
+      const cancelEditor = within(billingDialog).getByRole('button', { name: '取消' })
+      cancelEditor.focus()
+      fireEvent.click(cancelEditor)
+      expect(document.activeElement).toBe(document.body)
+
+      fireEvent.keyDown(document.body, { key: 'Tab' })
+
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Close enrollment billing details' }))
+    })
+
+    it('keeps Escape owned by billing details after focus is lost from the child layer', () => {
+      const onClose = vi.fn()
+      const { container, trigger } = openBillingDetail({ onClose })
+      document.activeElement.blur()
+
+      fireEvent.keyDown(document.body, { key: 'Escape' })
+
+      expect(container.querySelector('.enrollment-billing-dialog')).toBeNull()
+      expect(container.querySelector('.student-detail-dialog')).not.toBeNull()
+      expect(onClose).not.toHaveBeenCalled()
+      expect(document.activeElement).toBe(trigger)
+    })
+
+    it('routes reverse Tab from the billing layer fallback to its last available control', () => {
+      const { container } = openBillingDetail()
+      const billingLayer = container.querySelector('.student-detail-billing-layer')
+      const billingClose = screen.getByRole('button', { name: 'Close enrollment billing details' })
+      billingLayer.focus()
+
+      fireEvent.keyDown(billingLayer, { key: 'Tab', shiftKey: true })
+
+      expect(document.activeElement).toBe(billingClose)
     })
   })
 })

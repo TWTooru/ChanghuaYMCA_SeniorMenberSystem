@@ -43,9 +43,9 @@ export default function EnrollmentTimeline({ timeline, onDelete, onAddEnrollment
     if (onRefresh) onRefresh()
   }
 
-  const handleCardClick = (item) => {
+  const handleCardClick = (item, trigger) => {
     if (editingEnrollId === item.enrollment_id) return
-    onSelectEnrollment?.(item)
+    onSelectEnrollment?.(item, trigger)
   }
 
   return (
@@ -59,14 +59,14 @@ export default function EnrollmentTimeline({ timeline, onDelete, onAddEnrollment
           {timeline.map((item, idx) => (
             <div className={`timeline-item ${idx === timeline.length - 1 ? 'active' : ''} ${item.refunded ? 'refunded' : ''}`} key={item.enrollment_id}>
               <div className="timeline-dot" />
-              <div className="timeline-card">
+              <div className={`timeline-card ${onEditEnrollment && editingEnrollId === item.enrollment_id ? 'is-editing' : ''} ${onEditEnrollment && onDelete ? 'has-two-actions' : ''}`}>
                 {onEditEnrollment && editingEnrollId === item.enrollment_id ? <>
                   <TimelineMeta item={item} />
                   <EnrollmentEditForm enrollment={item} onSave={handleSave} onCancel={() => setEditingEnrollId(null)} />
                 </> : <button
                   type="button"
                   className="timeline-card-select"
-                  onClick={() => handleCardClick(item)}
+                  onClick={event => handleCardClick(item, event.currentTarget)}
                 >
                   <TimelineMeta item={item} />
                   <div className="timeline-courses">{item.courses && item.courses.length > 0 ? item.courses.map(course => <span className="course-tag" key={course}>{course}</span>) : <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>無選課紀錄/僅進行測驗</span>}</div>

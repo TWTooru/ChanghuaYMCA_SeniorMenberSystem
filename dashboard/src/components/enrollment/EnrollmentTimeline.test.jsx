@@ -1,6 +1,13 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import EnrollmentTimeline from './EnrollmentTimeline'
+
+const testDirectory = dirname(fileURLToPath(import.meta.url))
+const enrollmentStyles = readFileSync(resolve(testDirectory, './enrollment.css'), 'utf8')
+const adminStyles = readFileSync(resolve(testDirectory, '../admin/admin.css'), 'utf8')
 
 vi.mock('./EnrollmentEditForm', () => ({
   default: ({ onSave, onCancel }) => (
@@ -30,7 +37,18 @@ function selectionButton(container) {
 }
 
 describe('EnrollmentTimeline', () => {
-  afterEach(cleanup)
+  let styleElement
+
+  beforeEach(() => {
+    styleElement = document.createElement('style')
+    styleElement.textContent = `${adminStyles}\n${enrollmentStyles}`
+    document.head.append(styleElement)
+  })
+
+  afterEach(() => {
+    styleElement.remove()
+    cleanup()
+  })
 
   it('shows the receipt total and invoice numbers in a billing summary', () => {
     renderTimeline({
@@ -58,11 +76,12 @@ describe('EnrollmentTimeline', () => {
   it('selects the enrollment when its card is clicked', () => {
     const onSelectEnrollment = vi.fn()
     const { container } = renderTimeline({ onSelectEnrollment })
+    const selectButton = selectionButton(container)
 
-    fireEvent.click(selectionButton(container))
+    fireEvent.click(selectButton)
 
     expect(onSelectEnrollment).toHaveBeenCalledOnce()
-    expect(onSelectEnrollment).toHaveBeenCalledWith(baseEnrollment)
+    expect(onSelectEnrollment).toHaveBeenCalledWith(baseEnrollment, selectButton)
   })
 
   it.each(['Enter', ' '])('selects the enrollment exactly once when %s activates its native button', (key) => {
@@ -74,7 +93,7 @@ describe('EnrollmentTimeline', () => {
     fireEvent.click(selectButton)
 
     expect(onSelectEnrollment).toHaveBeenCalledOnce()
-    expect(onSelectEnrollment).toHaveBeenCalledWith(baseEnrollment)
+    expect(onSelectEnrollment).toHaveBeenCalledWith(baseEnrollment, selectButton)
   })
 
   it('does not select the enrollment when its edit control is clicked', () => {
@@ -153,5 +172,35 @@ describe('EnrollmentTimeline', () => {
     expect(card.getAttribute('role')).toBeNull()
     expect(selectButton).toBeTruthy()
     expect(selectButton.querySelector('.timeline-action-btn')).toBeNull()
+  })
+
+  it('restores the card spacing and default cursor while inline editing', () => {
+    const { container } = renderTimeline({ onEditEnrollment: true })
+
+    fireEvent.click(container.querySelector('.timeline-action-btn'))
+
+    const cardStyle = getComputedStyle(screen.getByTestId('edit-form').closest('.timeline-card'))
+    expect(cardStyle.paddingTop).toBe('16px')
+    expect(cardStyle.cursor).toBe('default')
+  })
+
+  it('reserves enough selection-button space for both card actions', () => {
+    const { container } = renderTimeline({
+      onEditEnrollment: true,
+      onDelete: vi.fn(),
+    })
+
+    const selectButton = selectionButton(container)
+    const actions = container.querySelector('.timeline-actions')
+    const actionButtons = Array.from(actions.querySelectorAll('.timeline-action-btn'))
+    const actionStyles = getComputedStyle(actions)
+    const reservedSpace = Number.parseFloat(getComputedStyle(selectButton).paddingRight)
+    const actionsWidth = actionButtons.reduce((total, button) => (
+      total + Number.parseFloat(getComputedStyle(button).width)
+    ), 0)
+    const interButtonGap = Number.parseFloat(actionStyles.gap) * (actionButtons.length - 1)
+    const rightInset = Number.parseFloat(actionStyles.right)
+
+    expect(reservedSpace).toBeGreaterThanOrEqual(actionsWidth + interButtonGap + rightInset)
   })
 })

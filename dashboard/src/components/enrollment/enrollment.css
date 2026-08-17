@@ -75,6 +75,15 @@
   text-align: left;
 }
 
+.timeline-card.has-two-actions .timeline-card-select {
+  padding-right: 84px;
+}
+
+.timeline-card.is-editing {
+  padding: 16px;
+  cursor: default;
+}
+
 .timeline-card-select:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: -2px;

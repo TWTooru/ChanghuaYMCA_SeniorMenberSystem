@@ -20,6 +20,37 @@ function getFocusableElements(container) {
     .filter(element => !element.hasAttribute('disabled'))
 }
 
+function containBillingLayerKeyDown(event, layer) {
+  if (!layer) return
+  if (event.key === 'Escape') {
+    event.preventDefault()
+    event.stopPropagation()
+    layer.querySelector('[aria-label="Close enrollment billing details"]')?.click()
+    return
+  }
+  if (event.key !== 'Tab') return
+
+  const focusableElements = getFocusableElements(layer)
+  if (focusableElements.length === 0) {
+    event.preventDefault()
+    layer.focus()
+    return
+  }
+
+  const first = focusableElements[0]
+  const last = focusableElements[focusableElements.length - 1]
+  if (!focusableElements.includes(document.activeElement)) {
+    event.preventDefault()
+    ;(event.shiftKey ? last : first).focus()
+  } else if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault()
+    last.focus()
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault()
+    first.focus()
+  }
+}
+
 export default function StudentDetailModal({ student, enrollments, initialTab = 'history', isTabbed = true, onClose, onAddEnrollment, onRefresh, onStudentUpdated }) {
   /** 對話框統一管理焦點、未儲存變更保護與分頁切換；儲存後先更新選取學員，再要求外層重新整理快照。 */
   const { role } = useAuth()
@@ -37,6 +68,8 @@ export default function StudentDetailModal({ student, enrollments, initialTab = 
   const [pendingDeleteEnrollmentId, setShowDeleteEnrollConfirm] = useState(null)
   const [selectedBillingEnrollment, setSelectedBillingEnrollment] = useState(null)
   const dialogRef = useRef(null)
+  const billingLayerRef = useRef(null)
+  const billingTriggerRef = useRef(null)
   const previousFocusRef = useRef(null)
   const showDeleteConfirm = isStudentDeleteConfirmOpen && permissions.canDeleteStudent
   const showDeleteEnrollConfirm = permissions.canDeleteEnrollment ? pendingDeleteEnrollmentId : null
@@ -67,6 +100,26 @@ export default function StudentDetailModal({ student, enrollments, initialTab = 
       if (previousFocus?.isConnected) previousFocus.focus()
     }
   }, [])
+
+  useEffect(() => {
+    if (selectedBillingEnrollment) {
+      const billingDialog = billingLayerRef.current?.querySelector('.enrollment-billing-dialog')
+      const [initialFocus] = getFocusableElements(billingDialog)
+      ;(initialFocus || billingLayerRef.current)?.focus()
+      return
+    }
+
+    const trigger = billingTriggerRef.current
+    if (trigger?.isConnected) trigger.focus()
+    billingTriggerRef.current = null
+  }, [selectedBillingEnrollment])
+
+  useEffect(() => {
+    if (!selectedBillingEnrollment) return undefined
+    const handleKeyDown = event => containBillingLayerKeyDown(event, billingLayerRef.current)
+    document.addEventListener('keydown', handleKeyDown, true)
+    return () => document.removeEventListener('keydown', handleKeyDown, true)
+  }, [selectedBillingEnrollment])
 
   const studentTimeline = useMemo(() => {
     if (!student || !enrollments) return []
@@ -117,6 +170,8 @@ export default function StudentDetailModal({ student, enrollments, initialTab = 
   }
 
   const handleKeyDown = event => {
+    if (selectedBillingEnrollment) return
+
     // Escape 交由未儲存變更守衛處理；Tab 則限制焦點留在 dialog 內。
     if (event.key === 'Escape') {
       requestClose()
@@ -143,6 +198,13 @@ export default function StudentDetailModal({ student, enrollments, initialTab = 
     }
   }
 
+  const handleSelectBillingEnrollment = (enrollment, trigger) => {
+    billingTriggerRef.current = trigger instanceof HTMLElement && dialogRef.current?.contains(trigger)
+      ? trigger
+      : null
+    setSelectedBillingEnrollment(enrollment)
+  }
+
   const deleteStudentMessage = `確定要刪除學員「${student.name}」（${student.student_id}）嗎？此操作無法復原，該學員的所有選課紀錄也會一併刪除。`
 
   const requestTab = tab => {
@@ -165,11 +227,25 @@ export default function StudentDetailModal({ student, enrollments, initialTab = 
     }
   }
 
+  const billingDetailLayer = selectedBillingEnrollment ? (
+    <div className="student-detail-billing-layer" ref={billingLayerRef} tabIndex={-1}>
+      <EnrollmentBillingDetailModal
+        student={student}
+        enrollment={selectedBillingEnrollment}
+        onClose={() => setSelectedBillingEnrollment(null)}
+        onRefresh={() => {
+          setSelectedBillingEnrollment(null)
+          onRefresh?.()
+        }}
+      />
+    </div>
+  ) : null
+
   if (!isTabbed) {
     return (
       <>
         <div className="modal-overlay student-detail-overlay" onClick={requestClose} id="modal-overlay">
-          <div className="modal-content student-detail-dialog" ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="student-detail-title" tabIndex={-1} onClick={event => event.stopPropagation()} onKeyDown={handleKeyDown}>
+          <div className="modal-content student-detail-dialog" ref={dialogRef} role="dialog" aria-modal={selectedBillingEnrollment ? undefined : 'true'} aria-hidden={selectedBillingEnrollment ? 'true' : undefined} inert={selectedBillingEnrollment ? true : undefined} aria-labelledby="student-detail-title" tabIndex={-1} onClick={event => event.stopPropagation()} onKeyDown={handleKeyDown}>
             <div className="modal-header student-detail-header">
               <div className="modal-title-group"><span className="modal-id-badge">{student.student_id}</span><h2 id="student-detail-title" className="modal-name">{student.name} ({student.gender || '未知'})</h2></div>
               <div className="modal-header-actions">
@@ -191,7 +267,7 @@ export default function StudentDetailModal({ student, enrollments, initialTab = 
                   onAddEnrollment={permissions.canAddEnrollment ? onAddEnrollment : null}
                   onEditEnrollment={permissions.canEditEnrollment}
                   onRefresh={onRefresh}
-                  onSelectEnrollment={setSelectedBillingEnrollment}
+                  onSelectEnrollment={handleSelectBillingEnrollment}
                 />
               </section>
             </div>
@@ -199,17 +275,7 @@ export default function StudentDetailModal({ student, enrollments, initialTab = 
         </div>
         <ConfirmDialog isOpen={showDeleteConfirm} title="刪除學員" message={deleteStudentMessage} onConfirm={handleDeleteStudent} onCancel={() => setShowDeleteConfirm(false)} />
         <ConfirmDialog isOpen={showDeleteEnrollConfirm !== null} title="刪除選課紀錄" message="確定要刪除此選課紀錄嗎？此操作無法復原。" onConfirm={() => handleDeleteEnrollment(showDeleteEnrollConfirm)} onCancel={() => setShowDeleteEnrollConfirm(null)} />
-        {selectedBillingEnrollment && (
-          <EnrollmentBillingDetailModal
-            student={student}
-            enrollment={selectedBillingEnrollment}
-            onClose={() => setSelectedBillingEnrollment(null)}
-            onRefresh={() => {
-              setSelectedBillingEnrollment(null)
-              onRefresh?.()
-            }}
-          />
-        )}
+        {billingDetailLayer}
       </>
     )
   }
@@ -217,7 +283,7 @@ export default function StudentDetailModal({ student, enrollments, initialTab = 
   return (
     <>
       <div className="modal-overlay student-detail-overlay" onClick={requestClose} id="modal-overlay">
-        <div className="modal-content student-detail-dialog" ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="student-detail-title" tabIndex={-1} onClick={event => event.stopPropagation()} onKeyDown={handleKeyDown}>
+        <div className="modal-content student-detail-dialog" ref={dialogRef} role="dialog" aria-modal={selectedBillingEnrollment ? undefined : 'true'} aria-hidden={selectedBillingEnrollment ? 'true' : undefined} inert={selectedBillingEnrollment ? true : undefined} aria-labelledby="student-detail-title" tabIndex={-1} onClick={event => event.stopPropagation()} onKeyDown={handleKeyDown}>
           <div className="modal-header student-detail-header">
           <div className="modal-title-group"><span className="modal-id-badge">{student.student_id}</span><h2 id="student-detail-title" className="modal-name">{student.name} ({student.gender || '未知'})</h2></div>
           <div className="modal-header-actions">
@@ -245,7 +311,7 @@ export default function StudentDetailModal({ student, enrollments, initialTab = 
                 onAddEnrollment={permissions.canAddEnrollment ? onAddEnrollment : null}
                 onEditEnrollment={permissions.canEditEnrollment}
                 onRefresh={onRefresh}
-                onSelectEnrollment={setSelectedBillingEnrollment}
+                onSelectEnrollment={handleSelectBillingEnrollment}
               />
             </section>
           )}
@@ -264,17 +330,7 @@ export default function StudentDetailModal({ student, enrollments, initialTab = 
         onConfirm={confirmPendingAction}
         onCancel={cancelPendingAction}
       />
-      {selectedBillingEnrollment && (
-        <EnrollmentBillingDetailModal
-          student={student}
-          enrollment={selectedBillingEnrollment}
-          onClose={() => setSelectedBillingEnrollment(null)}
-          onRefresh={() => {
-            setSelectedBillingEnrollment(null)
-            onRefresh?.()
-          }}
-        />
-      )}
+      {billingDetailLayer}
     </>
   )
 }
