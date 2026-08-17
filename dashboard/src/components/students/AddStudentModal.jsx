@@ -1,54 +1,117 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { X } from 'lucide-react'
+import { useAuth } from '../../contexts/AuthContext'
+import { normalizeInitialEnrollmentForm } from '../../domain/initialEnrollment'
+import { normalizeStudentId } from '../../domain/studentIdentity'
 import { supabase } from '../../lib/supabaseClient'
-import { EDUCATION_OPTIONS } from '../../domain/studentFields'
-import { normalizeStudentId, STUDENT_ID_VALIDATION_MESSAGE } from '../../domain/studentIdentity'
-import { createStudent } from '../../services/studentService'
+import { createStudentWithInitialEnrollment } from '../../services/studentService'
+import InitialEnrollmentStep from './InitialEnrollmentStep'
+import MemberProfileStep from './MemberProfileStep'
 import '../common/common.css'
 
-const initialProfile = { student_id: '', email: '', name: '', gender: '', phone: '', birth_date: '', address: '', organization: '', education: '' }
-const optionalKeys = ['email', 'phone', 'birth_date', 'address', 'organization']
+const initialProfile = {
+  student_id: '', email: '', name: '', gender: '', phone: '', birth_date: '',
+  address: '', organization: '', education: '',
+}
+
+const initialEnrollment = {
+  period: '', period_start_date: '', period_end_date: '', courses: [], notes: '',
+  prepaid_amount: '', prepaid_receipt_number: '', tuition_fee: '', materials_fee: '',
+  membership_fee: '', fee_receipt_number: '', handled_by_name: '', handled_on: '',
+}
+
+function normalizeProfile(profile) {
+  if (!profile.name.trim() || !profile.gender || !profile.education) {
+    throw new Error('請完整填寫姓名、性別與教育程度')
+  }
+  const payload = Object.fromEntries(
+    Object.entries(profile).map(([key, value]) => [key, String(value).trim()]),
+  )
+  payload.student_id = payload.student_id ? normalizeStudentId(payload.student_id) : null
+  payload.email = payload.email.toLowerCase() || null
+  for (const key of ['phone', 'birth_date', 'address', 'organization']) payload[key] ||= null
+  return payload
+}
 
 export default function AddStudentModal({ onClose, onRefresh }) {
+  const { user } = useAuth()
+  const [step, setStep] = useState(1)
   const [profile, setProfile] = useState(initialProfile)
+  const [enrollment, setEnrollment] = useState(initialEnrollment)
   const [error, setError] = useState('')
-  const change = event => setProfile(current => ({ ...current, [event.target.name]: event.target.value }))
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const submitInFlightRef = useRef(false)
 
-  const submit = async event => {
+  const changeProfile = event => {
+    const { name, value } = event.target
+    setProfile(current => ({ ...current, [name]: value }))
+  }
+
+  const changeEnrollment = event => {
+    const { name, value } = event.target
+    setEnrollment(current => ({ ...current, [name]: value }))
+  }
+
+  const handleSubmit = async event => {
     event.preventDefault()
+    setError('')
+    if (step === 1) {
+      try {
+        normalizeProfile(profile)
+        setStep(2)
+      } catch (validationError) {
+        setError(validationError.message)
+      }
+      return
+    }
+    if (submitInFlightRef.current) return
+
+    let succeeded = false
     try {
-      const studentId = profile.student_id.trim() ? normalizeStudentId(profile.student_id) : null
-      const payload = Object.fromEntries(Object.entries(profile).map(([key, value]) => [key, String(value).trim()]))
-      payload.student_id = studentId
-      payload.email = payload.email.toLowerCase()
-      for (const key of optionalKeys) payload[key] = payload[key] || null
-      await createStudent(supabase, payload)
+      const studentPayload = normalizeProfile(profile)
+      const enrollmentPayload = normalizeInitialEnrollmentForm(enrollment)
+      submitInFlightRef.current = true
+      setIsSubmitting(true)
+      await createStudentWithInitialEnrollment(supabase, studentPayload, enrollmentPayload)
+      succeeded = true
+    } catch (submitError) {
+      setError(submitError.message || '新增會員與報名失敗')
+    } finally {
+      submitInFlightRef.current = false
+      setIsSubmitting(false)
+    }
+    if (succeeded) {
       onRefresh?.()
       onClose()
-    } catch (submitError) {
-      setError(submitError.message || STUDENT_ID_VALIDATION_MESSAGE)
     }
   }
 
-  return <div className="modal-overlay-center" onClick={onClose} id="modal-add-student-overlay"><div className="form-modal-content" onClick={event => event.stopPropagation()}>
-    <div className="modal-header-centered"><h2>新增會員</h2><button type="button" className="btn-close" onClick={onClose} aria-label="關閉新增會員"><X size={20} /></button></div>
-    <form onSubmit={submit} className="form-grid">
-      <Field label="ID（選填）"><input id="student-id" className="form-input" name="student_id" inputMode="numeric" value={profile.student_id} onChange={change} /></Field>
-      <Field label="姓名"><input id="student-name" className="form-input" name="name" value={profile.name} onChange={change} required /></Field>
-      <Field label="性別"><select id="student-gender" className="form-select" name="gender" value={profile.gender} onChange={change} required><option value="">請選擇</option><option value="男">男</option><option value="女">女</option></select></Field>
-      <Field label="電子郵件"><input id="student-email" className="form-input" name="email" type="email" value={profile.email} onChange={change} /></Field>
-      <Field label="電話"><input id="student-phone" className="form-input" name="phone" value={profile.phone} onChange={change} /></Field>
-      <Field label="出生年月日"><input id="student-birth-date" className="form-input" name="birth_date" type="date" value={profile.birth_date} onChange={change} /></Field>
-      <Field label="通訊處"><input id="student-address" className="form-input" name="address" value={profile.address} onChange={change} /></Field>
-      <Field label="服務機關 / 學校"><input id="student-organization" className="form-input" name="organization" value={profile.organization} onChange={change} /></Field>
-      <Field label="教育程度"><select id="student-education" className="form-select" name="education" value={profile.education} onChange={change} required><option value="">請選擇</option>{EDUCATION_OPTIONS.map(option => <option key={option} value={option}>{option}</option>)}</select></Field>
-      {error && <p className="student-edit-error" role="alert">{error}</p>}
-      <div className="form-footer full-width"><button type="button" className="btn-secondary" onClick={onClose}>取消</button><button type="submit" className="btn-primary">新增會員</button></div>
-    </form>
-  </div></div>
-}
+  const closeModal = isSubmitting ? undefined : onClose
 
-function Field({ label, children }) {
-  const id = children.props.id
-  return <div className="form-group"><label className="form-label" htmlFor={id}>{label}</label>{children}</div>
+  return <div className="modal-overlay-center" onClick={closeModal} id="modal-add-student-overlay">
+    <div className="form-modal-content" role="dialog" aria-modal="true" aria-labelledby="add-member-title" onClick={event => event.stopPropagation()}>
+      <div className="modal-header-centered">
+        <h2 id="add-member-title">新增會員與第一筆報名</h2>
+        <button type="button" className="btn-close" onClick={closeModal} disabled={isSubmitting} aria-label="關閉新增會員"><X size={20} /></button>
+      </div>
+      <form onSubmit={handleSubmit} className="form-grid">
+        <p className="member-wizard-progress">步驟 {step} / 2</p>
+        {step === 1
+          ? <MemberProfileStep profile={profile} onChange={changeProfile} disabled={isSubmitting} />
+          : <InitialEnrollmentStep
+              enrollment={enrollment}
+              onChange={changeEnrollment}
+              onCoursesChange={courses => setEnrollment(current => ({ ...current, courses }))}
+              account={user?.email || ''}
+              disabled={isSubmitting}
+            />}
+        {error && <p className="student-edit-error" role="alert">{error}</p>}
+        <div className="form-footer full-width">
+          {step === 2 && <button type="button" className="btn-secondary" onClick={() => { setError(''); setStep(1) }} disabled={isSubmitting}>上一步</button>}
+          <button type="button" className="btn-secondary" onClick={closeModal} disabled={isSubmitting}>取消</button>
+          <button type="submit" className="btn-primary" disabled={isSubmitting}>{step === 1 ? '下一步' : '新增會員並報名'}</button>
+        </div>
+      </form>
+    </div>
+  </div>
 }
