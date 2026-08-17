@@ -20,8 +20,8 @@ describe('MemberProfileStep', () => {
   it('keeps the established member profile field contract', () => {
     render(<MemberProfileStep profile={profile} onChange={vi.fn()} disabled={false} />)
 
-    expect(screen.getByLabelText('ID')).not.toBeNull()
-    expect(screen.getByLabelText('ID').required).toBe(false)
+    expect(screen.getByLabelText('ID（選填）')).not.toBeNull()
+    expect(screen.getByLabelText('ID（選填）').required).toBe(false)
     expect(screen.getByLabelText('姓名').required).toBe(true)
     expect(screen.getByLabelText('性別').required).toBe(true)
     expect(screen.getByLabelText('教育程度').required).toBe(true)

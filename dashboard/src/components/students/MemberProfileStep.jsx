@@ -2,7 +2,7 @@ import { EDUCATION_OPTIONS } from '../../domain/studentFields'
 
 export default function MemberProfileStep({ profile, onChange, disabled = false }) {
   return <>
-    <Field label="ID"><input id="student-id" className="form-input" name="student_id" inputMode="numeric" value={profile.student_id} onChange={onChange} disabled={disabled} /></Field>
+    <Field label="ID（選填）"><input id="student-id" className="form-input" name="student_id" inputMode="numeric" value={profile.student_id} onChange={onChange} disabled={disabled} /></Field>
     <Field label="姓名"><input id="student-name" className="form-input" name="name" value={profile.name} onChange={onChange} disabled={disabled} required /></Field>
     <Field label="性別"><select id="student-gender" className="form-select" name="gender" value={profile.gender} onChange={onChange} disabled={disabled} required><option value="">請選擇</option><option value="男">男</option><option value="女">女</option></select></Field>
     <Field label="電子郵件"><input id="student-email" className="form-input" name="email" type="email" value={profile.email} onChange={onChange} disabled={disabled} /></Field>
