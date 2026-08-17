@@ -22,13 +22,20 @@ describe('member profile service', () => {
       student_id: 61,
       enrollment_id: 91,
     })
-    expect(client.rpc).toHaveBeenCalledWith('create_student_with_initial_enrollment', {
+    expect(client.rpc).toHaveBeenCalledWith('create_student_with_initial_enrollment', expect.anything())
+    const [, payload] = client.rpc.mock.calls[0]
+    expect(payload).toEqual({
       p_student: profile,
-      p_enrollment: expect.not.objectContaining({
-        handled_by_user_id: expect.anything(),
-        handled_by_account: expect.anything(),
-      }),
+      p_enrollment: {
+        period: '第16期', period_start_date: '2026-09-01', period_end_date: '2026-12-31',
+        courses: ['會計實務'], notes: null, prepaid_amount: 500,
+        prepaid_receipt_number: 'P-1', tuition_fee: 2400, materials_fee: 300,
+        membership_fee: 100, fee_receipt_number: 'F-1', handled_by_name: '林承辦',
+        handled_on: '2026-08-17',
+      },
     })
+    expect(payload.p_enrollment).not.toHaveProperty('handled_by_user_id')
+    expect(payload.p_enrollment).not.toHaveProperty('handled_by_account')
   })
 
   it.each([
