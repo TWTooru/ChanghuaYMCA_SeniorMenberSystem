@@ -382,9 +382,6 @@ export default function EnrollmentBillingDetailModal({
             </div>
 
             <div className="billing-receipt-list">
-              {existingReceipts.length === 0 && (
-                <p className="billing-receipt-empty">尚未建立繳費紀錄</p>
-              )}
               {existingReceipts.map((receipt, index) => (
                 <article
                   className="billing-receipt-row"
