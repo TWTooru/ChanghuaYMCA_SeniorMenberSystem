@@ -41,7 +41,7 @@ const completeEnrollment = ({ course = true } = {}) => {
   if (course) fireEvent.click(screen.getByRole('button', { name: '選擇瑜珈基礎' }))
 }
 
-const submitForm = () => fireEvent.submit(screen.getByRole('button', { name: '新增會員並報名' }).form)
+const submitForm = () => fireEvent.click(screen.getByRole('button', { name: '新增會員並報名' }))
 
 describe('AddStudentModal', () => {
   afterEach(() => {

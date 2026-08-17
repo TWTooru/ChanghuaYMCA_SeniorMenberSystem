@@ -94,7 +94,7 @@ export default function AddStudentModal({ onClose, onRefresh }) {
         <h2 id="add-member-title">新增會員與第一筆報名</h2>
         <button type="button" className="btn-close" onClick={closeModal} disabled={isSubmitting} aria-label="關閉新增會員"><X size={20} /></button>
       </div>
-      <form onSubmit={handleSubmit} className="form-grid">
+      <form noValidate onSubmit={handleSubmit} className="form-grid">
         <p className="member-wizard-progress">步驟 {step} / 2</p>
         {step === 1
           ? <MemberProfileStep profile={profile} onChange={changeProfile} disabled={isSubmitting} />
