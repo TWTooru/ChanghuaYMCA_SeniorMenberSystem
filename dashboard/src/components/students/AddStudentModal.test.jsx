@@ -80,6 +80,18 @@ describe('AddStudentModal', () => {
     expect(screen.getByLabelText('姓名').value).toBe('王小明')
   })
 
+  it('shows an email-format error from the visible next button and stays on step 1', () => {
+    renderModal()
+    completeProfile()
+    fireEvent.change(screen.getByLabelText('電子郵件'), { target: { value: 'not-an-email' } })
+    fireEvent.click(screen.getByRole('button', { name: '下一步' }))
+
+    expect(screen.getByRole('alert').textContent).toBe('電子郵件格式不正確')
+    expect(screen.getByText('步驟 1 / 2')).not.toBeNull()
+    expect(screen.queryByLabelText('期別')).toBeNull()
+    expect(createStudentWithInitialEnrollment).not.toHaveBeenCalled()
+  })
+
   it('shows the missing-date error and does not call the service', () => {
     renderModal()
     goToEnrollment()

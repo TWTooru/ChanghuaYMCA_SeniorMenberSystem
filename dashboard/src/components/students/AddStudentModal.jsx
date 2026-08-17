@@ -20,6 +20,8 @@ const initialEnrollment = {
   membership_fee: '', fee_receipt_number: '', handled_by_name: '', handled_on: '',
 }
 
+const EMAIL_VALIDATION_MESSAGE = '電子郵件格式不正確'
+
 function normalizeProfile(profile) {
   if (!profile.name.trim() || !profile.gender || !profile.education) {
     throw new Error('請完整填寫姓名、性別與教育程度')
@@ -29,6 +31,9 @@ function normalizeProfile(profile) {
   )
   payload.student_id = payload.student_id ? normalizeStudentId(payload.student_id) : null
   payload.email = payload.email.toLowerCase() || null
+  if (payload.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email)) {
+    throw new Error(EMAIL_VALIDATION_MESSAGE)
+  }
   for (const key of ['phone', 'birth_date', 'address', 'organization']) payload[key] ||= null
   return payload
 }
