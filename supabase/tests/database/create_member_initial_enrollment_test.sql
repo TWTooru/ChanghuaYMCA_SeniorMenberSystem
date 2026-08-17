@@ -1,5 +1,5 @@
 begin;
-select plan(24);
+select plan(26);
 
 truncate table public.students restart identity cascade;
 
@@ -160,6 +160,38 @@ select is(
    from public.enrollments where student_id = 8300 and period = '第11期'),
   '["11111111-1111-4111-8111-111111111111", "editor@example.com"]'::jsonb,
   'direct enrollment updates cannot alter handler audit fields'
+);
+
+select pg_catalog.set_config('request.jwt.claims', '{}', true);
+insert into public.students (student_id, name, gender, education)
+values (8400, '系統歷史會員', '女', '高中');
+insert into public.enrollments (
+  student_id, period, handled_by_user_id, handled_by_account
+) values (
+  8400, '第12期', '99999999-9999-4999-8999-999999999999', 'spoof@example.com'
+);
+select is(
+  (select pg_catalog.jsonb_build_array(handled_by_user_id, handled_by_account)
+   from public.enrollments where student_id = 8400 and period = '第12期'),
+  '[null, null]'::jsonb,
+  'system writes without a JWT preserve nullable audit fields'
+);
+
+insert into public.students (student_id, name, gender, education)
+values (8500, '部分 JWT 會員', '女', '高中');
+select pg_catalog.set_config(
+  'request.jwt.claims',
+  '{"sub":"11111111-1111-4111-8111-111111111111","app_metadata":{"app_role":"editor"}}',
+  true
+);
+select throws_ok(
+  $$insert into public.enrollments (
+      student_id, period, handled_by_user_id, handled_by_account
+    ) values (
+      8500, '第13期', '99999999-9999-4999-8999-999999999999', 'spoof@example.com'
+    )$$,
+  '42501', 'AUTH_ACCOUNT_REQUIRED',
+  'a partial JWT cannot bypass handler audit validation'
 );
 
 select * from finish();
