@@ -10,28 +10,58 @@ function BillingSummary({ enrollment }) {
     ? billing.invoiceNumbers.join(', ')
     : '--'
 
+  const hasPrepaid = enrollment.prepaid_amount != null || Boolean(String(enrollment.prepaid_receipt_number ?? '').trim())
+  const hasFormal = enrollment.tuition_fee != null || enrollment.materials_fee != null || enrollment.membership_fee != null || Boolean(String(enrollment.fee_receipt_number ?? '').trim())
+  const formalTotal = (enrollment.tuition_fee || 0) + (enrollment.materials_fee || 0) + (enrollment.membership_fee || 0)
+
   return (
     <div className="timeline-billing-summary" data-testid="timeline-billing-summary">
-      <span>{amountText}</span>
-      <span>{invoiceText}</span>
+      <div className="timeline-billing-row">
+        <span className="timeline-billing-amount">{amountText}</span>
+        <span className="timeline-billing-invoice">{invoiceText}</span>
+      </div>
+      {(hasPrepaid || hasFormal) && (
+        <div className="timeline-billing-breakdown">
+          {hasPrepaid && (
+            <span className="breakdown-tag prepaid">
+              預繳: NT$ {enrollment.prepaid_amount ?? 0} {enrollment.prepaid_receipt_number ? `(${enrollment.prepaid_receipt_number})` : ''}
+            </span>
+          )}
+          {hasFormal && (
+            <span className="breakdown-tag formal">
+              正式: NT$ {formalTotal} {enrollment.fee_receipt_number ? `(${enrollment.fee_receipt_number})` : ''}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   )
 }
 
 function TimelineMeta({ item }) {
+  const hasDates = item.period_start_date || item.period_end_date
+
   return (
-    <div className="timeline-meta" style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+    <div className="timeline-meta">
+      <div className="timeline-meta-header">
         <span className="timeline-period">{item.period}</span>
-        <div style={{ display: 'flex', gap: '6px' }}>
+        <div className="timeline-badges">
           {item.reg_type && <span className="timeline-reg-type">{item.reg_type === '新' ? '新生' : '續生'}</span>}
           {item.refunded && <span className="badge danger" style={{ padding: '1px 6px', fontSize: '10px' }}>已退費</span>}
         </div>
       </div>
-      {(item.handled_by_name || item.handled_on) && (
-        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-          {item.handled_by_name && <span>經手：{item.handled_by_name} </span>}
-          {item.handled_on && <span>({item.handled_on})</span>}
+      {(hasDates || item.handled_by_name || item.handled_on) && (
+        <div className="timeline-meta-sub">
+          {hasDates && (
+            <span className="timeline-dates">
+              {item.period_start_date || '--'} ~ {item.period_end_date || '--'}
+            </span>
+          )}
+          {(item.handled_by_name || item.handled_on) && (
+            <span className="timeline-handler">
+              經手: {item.handled_by_name || '未填'} {item.handled_on ? `(${item.handled_on})` : ''}
+            </span>
+          )}
         </div>
       )}
     </div>
@@ -78,6 +108,11 @@ export default function EnrollmentTimeline({ timeline, onDelete, onAddEnrollment
                 >
                   <TimelineMeta item={item} />
                   <div className="timeline-courses">{item.courses && item.courses.length > 0 ? item.courses.map(course => <span className="course-tag" key={course}>{course}</span>) : <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>無選課紀錄/僅進行測驗</span>}</div>
+                  {item.notes && (
+                    <div className="timeline-notes" title={item.notes}>
+                      備註：{item.notes}
+                    </div>
+                  )}
                   <BillingSummary enrollment={item} />
                 </button>}
                 <div className="timeline-actions">{onEditEnrollment && <button type="button" className="timeline-action-btn" onClick={() => setEditingEnrollId(item.enrollment_id)}><Edit2 size={14} /></button>}{onDelete && <button type="button" className="timeline-action-btn danger" onClick={() => onDelete(item.enrollment_id)}><Trash2 size={14} /></button>}</div>

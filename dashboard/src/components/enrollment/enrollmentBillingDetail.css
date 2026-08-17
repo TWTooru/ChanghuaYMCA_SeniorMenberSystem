@@ -186,10 +186,90 @@
   color: var(--color-success);
 }
 
+.enrollment-paper-billing {
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.paper-billing-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.paper-billing-heading h3 {
+  margin: 0;
+}
+
+.enrollment-period-dates {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.paper-billing-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.paper-billing-card {
+  padding: 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-primary);
+}
+
+.paper-billing-card.full-width {
+  grid-column: 1 / -1;
+}
+
+.paper-billing-card-title {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.paper-fee-items {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.paper-fee-summary {
+  border-top: 1px dashed var(--border-color);
+  padding-top: 10px;
+}
+
+.paper-handler-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.paper-notes-box {
+  margin-top: 10px;
+  border-top: 1px dashed var(--border-color);
+  padding-top: 10px;
+}
+
+.paper-notes-text {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+}
+
 @media (max-width: 640px) {
   .billing-receipt-row,
   .billing-receipt-values,
-  .enrollment-billing-fields {
+  .enrollment-billing-fields,
+  .paper-billing-grid,
+  .paper-fee-items,
+  .paper-handler-grid {
     grid-template-columns: 1fr;
   }
 

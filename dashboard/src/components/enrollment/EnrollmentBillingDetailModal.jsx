@@ -273,6 +273,93 @@ export default function EnrollmentBillingDetailModal({
             </section>
           )}
 
+          {/* 報名費用與經手明細 */}
+          <section className="enrollment-paper-billing" aria-labelledby="paper-billing-title">
+            <div className="paper-billing-heading">
+              <h3 id="paper-billing-title">報名費用與經手明細</h3>
+              {(enrollment.period_start_date || enrollment.period_end_date) && (
+                <span className="enrollment-period-dates">
+                  起訖：{enrollment.period_start_date || '--'} 至 {enrollment.period_end_date || '--'}
+                </span>
+              )}
+            </div>
+
+            <div className="paper-billing-grid">
+              {/* 預繳 */}
+              <div className="paper-billing-card">
+                <h4 className="paper-billing-card-title">預繳資料</h4>
+                <div className="billing-receipt-values">
+                  <span>
+                    <span className="billing-receipt-label">預繳金額</span>
+                    {displayAmount(enrollment.prepaid_amount)}
+                  </span>
+                  <span>
+                    <span className="billing-receipt-label">預繳 No.</span>
+                    {displayInvoiceNumber(enrollment.prepaid_receipt_number)}
+                  </span>
+                </div>
+              </div>
+
+              {/* 正式收據 */}
+              <div className="paper-billing-card">
+                <h4 className="paper-billing-card-title">正式收據明細</h4>
+                <div className="paper-fee-items">
+                  <span>
+                    <span className="billing-receipt-label">學費</span>
+                    {displayAmount(enrollment.tuition_fee)}
+                  </span>
+                  <span>
+                    <span className="billing-receipt-label">教材費</span>
+                    {displayAmount(enrollment.materials_fee)}
+                  </span>
+                  <span>
+                    <span className="billing-receipt-label">會友費</span>
+                    {displayAmount(enrollment.membership_fee)}
+                  </span>
+                </div>
+                <div className="billing-receipt-values paper-fee-summary">
+                  <span>
+                    <span className="billing-receipt-label">正式費用合計</span>
+                    {displayAmount(
+                      (enrollment.tuition_fee != null || enrollment.materials_fee != null || enrollment.membership_fee != null)
+                        ? (enrollment.tuition_fee || 0) + (enrollment.materials_fee || 0) + (enrollment.membership_fee || 0)
+                        : null
+                    )}
+                  </span>
+                  <span>
+                    <span className="billing-receipt-label">正式收據 No.</span>
+                    {displayInvoiceNumber(enrollment.fee_receipt_number)}
+                  </span>
+                </div>
+              </div>
+
+              {/* 經手人與備註 */}
+              <div className="paper-billing-card full-width">
+                <h4 className="paper-billing-card-title">經手與其他資訊</h4>
+                <div className="paper-handler-grid">
+                  <span>
+                    <span className="billing-receipt-label">經手人姓名</span>
+                    {enrollment.handled_by_name || '--'}
+                  </span>
+                  <span>
+                    <span className="billing-receipt-label">辦理日期</span>
+                    {enrollment.handled_on || '--'}
+                  </span>
+                  <span>
+                    <span className="billing-receipt-label">登入帳號</span>
+                    {enrollment.handled_by_account || '--'}
+                  </span>
+                </div>
+                {enrollment.notes && (
+                  <div className="paper-notes-box">
+                    <span className="billing-receipt-label">備註</span>
+                    <p className="paper-notes-text">{enrollment.notes}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+
           <section className="enrollment-billing-receipts" aria-labelledby="billing-receipts-title">
             <div className="enrollment-billing-heading">
               <h3 id="billing-receipts-title">繳費紀錄</h3>
