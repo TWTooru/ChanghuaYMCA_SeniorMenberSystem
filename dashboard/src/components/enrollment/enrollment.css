@@ -58,9 +58,26 @@
   background: rgba(31, 41, 55, 0.3);
   border: 1px solid var(--border-color);
   border-radius: 10px;
-  padding: 16px;
+  position: relative;
   transition: all 0.2s ease;
   cursor: pointer;
+}
+
+.timeline-card-select {
+  display: block;
+  width: 100%;
+  border: 0;
+  border-radius: inherit;
+  padding: 16px 52px 16px 16px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.timeline-card-select:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
 }
 
 .timeline-card:hover {
@@ -122,6 +139,13 @@
   font-size: 11px;
   padding: 2px 8px;
   border-radius: 4px;
+}
+
+.timeline-actions {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 1;
 }
 
 .timeline-billing-summary {

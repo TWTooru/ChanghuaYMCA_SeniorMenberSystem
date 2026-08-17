@@ -25,6 +25,10 @@ function renderTimeline(props = {}) {
   return render(<EnrollmentTimeline timeline={[baseEnrollment]} {...props} />)
 }
 
+function selectionButton(container) {
+  return container.querySelector('.timeline-card-select')
+}
+
 describe('EnrollmentTimeline', () => {
   afterEach(cleanup)
 
@@ -55,7 +59,7 @@ describe('EnrollmentTimeline', () => {
     const onSelectEnrollment = vi.fn()
     const { container } = renderTimeline({ onSelectEnrollment })
 
-    fireEvent.click(container.querySelector('.timeline-card'))
+    fireEvent.click(selectionButton(container))
 
     expect(onSelectEnrollment).toHaveBeenCalledOnce()
     expect(onSelectEnrollment).toHaveBeenCalledWith(baseEnrollment)
@@ -65,7 +69,7 @@ describe('EnrollmentTimeline', () => {
     const onSelectEnrollment = vi.fn()
     const { container } = renderTimeline({ onSelectEnrollment })
 
-    fireEvent.keyDown(container.querySelector('.timeline-card'), { key })
+    fireEvent.keyDown(selectionButton(container), { key })
 
     expect(onSelectEnrollment).toHaveBeenCalledOnce()
     expect(onSelectEnrollment).toHaveBeenCalledWith(baseEnrollment)
@@ -93,6 +97,32 @@ describe('EnrollmentTimeline', () => {
     expect(onDelete).toHaveBeenCalledWith(baseEnrollment.enrollment_id)
   })
 
+  it.each(['Enter', ' '])('does not select the enrollment from the %s key on its edit control', (key) => {
+    const onSelectEnrollment = vi.fn()
+    const { container } = renderTimeline({ onSelectEnrollment, onEditEnrollment: true })
+    const editButton = container.querySelector('.timeline-action-btn')
+
+    fireEvent.keyDown(editButton, { key })
+    fireEvent.click(editButton)
+
+    expect(onSelectEnrollment).not.toHaveBeenCalled()
+    expect(screen.getByTestId('edit-form')).toBeTruthy()
+  })
+
+  it.each(['Enter', ' '])('does not select the enrollment from the %s key on its delete control', (key) => {
+    const onSelectEnrollment = vi.fn()
+    const onDelete = vi.fn()
+    const { container } = renderTimeline({ onSelectEnrollment, onDelete })
+    const deleteButton = container.querySelector('.timeline-action-btn.danger')
+
+    fireEvent.keyDown(deleteButton, { key })
+    fireEvent.click(deleteButton)
+
+    expect(onSelectEnrollment).not.toHaveBeenCalled()
+    expect(onDelete).toHaveBeenCalledOnce()
+    expect(onDelete).toHaveBeenCalledWith(baseEnrollment.enrollment_id)
+  })
+
   it('does not select an enrollment while its card is being edited', () => {
     const onSelectEnrollment = vi.fn()
     const { container } = renderTimeline({ onSelectEnrollment, onEditEnrollment: true })
@@ -105,11 +135,21 @@ describe('EnrollmentTimeline', () => {
 
   it('does not throw when no selection handler is provided', () => {
     const { container } = renderTimeline()
-    const card = container.querySelector('.timeline-card')
+    const card = selectionButton(container)
 
     expect(() => {
       fireEvent.click(card)
       fireEvent.keyDown(card, { key: 'Enter' })
     }).not.toThrow()
+  })
+
+  it('keeps action controls outside the selection button semantics', () => {
+    const { container } = renderTimeline({ onDelete: vi.fn() })
+    const card = container.querySelector('.timeline-card')
+    const selectButton = selectionButton(container)
+
+    expect(card.getAttribute('role')).toBeNull()
+    expect(selectButton).toBeTruthy()
+    expect(selectButton.querySelector('.timeline-action-btn')).toBeNull()
   })
 })
