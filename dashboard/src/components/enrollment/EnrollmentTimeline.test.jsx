@@ -65,11 +65,13 @@ describe('EnrollmentTimeline', () => {
     expect(onSelectEnrollment).toHaveBeenCalledWith(baseEnrollment)
   })
 
-  it.each(['Enter', ' '])('selects the enrollment from the %s key', (key) => {
+  it.each(['Enter', ' '])('selects the enrollment exactly once when %s activates its native button', (key) => {
     const onSelectEnrollment = vi.fn()
     const { container } = renderTimeline({ onSelectEnrollment })
+    const selectButton = selectionButton(container)
 
-    fireEvent.keyDown(selectionButton(container), { key })
+    fireEvent.keyDown(selectButton, { key })
+    fireEvent.click(selectButton)
 
     expect(onSelectEnrollment).toHaveBeenCalledOnce()
     expect(onSelectEnrollment).toHaveBeenCalledWith(baseEnrollment)

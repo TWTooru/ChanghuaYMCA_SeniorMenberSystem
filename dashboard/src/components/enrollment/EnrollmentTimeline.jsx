@@ -67,12 +67,6 @@ export default function EnrollmentTimeline({ timeline, onDelete, onAddEnrollment
                   type="button"
                   className="timeline-card-select"
                   onClick={() => handleCardClick(item)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault()
-                      handleCardClick(item)
-                    }
-                  }}
                 >
                   <TimelineMeta item={item} />
                   <div className="timeline-courses">{item.courses && item.courses.length > 0 ? item.courses.map(course => <span className="course-tag" key={course}>{course}</span>) : <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>無選課紀錄/僅進行測驗</span>}</div>
