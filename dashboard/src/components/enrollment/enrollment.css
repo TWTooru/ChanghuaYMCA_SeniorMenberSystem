@@ -60,6 +60,7 @@
   border-radius: 10px;
   padding: 16px;
   transition: all 0.2s ease;
+  cursor: pointer;
 }
 
 .timeline-card:hover {
@@ -121,6 +122,14 @@
   font-size: 11px;
   padding: 2px 8px;
   border-radius: 4px;
+}
+
+.timeline-billing-summary {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
 }
 
 /* Inline enrollment edit form */

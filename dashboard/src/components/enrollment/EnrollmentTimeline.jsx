@@ -1,8 +1,24 @@
 import { Activity, Edit2, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { summarizeEnrollmentBilling } from '../../domain/enrollmentBilling'
 import EnrollmentEditForm from './EnrollmentEditForm'
 
-export default function EnrollmentTimeline({ timeline, onDelete, onAddEnrollment, onEditEnrollment = true, onRefresh }) {
+function BillingSummary({ enrollment }) {
+  const billing = summarizeEnrollmentBilling(enrollment)
+  const amountText = billing.amount == null ? '--' : `NT$ ${billing.amount}`
+  const invoiceText = billing.invoiceNumbers.length > 0
+    ? billing.invoiceNumbers.join(', ')
+    : '--'
+
+  return (
+    <div className="timeline-billing-summary" data-testid="timeline-billing-summary">
+      <span>{amountText}</span>
+      <span>{invoiceText}</span>
+    </div>
+  )
+}
+
+export default function EnrollmentTimeline({ timeline, onDelete, onAddEnrollment, onEditEnrollment = true, onRefresh, onSelectEnrollment }) {
   const [editingEnrollId, setEditingEnrollId] = useState(null)
 
   useEffect(() => {
@@ -13,6 +29,11 @@ export default function EnrollmentTimeline({ timeline, onDelete, onAddEnrollment
   const handleSave = () => {
     setEditingEnrollId(null)
     if (onRefresh) onRefresh()
+  }
+
+  const handleCardClick = (item) => {
+    if (editingEnrollId === item.enrollment_id) return
+    onSelectEnrollment?.(item)
   }
 
   return (
@@ -26,17 +47,29 @@ export default function EnrollmentTimeline({ timeline, onDelete, onAddEnrollment
           {timeline.map((item, idx) => (
             <div className={`timeline-item ${idx === timeline.length - 1 ? 'active' : ''} ${item.refunded ? 'refunded' : ''}`} key={item.enrollment_id}>
               <div className="timeline-dot" />
-              <div className="timeline-card">
+              <div
+                className="timeline-card"
+                onClick={() => handleCardClick(item)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    handleCardClick(item)
+                  }
+                }}
+              >
                 <div className="timeline-meta">
                   <span className="timeline-period">{item.period}</span>
                   <div style={{ display: 'flex', gap: '6px' }}>
                     {item.reg_type && <span className="timeline-reg-type">{item.reg_type === '新' ? '新生' : '續生'}</span>}
                     {item.refunded && <span className="badge danger" style={{ padding: '1px 6px', fontSize: '10px' }}>已退費</span>}
                   </div>
-                  <div className="timeline-actions">{onEditEnrollment && <button type="button" className="timeline-action-btn" onClick={() => { if (onEditEnrollment) setEditingEnrollId(item.enrollment_id) }}><Edit2 size={14} /></button>}{onDelete && <button type="button" className="timeline-action-btn danger" onClick={() => onDelete(item.enrollment_id)}><Trash2 size={14} /></button>}</div>
+                  <div className="timeline-actions">{onEditEnrollment && <button type="button" className="timeline-action-btn" onClick={(event) => { event.stopPropagation(); if (onEditEnrollment) setEditingEnrollId(item.enrollment_id) }}><Edit2 size={14} /></button>}{onDelete && <button type="button" className="timeline-action-btn danger" onClick={(event) => { event.stopPropagation(); onDelete(item.enrollment_id) }}><Trash2 size={14} /></button>}</div>
                 </div>
                 {onEditEnrollment && editingEnrollId === item.enrollment_id ? <EnrollmentEditForm enrollment={item} onSave={handleSave} onCancel={() => setEditingEnrollId(null)} /> : <>
                   <div className="timeline-courses">{item.courses && item.courses.length > 0 ? item.courses.map(course => <span className="course-tag" key={course}>{course}</span>) : <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>無選課紀錄/僅進行測驗</span>}</div>
+                  <BillingSummary enrollment={item} />
                 </>}
               </div>
             </div>
