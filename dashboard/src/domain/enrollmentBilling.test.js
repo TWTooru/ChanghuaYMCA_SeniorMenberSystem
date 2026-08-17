@@ -66,6 +66,70 @@ describe('normalizeEnrollmentBilling', () => {
       }],
     })
   })
+
+  it('collects multiple receipts when a course has multiple billing_receipt_courses links', () => {
+    expect(normalizeEnrollmentBilling([
+      {
+        course_id: 20,
+        course_name: '瑜珈課',
+        billing_receipt_courses: [
+          {
+            billing_receipts: { receipt_id: 200, amount: 500, invoice_number: 'P-1' },
+          },
+          {
+            billing_receipts: { receipt_id: 201, amount: 2800, invoice_number: 'F-1' },
+          },
+        ],
+      },
+      {
+        course_id: 21,
+        course_name: '手機課',
+        billing_receipt_courses: [
+          {
+            billing_receipts: { receipt_id: 200, amount: 500, invoice_number: 'P-1' },
+          },
+          {
+            billing_receipts: { receipt_id: 201, amount: 2800, invoice_number: 'F-1' },
+          },
+        ],
+      },
+    ])).toEqual({
+      courseDetails: [
+        {
+          courseId: 20,
+          courseName: '瑜珈課',
+          billingReceiptId: 200,
+          receipt: { receiptId: 200, amount: 500, invoiceNumber: 'P-1' },
+        },
+        {
+          courseId: 21,
+          courseName: '手機課',
+          billingReceiptId: 200,
+          receipt: { receiptId: 200, amount: 500, invoiceNumber: 'P-1' },
+        },
+      ],
+      billingReceipts: [
+        {
+          receiptId: 200,
+          amount: 500,
+          invoiceNumber: 'P-1',
+          courses: [
+            { courseId: 20, courseName: '瑜珈課' },
+            { courseId: 21, courseName: '手機課' },
+          ],
+        },
+        {
+          receiptId: 201,
+          amount: 2800,
+          invoiceNumber: 'F-1',
+          courses: [
+            { courseId: 20, courseName: '瑜珈課' },
+            { courseId: 21, courseName: '手機課' },
+          ],
+        },
+      ],
+    })
+  })
 })
 
 describe('summarizeEnrollmentBilling', () => {

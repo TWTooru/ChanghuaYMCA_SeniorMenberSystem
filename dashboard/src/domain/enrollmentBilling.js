@@ -27,36 +27,47 @@ export function normalizeCourseDetails(courseRows = []) {
 export function normalizeEnrollmentBilling(courseRows = []) {
   const receiptMap = new Map()
   const courseDetails = courseRows.map(course => {
-    const link = firstReceipt(course.billing_receipt_courses)
-    const receipt = firstReceipt(link?.billing_receipts)
-    const courseDetail = {
-      courseId: course.course_id,
-      courseName: course.course_name,
-      billingReceiptId: receipt?.receipt_id ?? null,
-      receipt: receipt
-        ? {
-            receiptId: receipt.receipt_id,
-            amount: receipt.amount,
-            invoiceNumber: receipt.invoice_number,
-          }
-        : null,
-    }
+    const links = Array.isArray(course.billing_receipt_courses)
+      ? course.billing_receipt_courses
+      : course.billing_receipt_courses ? [course.billing_receipt_courses] : []
 
-    if (receipt) {
+    let firstReceiptId = null
+    let firstReceiptData = null
+
+    for (const link of links) {
+      const receipt = firstReceipt(link?.billing_receipts)
+      if (!receipt) continue
+
+      if (firstReceiptId === null) {
+        firstReceiptId = receipt.receipt_id
+        firstReceiptData = {
+          receiptId: receipt.receipt_id,
+          amount: receipt.amount,
+          invoiceNumber: receipt.invoice_number,
+        }
+      }
+
       const normalizedReceipt = receiptMap.get(receipt.receipt_id) || {
         receiptId: receipt.receipt_id,
         amount: receipt.amount,
         invoiceNumber: receipt.invoice_number,
         courses: [],
       }
-      normalizedReceipt.courses.push({
-        courseId: course.course_id,
-        courseName: course.course_name,
-      })
+      if (!normalizedReceipt.courses.some(c => c.courseId === course.course_id)) {
+        normalizedReceipt.courses.push({
+          courseId: course.course_id,
+          courseName: course.course_name,
+        })
+      }
       receiptMap.set(receipt.receipt_id, normalizedReceipt)
     }
 
-    return courseDetail
+    return {
+      courseId: course.course_id,
+      courseName: course.course_name,
+      billingReceiptId: firstReceiptId,
+      receipt: firstReceiptData,
+    }
   })
 
   return { courseDetails, billingReceipts: [...receiptMap.values()] }
