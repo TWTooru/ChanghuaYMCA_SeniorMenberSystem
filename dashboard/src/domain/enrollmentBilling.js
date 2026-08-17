@@ -83,7 +83,25 @@ export function summarizeEnrollmentBilling(enrollment) {
     : (enrollment.courseDetails || []).map(course => course.receipt).filter(Boolean)
 
   if (receipts.length === 0) {
-    // 舊版報名列早於課程收據機制，其自身欄位仍是資料依據。
+    // 舊版報名列早於課程收據機制，或為初次報名未產生收據之歷史紀錄
+    const hasNewFields = enrollment.prepaid_amount != null || 
+                         enrollment.tuition_fee != null || 
+                         enrollment.materials_fee != null || 
+                         enrollment.membership_fee != null
+
+    if (hasNewFields) {
+      const amounts = [enrollment.prepaid_amount, enrollment.tuition_fee, enrollment.materials_fee, enrollment.membership_fee].filter(v => v != null)
+      const invoiceNumbers = [enrollment.prepaid_receipt_number, enrollment.fee_receipt_number]
+        .map(n => String(n ?? '').trim())
+        .filter(Boolean)
+
+      return {
+        amount: amounts.length > 0 ? amounts.reduce((a, b) => a + b, 0) : null,
+        invoiceNumbers,
+        source: 'legacy',
+      }
+    }
+
     const invoice = String(enrollment.invoice_number ?? '').trim()
     return {
       amount: enrollment.amount == null ? null : enrollment.amount,

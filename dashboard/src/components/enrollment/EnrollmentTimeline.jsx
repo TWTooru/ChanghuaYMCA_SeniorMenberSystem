@@ -20,12 +20,20 @@ function BillingSummary({ enrollment }) {
 
 function TimelineMeta({ item }) {
   return (
-    <div className="timeline-meta">
-      <span className="timeline-period">{item.period}</span>
-      <div style={{ display: 'flex', gap: '6px' }}>
-        {item.reg_type && <span className="timeline-reg-type">{item.reg_type === '新' ? '新生' : '續生'}</span>}
-        {item.refunded && <span className="badge danger" style={{ padding: '1px 6px', fontSize: '10px' }}>已退費</span>}
+    <div className="timeline-meta" style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <span className="timeline-period">{item.period}</span>
+        <div style={{ display: 'flex', gap: '6px' }}>
+          {item.reg_type && <span className="timeline-reg-type">{item.reg_type === '新' ? '新生' : '續生'}</span>}
+          {item.refunded && <span className="badge danger" style={{ padding: '1px 6px', fontSize: '10px' }}>已退費</span>}
+        </div>
       </div>
+      {(item.handled_by_name || item.handled_on) && (
+        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+          {item.handled_by_name && <span>經手：{item.handled_by_name} </span>}
+          {item.handled_on && <span>({item.handled_on})</span>}
+        </div>
+      )}
     </div>
   )
 }
