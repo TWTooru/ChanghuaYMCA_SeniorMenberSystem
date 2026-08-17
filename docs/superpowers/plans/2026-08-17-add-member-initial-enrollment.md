@@ -711,7 +711,7 @@ begin
     from pg_catalog.jsonb_array_elements(p_enrollment -> 'courses') item(value)
     group by pg_catalog.lower(pg_catalog.btrim(item.value #>> '{}'))
   ) normalized;
-  if pg_catalog.coalesce(pg_catalog.cardinality(normalized_courses), 0) = 0 then raise exception 'COURSE_REQUIRED'; end if;
+  if coalesce(pg_catalog.cardinality(normalized_courses), 0) = 0 then raise exception 'COURSE_REQUIRED'; end if;
 
   handled_on_text := nullif(pg_catalog.btrim(p_enrollment ->> 'handled_on'), '');
   if handled_on_text is not null then
