@@ -3,7 +3,7 @@ select plan(18);
 
 select has_table('public', 'billing_receipts', 'billing receipt headers exist');
 select has_table('public', 'billing_receipt_courses', 'billing receipt course links exist');
-select col_is_unique('public', 'billing_receipt_courses', 'course_id', 'one course belongs to at most one receipt');
+select col_is_pk('public', 'billing_receipt_courses', array['receipt_id', 'course_id'], 'billing receipt course links have composite primary key');
 select has_function('public', 'create_billing_receipt', array['bigint[]', 'integer', 'text'], 'create receipt RPC exists');
 select has_function('public', 'update_billing_receipt', array['bigint', 'integer', 'text'], 'update receipt RPC exists');
 select has_function('public', 'delete_billing_receipt', array['bigint'], 'delete receipt RPC exists');

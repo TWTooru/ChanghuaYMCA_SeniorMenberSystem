@@ -1,5 +1,5 @@
 begin;
-select plan(26);
+select plan(31);
 
 truncate table public.students restart identity cascade;
 
@@ -80,6 +80,59 @@ select is(
    where enrollment_id = (pg_catalog.current_setting('test.created')::jsonb ->> 'enrollment_id')::bigint),
   array['有氧舞蹈', '瑜伽入門']::text[],
   'all selected courses are created'
+);
+select is(
+  (select count(*)::integer from public.billing_receipt_courses link
+   join public.courses c on c.course_id = link.course_id
+   where c.enrollment_id = (pg_catalog.current_setting('test.created')::jsonb ->> 'enrollment_id')::bigint),
+  4,
+  'both courses are linked to both prepaid and formal receipts'
+);
+select is(
+  (select count(distinct r.receipt_id)::integer from public.billing_receipts r
+   join public.billing_receipt_courses link on link.receipt_id = r.receipt_id
+   join public.courses c on c.course_id = link.course_id
+   where c.enrollment_id = (pg_catalog.current_setting('test.created')::jsonb ->> 'enrollment_id')::bigint),
+  2,
+  'two billing receipts are created for the enrollment'
+);
+select is(
+  (select pg_catalog.jsonb_build_object('amount', r.amount, 'invoice', r.invoice_number)
+   from public.billing_receipts r
+   join public.billing_receipt_courses link on link.receipt_id = r.receipt_id
+   join public.courses c on c.course_id = link.course_id
+   where c.enrollment_id = (pg_catalog.current_setting('test.created')::jsonb ->> 'enrollment_id')::bigint
+     and r.invoice_number = 'P-1'
+   group by r.receipt_id, r.amount, r.invoice_number),
+  '{"amount":500,"invoice":"P-1"}'::jsonb,
+  'prepaid receipt has correct amount and invoice number'
+);
+select is(
+  (select pg_catalog.jsonb_build_object('amount', r.amount, 'invoice', r.invoice_number)
+   from public.billing_receipts r
+   join public.billing_receipt_courses link on link.receipt_id = r.receipt_id
+   join public.courses c on c.course_id = link.course_id
+   where c.enrollment_id = (pg_catalog.current_setting('test.created')::jsonb ->> 'enrollment_id')::bigint
+     and r.invoice_number = 'F-1'
+   group by r.receipt_id, r.amount, r.invoice_number),
+  '{"amount":2800,"invoice":"F-1"}'::jsonb,
+  'formal fee receipt has summed amount and invoice number'
+);
+
+select pg_catalog.set_config(
+  'test.zero_fees',
+  public.create_student_with_initial_enrollment(
+    '{"name":"零費用會員","gender":"男","education":"國中以下"}'::jsonb,
+    '{"period":"第6期","period_start_date":"2026-09-01","period_end_date":"2026-12-31","courses":["瑜伽入門"],"prepaid_amount":0,"tuition_fee":null}'::jsonb
+  )::text,
+  true
+);
+select is(
+  (select count(*)::integer from public.billing_receipt_courses link
+   join public.courses c on c.course_id = link.course_id
+   where c.enrollment_id = (pg_catalog.current_setting('test.zero_fees')::jsonb ->> 'enrollment_id')::bigint),
+  0,
+  'zero fee enrollment creates no billing receipts'
 );
 
 select pg_catalog.set_config(
