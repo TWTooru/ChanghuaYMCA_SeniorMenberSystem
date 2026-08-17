@@ -335,4 +335,70 @@ describe('Student detail components', () => {
     if (!container.querySelector('.student-course-trend')) return
     expect(screen.getByRole('heading', { name: '學生選課趨勢圖' })).not.toBeNull()
   })
+  describe('billing detail integration', () => {
+    const billingStudent = {
+      student_id: 'billing-student',
+      name: 'Billing Student',
+      gender: '男',
+    }
+    const billingEnrollment = {
+      enrollment_id: 101,
+      student_id: 'billing-student',
+      period: 'Integration Period',
+      reg_type: 'regular',
+      refunded: false,
+      courses: ['Integration Course'],
+      billingReceipts: [
+        {
+          receiptId: 1,
+          amount: 1500,
+          invoiceNumber: 'A-001',
+          courses: [{ courseId: 1, courseName: 'Integration Course' }],
+        },
+      ],
+      courseDetails: [
+        { courseId: 1, courseName: 'Integration Course', billingReceiptId: 1 },
+      ],
+    }
+
+    it('opens billing details for the clicked timeline enrollment', () => {
+      const { container } = render(
+        <StudentDetailModal
+          student={billingStudent}
+          enrollments={[billingEnrollment]}
+          initialTab="history"
+          isTabbed={true}
+          onClose={vi.fn()}
+          onRefresh={vi.fn()}
+        />
+      )
+
+      fireEvent.click(screen.getByText('Integration Period').closest('button'))
+
+      const billingDialog = container.querySelector('.enrollment-billing-dialog')
+      expect(billingDialog).not.toBeNull()
+      expect(billingDialog.textContent).toContain('Billing Student')
+      expect(billingDialog.textContent).toContain('Integration Period')
+    })
+
+    it('closes billing details while keeping the student detail modal open', () => {
+      const { container } = render(
+        <StudentDetailModal
+          student={billingStudent}
+          enrollments={[billingEnrollment]}
+          initialTab="history"
+          isTabbed={true}
+          onClose={vi.fn()}
+          onRefresh={vi.fn()}
+        />
+      )
+
+      fireEvent.click(screen.getByText('Integration Period').closest('button'))
+      fireEvent.click(screen.getByRole('button', { name: 'Close enrollment billing details' }))
+
+      expect(container.querySelector('.enrollment-billing-dialog')).toBeNull()
+      expect(container.querySelector('.student-detail-dialog')).not.toBeNull()
+      expect(container.querySelector('.student-detail-dialog .modal-name').textContent).toContain('Billing Student')
+    })
+  })
 })

@@ -5,6 +5,10 @@
   overflow: auto;
 }
 
+.enrollment-billing-overlay {
+  z-index: 110;
+}
+
 .enrollment-billing-subtitle {
   margin-top: 4px;
   color: var(--text-secondary);

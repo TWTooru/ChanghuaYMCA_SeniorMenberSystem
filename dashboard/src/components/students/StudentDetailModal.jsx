@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Edit2, Trash2, X } from 'lucide-react'
 import ConfirmDialog from '../common/ConfirmDialog'
 import EnrollmentTimeline from '../enrollment/EnrollmentTimeline'
+import EnrollmentBillingDetailModal from '../enrollment/EnrollmentBillingDetailModal'
 import { supabase } from '../../lib/supabaseClient'
 import StudentEditForm from './StudentEditForm'
 import StudentInfoView from './StudentInfoView'
@@ -34,6 +35,7 @@ export default function StudentDetailModal({ student, enrollments, initialTab = 
   } = useUnsavedChangesGuard()
   const [isStudentDeleteConfirmOpen, setShowDeleteConfirm] = useState(false)
   const [pendingDeleteEnrollmentId, setShowDeleteEnrollConfirm] = useState(null)
+  const [selectedBillingEnrollment, setSelectedBillingEnrollment] = useState(null)
   const dialogRef = useRef(null)
   const previousFocusRef = useRef(null)
   const showDeleteConfirm = isStudentDeleteConfirmOpen && permissions.canDeleteStudent
@@ -49,6 +51,7 @@ export default function StudentDetailModal({ student, enrollments, initialTab = 
     setActiveDetailTab(initialTab)
     setIsEditing(false)
     setHasUnsavedStudentChanges(false)
+    setSelectedBillingEnrollment(null)
   }, [student?.student_id, initialTab, setHasUnsavedStudentChanges])
 
   useEffect(() => {
@@ -188,6 +191,7 @@ export default function StudentDetailModal({ student, enrollments, initialTab = 
                   onAddEnrollment={permissions.canAddEnrollment ? onAddEnrollment : null}
                   onEditEnrollment={permissions.canEditEnrollment}
                   onRefresh={onRefresh}
+                  onSelectEnrollment={setSelectedBillingEnrollment}
                 />
               </section>
             </div>
@@ -195,6 +199,17 @@ export default function StudentDetailModal({ student, enrollments, initialTab = 
         </div>
         <ConfirmDialog isOpen={showDeleteConfirm} title="刪除學員" message={deleteStudentMessage} onConfirm={handleDeleteStudent} onCancel={() => setShowDeleteConfirm(false)} />
         <ConfirmDialog isOpen={showDeleteEnrollConfirm !== null} title="刪除選課紀錄" message="確定要刪除此選課紀錄嗎？此操作無法復原。" onConfirm={() => handleDeleteEnrollment(showDeleteEnrollConfirm)} onCancel={() => setShowDeleteEnrollConfirm(null)} />
+        {selectedBillingEnrollment && (
+          <EnrollmentBillingDetailModal
+            student={student}
+            enrollment={selectedBillingEnrollment}
+            onClose={() => setSelectedBillingEnrollment(null)}
+            onRefresh={() => {
+              setSelectedBillingEnrollment(null)
+              onRefresh?.()
+            }}
+          />
+        )}
       </>
     )
   }
@@ -230,6 +245,7 @@ export default function StudentDetailModal({ student, enrollments, initialTab = 
                 onAddEnrollment={permissions.canAddEnrollment ? onAddEnrollment : null}
                 onEditEnrollment={permissions.canEditEnrollment}
                 onRefresh={onRefresh}
+                onSelectEnrollment={setSelectedBillingEnrollment}
               />
             </section>
           )}
@@ -248,6 +264,17 @@ export default function StudentDetailModal({ student, enrollments, initialTab = 
         onConfirm={confirmPendingAction}
         onCancel={cancelPendingAction}
       />
+      {selectedBillingEnrollment && (
+        <EnrollmentBillingDetailModal
+          student={student}
+          enrollment={selectedBillingEnrollment}
+          onClose={() => setSelectedBillingEnrollment(null)}
+          onRefresh={() => {
+            setSelectedBillingEnrollment(null)
+            onRefresh?.()
+          }}
+        />
+      )}
     </>
   )
 }
