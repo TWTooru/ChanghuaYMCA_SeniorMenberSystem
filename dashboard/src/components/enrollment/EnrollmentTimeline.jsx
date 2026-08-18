@@ -43,25 +43,25 @@ function TimelineMeta({ item }) {
   return (
     <div className="timeline-meta">
       <div className="timeline-meta-header">
-        <span className="timeline-period">{item.period}</span>
-        <div className="timeline-badges">
-          {item.reg_type && <span className="timeline-reg-type">{item.reg_type === '新' ? '新生' : '續生'}</span>}
-          {item.refunded && <span className="badge danger" style={{ padding: '1px 6px', fontSize: '10px' }}>已退費</span>}
-        </div>
-      </div>
-      {(hasDates || item.handled_by_name || item.handled_on) && (
-        <div className="timeline-meta-sub">
+        <div className="timeline-period-group">
+          <span className="timeline-period">{item.period}</span>
           {hasDates && (
             <span className="timeline-dates">
               <Calendar size={12} style={{ verticalAlign: 'middle', marginRight: '3px' }} />
               {item.period_start_date || '--'} ~ {item.period_end_date || '--'}
             </span>
           )}
-          {(item.handled_by_name || item.handled_on) && (
-            <span className="timeline-handler">
-              經手: {item.handled_by_name || '未填'} {item.handled_on ? `(${item.handled_on})` : ''}
-            </span>
-          )}
+        </div>
+        <div className="timeline-badges">
+          {item.reg_type && <span className="timeline-reg-type">{item.reg_type === '新' ? '新生' : '續生'}</span>}
+          {item.refunded && <span className="badge danger" style={{ padding: '1px 6px', fontSize: '10px' }}>已退費</span>}
+        </div>
+      </div>
+      {(item.handled_by_name || item.handled_on) && (
+        <div className="timeline-meta-sub">
+          <span className="timeline-handler">
+            經手: {item.handled_by_name || '未填'} {item.handled_on ? `(${item.handled_on})` : ''}
+          </span>
         </div>
       )}
     </div>
@@ -115,7 +115,28 @@ export default function EnrollmentTimeline({ timeline, onDelete, onAddEnrollment
                   )}
                   <BillingSummary enrollment={item} />
                 </button>}
-                <div className="timeline-actions">{onEditEnrollment && <button type="button" className="timeline-action-btn" onClick={() => setEditingEnrollId(item.enrollment_id)}><Edit2 size={14} /></button>}{onDelete && <button type="button" className="timeline-action-btn danger" onClick={() => onDelete(item.enrollment_id)}><Trash2 size={14} /></button>}</div>
+                {editingEnrollId !== item.enrollment_id && (
+                  <div className="timeline-actions">
+                    {onEditEnrollment && (
+                      <button
+                        type="button"
+                        className="timeline-action-btn"
+                        onClick={() => setEditingEnrollId(item.enrollment_id)}
+                      >
+                        <Edit2 size={14} />
+                      </button>
+                    )}
+                    {onDelete && (
+                      <button
+                        type="button"
+                        className="timeline-action-btn danger"
+                        onClick={() => onDelete(item.enrollment_id)}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           ))}

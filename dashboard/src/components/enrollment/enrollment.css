@@ -108,6 +108,13 @@
   width: 100%;
 }
 
+.timeline-period-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .timeline-period {
   font-size: 14px;
   font-weight: 600;

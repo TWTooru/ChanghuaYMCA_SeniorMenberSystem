@@ -438,10 +438,7 @@ export default function EnrollmentBillingDetailModal({
                 )}
               </span>
               <span>
-                <label className="billing-receipt-label" htmlFor="billing-handled-on">
-                  <Calendar size={12} style={{ verticalAlign: 'middle', marginRight: '3px' }} />
-                  辦理日期
-                </label>
+                <label className="billing-receipt-label" htmlFor="billing-handled-on">辦理日期</label>
                 {isEditing ? (
                   <input
                     id="billing-handled-on"
