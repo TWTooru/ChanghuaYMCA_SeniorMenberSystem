@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   createEnrollmentWithCourses,
   deleteEnrollment,
+  updateEnrollmentBillingDetails,
   updateEnrollmentRefundStatus,
   updateEnrollmentWithCourses,
 } from './enrollmentService'
@@ -266,5 +267,138 @@ describe('updateEnrollmentWithCourses', () => {
       refund_info: '',
       courses: ['肌力訓練'],
     })).rejects.toThrow(expectedMessage)
+  })
+})
+
+describe('updateEnrollmentBillingDetails', () => {
+  function createUpdateClient(result = { error: null }) {
+    const calls = []
+    return {
+      calls,
+      client: {
+        from(table) {
+          calls.push({ table })
+          return {
+            update(values) {
+              calls.push({ operation: 'update', values })
+              return {
+                eq: async (column, value) => {
+                  calls.push({ operation: 'eq', column, value })
+                  return result
+                },
+              }
+            },
+          }
+        },
+      },
+    }
+  }
+
+  it('normalizes inputs and updates enrollment billing details', async () => {
+    const { client, calls } = createUpdateClient()
+
+    await updateEnrollmentBillingDetails(client, '42', {
+      prepaid_amount: '500',
+      prepaid_receipt_number: ' PRE-101 ',
+      tuition_fee: 3000,
+      materials_fee: '200',
+      membership_fee: 100,
+      fee_receipt_number: ' REC-202 ',
+      handled_by_name: ' 王小明 ',
+      handled_on: ' 2026-08-18 ',
+      notes: ' 備註事項 ',
+    })
+
+    expect(calls).toEqual([
+      { table: 'enrollments' },
+      {
+        operation: 'update',
+        values: {
+          prepaid_amount: 500,
+          prepaid_receipt_number: 'PRE-101',
+          tuition_fee: 3000,
+          materials_fee: 200,
+          membership_fee: 100,
+          fee_receipt_number: 'REC-202',
+          handled_by_name: '王小明',
+          handled_on: '2026-08-18',
+          notes: '備註事項',
+        },
+      },
+      { operation: 'eq', column: 'enrollment_id', value: 42 },
+    ])
+  })
+
+  it('converts empty strings, null, and undefined values to null', async () => {
+    const { client, calls } = createUpdateClient()
+
+    await updateEnrollmentBillingDetails(client, 10, {
+      prepaid_amount: '',
+      prepaid_receipt_number: '   ',
+      tuition_fee: null,
+      materials_fee: undefined,
+      membership_fee: '',
+      fee_receipt_number: null,
+      handled_by_name: '  ',
+      handled_on: null,
+      notes: undefined,
+    })
+
+    expect(calls).toContainEqual({
+      operation: 'update',
+      values: {
+        prepaid_amount: null,
+        prepaid_receipt_number: null,
+        tuition_fee: null,
+        materials_fee: null,
+        membership_fee: null,
+        fee_receipt_number: null,
+        handled_by_name: null,
+        handled_on: null,
+        notes: null,
+      },
+    })
+  })
+
+  it('handles empty billingData object with defaults', async () => {
+    const { client, calls } = createUpdateClient()
+
+    await updateEnrollmentBillingDetails(client, 10)
+
+    expect(calls).toContainEqual({
+      operation: 'update',
+      values: {
+        prepaid_amount: null,
+        prepaid_receipt_number: null,
+        tuition_fee: null,
+        materials_fee: null,
+        membership_fee: null,
+        fee_receipt_number: null,
+        handled_by_name: null,
+        handled_on: null,
+        notes: null,
+      },
+    })
+  })
+
+  it('throws error when amount is invalid or negative', async () => {
+    const { client } = createUpdateClient()
+
+    await expect(
+      updateEnrollmentBillingDetails(client, 10, { prepaid_amount: -50 })
+    ).rejects.toThrow('金額必須為非負整數')
+
+    await expect(
+      updateEnrollmentBillingDetails(client, 10, { tuition_fee: 'invalid' })
+    ).rejects.toThrow('金額必須為非負整數')
+  })
+
+  it('throws when database update fails', async () => {
+    const updateError = new Error('update permission denied')
+    const { client } = createUpdateClient({ error: updateError })
+
+    await expect(
+      updateEnrollmentBillingDetails(client, 10, { tuition_fee: 1000 })
+    ).rejects.toBe(updateError)
   })
 })

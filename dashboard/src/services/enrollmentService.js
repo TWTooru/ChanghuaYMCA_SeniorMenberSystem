@@ -105,3 +105,42 @@ export async function updateEnrollmentRefundStatus(client, enrollmentId, refunde
   if (error) throw error
 }
 
+function normalizeAmount(value) {
+  if (value == null || String(value).trim() === '') return null
+  const num = Number(value)
+  if (Number.isNaN(num) || num < 0) throw new Error('金額必須為非負整數')
+  return Math.round(num)
+}
+
+function normalizeText(value) {
+  if (value == null) return null
+  const trimmed = String(value).trim()
+  return trimmed === '' ? null : trimmed
+}
+
+function normalizeDate(value) {
+  if (value == null) return null
+  const trimmed = String(value).trim()
+  return trimmed === '' ? null : trimmed
+}
+
+export async function updateEnrollmentBillingDetails(client, enrollmentId, billingData = {}) {
+  const payload = {
+    prepaid_amount: normalizeAmount(billingData.prepaid_amount),
+    prepaid_receipt_number: normalizeText(billingData.prepaid_receipt_number),
+    tuition_fee: normalizeAmount(billingData.tuition_fee),
+    materials_fee: normalizeAmount(billingData.materials_fee),
+    membership_fee: normalizeAmount(billingData.membership_fee),
+    fee_receipt_number: normalizeText(billingData.fee_receipt_number),
+    handled_by_name: normalizeText(billingData.handled_by_name),
+    handled_on: normalizeDate(billingData.handled_on),
+    notes: normalizeText(billingData.notes),
+  }
+
+  const { error } = await client
+    .from('enrollments')
+    .update(payload)
+    .eq('enrollment_id', Number(enrollmentId))
+
+  if (error) throw error
+}
