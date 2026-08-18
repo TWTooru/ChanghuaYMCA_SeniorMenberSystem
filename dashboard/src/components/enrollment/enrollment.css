@@ -135,7 +135,18 @@
 }
 
 .timeline-dates {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace);
   color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-color);
+  padding: 1.5px 7px;
+  border-radius: 5px;
+  letter-spacing: 0.2px;
 }
 
 .timeline-handler {
