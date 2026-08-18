@@ -84,6 +84,19 @@ describe('EnrollmentTimeline', () => {
     expect(summary.textContent).toContain('正式: NT$ 1800 (F-01)')
   })
 
+  it('renders handler name and date inside billing summary on the right', () => {
+    renderTimeline({
+      timeline: [{
+        ...baseEnrollment,
+        handled_by_name: '張組長',
+        handled_on: '2026-08-18',
+      }],
+    })
+
+    const summary = screen.getByTestId('timeline-billing-summary')
+    expect(summary.textContent).toContain('經手: 張組長 (2026-08-18)')
+  })
+
   it('omits billing summary when no billing values exist', () => {
     renderTimeline()
 

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Calendar, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import usePermissions from '../../hooks/usePermissions'
 import { supabase } from '../../lib/supabaseClient'
@@ -245,7 +245,6 @@ export default function EnrollmentBillingDetailModal({
               <h3 id="fee-details-title">收費明細</h3>
               {isEditing ? (
                 <div className="enrollment-period-dates-edit">
-                  <Calendar size={14} className="date-icon" />
                   <span className="billing-receipt-label" style={{ margin: 0 }}>起訖：</span>
                   <input
                     type="date"
@@ -268,7 +267,6 @@ export default function EnrollmentBillingDetailModal({
               ) : (
                 (enrollment.period_start_date || enrollment.period_end_date) && (
                   <span className="enrollment-period-dates">
-                    <Calendar size={13} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
                     起訖：{enrollment.period_start_date || '--'} 至 {enrollment.period_end_date || '--'}
                   </span>
                 )

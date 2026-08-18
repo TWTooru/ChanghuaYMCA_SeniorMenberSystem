@@ -204,27 +204,18 @@
 
 .timeline-billing-summary {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 10px;
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-.timeline-billing-row {
-  display: flex;
   justify-content: space-between;
   align-items: center;
-}
-
-.timeline-billing-amount {
-  font-weight: 600;
-  color: var(--text-primary);
+  gap: 10px;
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--text-muted);
 }
 
 .timeline-billing-breakdown {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
   font-size: 11px;
 }

@@ -1,4 +1,4 @@
-import { Activity, Calendar, Edit2, Trash2 } from 'lucide-react'
+import { Activity, Edit2, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { summarizeEnrollmentBilling } from '../../domain/enrollmentBilling'
 import EnrollmentEditForm from './EnrollmentEditForm'
@@ -11,8 +11,9 @@ function BillingSummary({ enrollment }) {
 
   const hasAnyBreakdown = hasPrepaid || hasFormal
   const hasLegacy = billing.amount != null || billing.invoiceNumbers.length > 0
+  const hasHandler = Boolean(enrollment.handled_by_name || enrollment.handled_on)
 
-  if (!hasAnyBreakdown && !hasLegacy) return null
+  if (!hasAnyBreakdown && !hasLegacy && !hasHandler) return null
 
   return (
     <div className="timeline-billing-summary" data-testid="timeline-billing-summary">
@@ -33,6 +34,11 @@ function BillingSummary({ enrollment }) {
           </span>
         )}
       </div>
+      {hasHandler && (
+        <span className="timeline-handler">
+          經手: {enrollment.handled_by_name || '未填'} {enrollment.handled_on ? `(${enrollment.handled_on})` : ''}
+        </span>
+      )}
     </div>
   )
 }
@@ -47,7 +53,6 @@ function TimelineMeta({ item }) {
           <span className="timeline-period">{item.period}</span>
           {hasDates && (
             <span className="timeline-dates">
-              <Calendar size={12} style={{ verticalAlign: 'middle', marginRight: '3px' }} />
               {item.period_start_date || '--'} ~ {item.period_end_date || '--'}
             </span>
           )}
@@ -57,13 +62,6 @@ function TimelineMeta({ item }) {
           {item.refunded && <span className="badge danger" style={{ padding: '1px 6px', fontSize: '10px' }}>已退費</span>}
         </div>
       </div>
-      {(item.handled_by_name || item.handled_on) && (
-        <div className="timeline-meta-sub">
-          <span className="timeline-handler">
-            經手: {item.handled_by_name || '未填'} {item.handled_on ? `(${item.handled_on})` : ''}
-          </span>
-        </div>
-      )}
     </div>
   )
 }
