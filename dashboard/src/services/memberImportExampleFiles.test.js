@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -16,8 +17,12 @@ const client = {
   }),
 }
 
+function getExamplePath(name) {
+  return resolve(process.cwd(), '..', 'import example', name)
+}
+
 async function loadExampleFile(name) {
-  const bytes = await readFile(resolve(process.cwd(), '..', 'import example', name))
+  const bytes = await readFile(getExamplePath(name))
   const contents = new Uint8Array(bytes.byteLength)
   contents.set(bytes)
   return {
@@ -28,7 +33,9 @@ async function loadExampleFile(name) {
 }
 
 describe.each(exampleNames)('member import example: %s', name => {
-  it('previews the supplied Google Form export without blocking errors', async () => {
+  const fileExists = existsSync(getExamplePath(name))
+
+  it.skipIf(!fileExists)('previews the supplied Google Form export without blocking errors', async () => {
     const file = await loadExampleFile(name)
     const preview = await prepareImport(file, client)
 

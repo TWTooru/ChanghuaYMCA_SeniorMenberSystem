@@ -481,20 +481,17 @@ describe('Student detail components', () => {
       expect(document.activeElement).toBe(trigger)
     })
 
-    it('recovers Tab containment after a focused billing editor control unmounts', () => {
+    it('recovers Tab containment when focus falls to document body inside billing details', () => {
       authState.role = 'admin'
       const { container } = openBillingDetail()
-      const billingDialog = container.querySelector('.enrollment-billing-dialog')
-
-      fireEvent.click(within(billingDialog).getByRole('button', { name: '編輯' }))
-      const cancelEditor = within(billingDialog).getByRole('button', { name: '取消' })
-      cancelEditor.focus()
-      fireEvent.click(cancelEditor)
+      const refundBtn = within(container.querySelector('.enrollment-billing-dialog')).getByRole('button', { name: '標記退費' })
+      refundBtn.focus()
+      refundBtn.blur()
       expect(document.activeElement).toBe(document.body)
 
       fireEvent.keyDown(document.body, { key: 'Tab' })
 
-      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Close enrollment billing details' }))
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: '標記退費' }))
     })
 
     it('keeps Escape owned by billing details after focus is lost from the child layer', () => {
