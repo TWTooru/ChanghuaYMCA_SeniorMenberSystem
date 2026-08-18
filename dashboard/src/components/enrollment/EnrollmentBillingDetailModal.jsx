@@ -293,7 +293,7 @@ export default function EnrollmentBillingDetailModal({
                         onChange={e => setFormData(prev => ({ ...prev, prepaid_amount: e.target.value }))}
                       />
                     ) : (
-                      displayAmount(enrollment.prepaid_amount)
+                      <span className="billing-receipt-value">{displayAmount(enrollment.prepaid_amount)}</span>
                     )}
                   </span>
                   <span>
@@ -309,7 +309,7 @@ export default function EnrollmentBillingDetailModal({
                         onChange={e => setFormData(prev => ({ ...prev, prepaid_receipt_number: e.target.value }))}
                       />
                     ) : (
-                      displayInvoiceNumber(enrollment.prepaid_receipt_number)
+                      <span className="billing-receipt-value">{displayInvoiceNumber(enrollment.prepaid_receipt_number)}</span>
                     )}
                   </span>
                 </div>
@@ -334,7 +334,7 @@ export default function EnrollmentBillingDetailModal({
                         onChange={e => setFormData(prev => ({ ...prev, tuition_fee: e.target.value }))}
                       />
                     ) : (
-                      displayAmount(enrollment.tuition_fee)
+                      <span className="billing-receipt-value">{displayAmount(enrollment.tuition_fee)}</span>
                     )}
                   </span>
                   <span>
@@ -352,7 +352,7 @@ export default function EnrollmentBillingDetailModal({
                         onChange={e => setFormData(prev => ({ ...prev, materials_fee: e.target.value }))}
                       />
                     ) : (
-                      displayAmount(enrollment.materials_fee)
+                      <span className="billing-receipt-value">{displayAmount(enrollment.materials_fee)}</span>
                     )}
                   </span>
                   <span>
@@ -370,14 +370,14 @@ export default function EnrollmentBillingDetailModal({
                         onChange={e => setFormData(prev => ({ ...prev, membership_fee: e.target.value }))}
                       />
                     ) : (
-                      displayAmount(enrollment.membership_fee)
+                      <span className="billing-receipt-value">{displayAmount(enrollment.membership_fee)}</span>
                     )}
                   </span>
                 </div>
                 <div className="billing-receipt-values fee-total">
                   <span>
                     <span className="billing-receipt-label">合計</span>
-                    <span aria-label="正式費用合計">
+                    <span className="billing-receipt-value fee-total-value" aria-label="正式費用合計">
                       {isEditing
                         ? displayAmount(
                             (formData.tuition_fee !== '' || formData.materials_fee !== '' || formData.membership_fee !== '')
@@ -404,7 +404,7 @@ export default function EnrollmentBillingDetailModal({
                         onChange={e => setFormData(prev => ({ ...prev, fee_receipt_number: e.target.value }))}
                       />
                     ) : (
-                      displayInvoiceNumber(enrollment.fee_receipt_number)
+                      <span className="billing-receipt-value">{displayInvoiceNumber(enrollment.fee_receipt_number)}</span>
                     )}
                   </span>
                 </div>
@@ -432,7 +432,7 @@ export default function EnrollmentBillingDetailModal({
                     onChange={e => setFormData(prev => ({ ...prev, handled_by_name: e.target.value }))}
                   />
                 ) : (
-                  enrollment.handled_by_name || '--'
+                  <span className="billing-receipt-value">{enrollment.handled_by_name || '--'}</span>
                 )}
               </span>
               <span>
@@ -448,12 +448,12 @@ export default function EnrollmentBillingDetailModal({
                     onChange={e => setFormData(prev => ({ ...prev, handled_on: e.target.value }))}
                   />
                 ) : (
-                  enrollment.handled_on || '--'
+                  <span className="billing-receipt-value">{enrollment.handled_on || '--'}</span>
                 )}
               </span>
               <span>
                 <span className="billing-receipt-label">登入帳號</span>
-                {enrollment.handled_by_account || '--'}
+                <span className="billing-receipt-value">{enrollment.handled_by_account || '--'}</span>
               </span>
             </div>
             {isEditing ? (
@@ -485,11 +485,11 @@ export default function EnrollmentBillingDetailModal({
               <div className="billing-receipt-values">
                 <span>
                   <span className="billing-receipt-label">金額</span>
-                  {displayAmount(enrollment.amount)}
+                  <span className="billing-receipt-value">{displayAmount(enrollment.amount)}</span>
                 </span>
                 <span>
                   <span className="billing-receipt-label">收據編號</span>
-                  {displayInvoiceNumber(enrollment.invoice_number)}
+                  <span className="billing-receipt-value">{displayInvoiceNumber(enrollment.invoice_number)}</span>
                 </span>
               </div>
             </section>
