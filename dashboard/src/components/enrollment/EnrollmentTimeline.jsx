@@ -20,12 +20,12 @@ function BillingSummary({ enrollment }) {
       <div className="timeline-billing-breakdown">
         {hasPrepaid && (
           <span className="breakdown-tag prepaid">
-            預繳: NT$ {enrollment.prepaid_amount ?? 0} {enrollment.prepaid_receipt_number ? `(${enrollment.prepaid_receipt_number})` : ''}
+            預繳: NT$ {enrollment.prepaid_amount ?? 0} {enrollment.prepaid_receipt_number ? `(No.${enrollment.prepaid_receipt_number})` : ''}
           </span>
         )}
         {hasFormal && (
           <span className="breakdown-tag formal">
-            正式: NT$ {formalTotal} {enrollment.fee_receipt_number ? `(${enrollment.fee_receipt_number})` : ''}
+            正式: NT$ {formalTotal} {enrollment.fee_receipt_number ? `(No.${enrollment.fee_receipt_number})` : ''}
           </span>
         )}
         {!hasAnyBreakdown && hasLegacy && (

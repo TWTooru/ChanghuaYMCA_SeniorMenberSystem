@@ -80,8 +80,8 @@ describe('EnrollmentTimeline', () => {
     })
 
     const summary = screen.getByTestId('timeline-billing-summary')
-    expect(summary.textContent).toContain('預繳: NT$ 500 (P-01)')
-    expect(summary.textContent).toContain('正式: NT$ 1800 (F-01)')
+    expect(summary.textContent).toContain('預繳: NT$ 500 (No.P-01)')
+    expect(summary.textContent).toContain('正式: NT$ 1800 (No.F-01)')
   })
 
   it('renders handler name and date inside billing summary on the right', () => {
