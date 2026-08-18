@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import EnrollmentBillingDetailModal from './EnrollmentBillingDetailModal'
 import { updateEnrollmentRefundStatus } from '../../services/enrollmentService'
@@ -65,30 +65,47 @@ describe('EnrollmentBillingDetailModal', () => {
     vi.mocked(updateEnrollmentRefundStatus).mockReset()
   })
 
-  it('renders paper billing details and calculates total formal fees', () => {
+  it('renders refund badge and toggle in the modal header', () => {
     const { container } = renderModal()
 
-    expect(screen.getByText('NT$ 500')).toBeTruthy()
-    expect(screen.getByText('PRE-01')).toBeTruthy()
-    expect(screen.getAllByText('NT$ 1900')).toHaveLength(2)
-    expect(screen.getByText('NT$ 0')).toBeTruthy()
-    expect(screen.getByText('FEE-01')).toBeTruthy()
-    expect(screen.getByText('Admin')).toBeTruthy()
-    expect(screen.getByText('admin123')).toBeTruthy()
-    expect(screen.getByText('2026-08-18')).toBeTruthy()
-    expect(screen.getByText('Test notes')).toBeTruthy()
-    
-    // total of 1900 + 0
+    const header = container.querySelector('.modal-header')
+    expect(within(header).getByText('正常')).toBeTruthy()
+    expect(within(header).getByRole('button', { name: '標記退費' })).toBeTruthy()
+  })
+
+  it('renders fee details with prepaid and formal fee breakdown', () => {
+    const { container } = renderModal()
+    const feeSection = container.querySelector('.enrollment-fee-details')
+
+    expect(feeSection).toBeTruthy()
+    expect(within(feeSection).getByText('收費明細')).toBeTruthy()
+    expect(within(feeSection).getByText('NT$ 500')).toBeTruthy()
+    expect(within(feeSection).getByText('PRE-01')).toBeTruthy()
+    expect(within(feeSection).getAllByText('NT$ 1900')).toHaveLength(2) // tuition + total
+    expect(within(feeSection).getByText('NT$ 0')).toBeTruthy()
+    expect(within(feeSection).getByText('FEE-01')).toBeTruthy()
 
     const dates = container.querySelector('.enrollment-period-dates')
     expect(dates.textContent).toContain('2026-09-01')
     expect(dates.textContent).toContain('2026-12-31')
   })
 
-  it('renders legacy billing properly', () => {
+  it('renders handler info in a separate section', () => {
+    const { container } = renderModal()
+    const handlerSection = container.querySelector('.enrollment-handler-info')
+
+    expect(handlerSection).toBeTruthy()
+    expect(within(handlerSection).getByText('辦理資訊')).toBeTruthy()
+    expect(within(handlerSection).getByText('Admin')).toBeTruthy()
+    expect(within(handlerSection).getByText('admin123')).toBeTruthy()
+    expect(within(handlerSection).getByText('2026-08-18')).toBeTruthy()
+    expect(within(handlerSection).getByText('Test notes')).toBeTruthy()
+  })
+
+  it('renders legacy billing section', () => {
     const { container } = renderModal()
     const legacy = container.querySelector('.enrollment-legacy-billing')
-    
+
     expect(legacy).toBeTruthy()
     expect(legacy.textContent).toContain('NT$ 2400')
     expect(legacy.textContent).toContain('LEGACY-MULTI')
@@ -96,21 +113,19 @@ describe('EnrollmentBillingDetailModal', () => {
 
   it('hides refund toggle for viewers', () => {
     authState.role = 'viewer'
-    renderModal()
+    const { container } = renderModal()
+    const header = container.querySelector('.modal-header')
 
-    expect(screen.getByText('正常')).toBeTruthy()
+    expect(within(header).getByText('正常')).toBeTruthy()
     expect(screen.queryByRole('button', { name: '標記退費' })).toBeNull()
   })
 
-  it('omits empty course context and keeps refund status beside the paper billing heading', () => {
+  it('omits empty course context', () => {
     const { container } = renderModal({
       enrollment: { ...enrollment, courses: [] },
     })
 
     expect(container.querySelector('.enrollment-billing-context')).toBeNull()
-    const heading = container.querySelector('.paper-billing-heading')
-    expect(heading?.querySelector('h3')?.textContent).toBe('報名費用與經手明細')
-    expect(heading?.querySelector('.badge.success')?.textContent).toBe('正常')
   })
 
   it('marks enrollment as refunded and refreshes on toggle click', async () => {
