@@ -162,6 +162,47 @@
   color: var(--color-success);
 }
 
+/* 編輯輸入框 */
+.billing-edit-input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 4px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--input-bg, rgba(255, 255, 255, 0.05));
+  color: var(--text-primary);
+  font-size: 13px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.billing-edit-input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px var(--color-accent-glow);
+}
+
+.billing-edit-textarea {
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 4px;
+  padding: 6px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--input-bg, rgba(255, 255, 255, 0.05));
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 60px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.billing-edit-textarea:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px var(--color-accent-glow);
+}
+
 /* RWD */
 @media (max-width: 640px) {
   .fee-details-grid,

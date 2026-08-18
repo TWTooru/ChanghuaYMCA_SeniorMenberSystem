@@ -3,7 +3,10 @@ import { X } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import usePermissions from '../../hooks/usePermissions'
 import { supabase } from '../../lib/supabaseClient'
-import { updateEnrollmentRefundStatus } from '../../services/enrollmentService'
+import {
+  updateEnrollmentBillingDetails,
+  updateEnrollmentRefundStatus,
+} from '../../services/enrollmentService'
 import StudentInfoView from '../students/StudentInfoView'
 import './enrollmentBillingDetail.css'
 
@@ -15,6 +18,20 @@ function displayInvoiceNumber(invoiceNumber) {
   return String(invoiceNumber ?? '').trim() || '--'
 }
 
+function createInitialFormData(enrollment) {
+  return {
+    prepaid_amount: enrollment?.prepaid_amount ?? '',
+    prepaid_receipt_number: enrollment?.prepaid_receipt_number ?? '',
+    tuition_fee: enrollment?.tuition_fee ?? '',
+    materials_fee: enrollment?.materials_fee ?? '',
+    membership_fee: enrollment?.membership_fee ?? '',
+    fee_receipt_number: enrollment?.fee_receipt_number ?? '',
+    handled_by_name: enrollment?.handled_by_name ?? '',
+    handled_on: enrollment?.handled_on ?? '',
+    notes: enrollment?.notes ?? '',
+  }
+}
+
 export default function EnrollmentBillingDetailModal({
   student,
   enrollment,
@@ -24,6 +41,8 @@ export default function EnrollmentBillingDetailModal({
   const { role } = useAuth()
   const permissions = usePermissions(role)
   const enrollmentId = enrollment?.enrollment_id
+  const [isEditing, setIsEditing] = useState(false)
+  const [formData, setFormData] = useState(() => createInitialFormData(enrollment))
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -32,9 +51,11 @@ export default function EnrollmentBillingDetailModal({
   useEffect(() => {
     if (enrollmentId == null) return
     setIsSaving(false)
+    setIsEditing(false)
+    setFormData(createInitialFormData(enrollment))
     setError('')
     setSuccess('')
-  }, [enrollmentId])
+  }, [enrollmentId, enrollment])
 
   if (!student || !enrollment) return null
 
@@ -49,6 +70,56 @@ export default function EnrollmentBillingDetailModal({
 
   const handleClose = () => {
     if (!saveInFlight.current) onClose?.()
+  }
+
+  const handleStartEdit = () => {
+    if (!permissions.canEditEnrollment || saveInFlight.current) return
+    clearMessages()
+    setFormData(createInitialFormData(enrollment))
+    setIsEditing(true)
+  }
+
+  const handleCancel = () => {
+    clearMessages()
+    setFormData(createInitialFormData(enrollment))
+    setIsEditing(false)
+  }
+
+  const handleSave = async () => {
+    if (!permissions.canEditEnrollment || saveInFlight.current) return
+
+    const amountFields = [
+      formData.prepaid_amount,
+      formData.tuition_fee,
+      formData.materials_fee,
+      formData.membership_fee,
+    ]
+    const hasInvalidAmount = amountFields.some(val => {
+      if (val === '' || val == null) return false
+      const num = Number(val)
+      return Number.isNaN(num) || num < 0
+    })
+
+    if (hasInvalidAmount) {
+      setError('金額必須為非負整數')
+      return
+    }
+
+    saveInFlight.current = true
+    setIsSaving(true)
+    clearMessages()
+
+    try {
+      await updateEnrollmentBillingDetails(supabase, enrollmentId, formData)
+      setSuccess('帳單明細已更新')
+      setIsEditing(false)
+      onRefresh?.()
+    } catch (err) {
+      setError(err?.message || '帳單明細更新失敗')
+    } finally {
+      saveInFlight.current = false
+      setIsSaving(false)
+    }
   }
 
   const handleRefundToggle = async () => {
@@ -86,16 +157,49 @@ export default function EnrollmentBillingDetailModal({
               <span className={`badge ${enrollment.refunded ? 'danger' : 'success'}`}>
                 {enrollment.refunded ? '退費' : '正常'}
               </span>
-              {permissions.canEditEnrollment && (
-                <button
-                  type="button"
-                  className={enrollment.refunded ? 'btn-secondary' : 'btn-danger'}
-                  style={{ padding: '2px 8px', fontSize: '12px' }}
-                  disabled={isSaving}
-                  onClick={handleRefundToggle}
-                >
-                  {enrollment.refunded ? '取消退費' : '標記退費'}
-                </button>
+              {permissions.canEditEnrollment && !isEditing && (
+                <>
+                  <button
+                    type="button"
+                    className={enrollment.refunded ? 'btn-secondary' : 'btn-danger'}
+                    style={{ padding: '2px 8px', fontSize: '12px' }}
+                    disabled={isSaving}
+                    onClick={handleRefundToggle}
+                  >
+                    {enrollment.refunded ? '取消退費' : '標記退費'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    style={{ padding: '2px 8px', fontSize: '12px' }}
+                    disabled={isSaving}
+                    onClick={handleStartEdit}
+                  >
+                    編輯
+                  </button>
+                </>
+              )}
+              {permissions.canEditEnrollment && isEditing && (
+                <>
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    style={{ padding: '2px 10px', fontSize: '12px' }}
+                    disabled={isSaving}
+                    onClick={handleSave}
+                  >
+                    儲存
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    style={{ padding: '2px 10px', fontSize: '12px' }}
+                    disabled={isSaving}
+                    onClick={handleCancel}
+                  >
+                    取消
+                  </button>
+                </>
               )}
             </div>
             <p className="enrollment-billing-subtitle">
@@ -141,12 +245,38 @@ export default function EnrollmentBillingDetailModal({
                 <h4 className="fee-details-card-title">預繳</h4>
                 <div className="billing-receipt-values">
                   <span>
-                    <span className="billing-receipt-label">金額</span>
-                    {displayAmount(enrollment.prepaid_amount)}
+                    <label className="billing-receipt-label" htmlFor="billing-prepaid-amount">金額</label>
+                    {isEditing ? (
+                      <input
+                        id="billing-prepaid-amount"
+                        type="number"
+                        min="0"
+                        step="1"
+                        className="billing-edit-input"
+                        aria-label="預繳金額"
+                        value={formData.prepaid_amount}
+                        disabled={isSaving}
+                        onChange={e => setFormData(prev => ({ ...prev, prepaid_amount: e.target.value }))}
+                      />
+                    ) : (
+                      displayAmount(enrollment.prepaid_amount)
+                    )}
                   </span>
                   <span>
-                    <span className="billing-receipt-label">收據 No.</span>
-                    {displayInvoiceNumber(enrollment.prepaid_receipt_number)}
+                    <label className="billing-receipt-label" htmlFor="billing-prepaid-receipt">收據 No.</label>
+                    {isEditing ? (
+                      <input
+                        id="billing-prepaid-receipt"
+                        type="text"
+                        className="billing-edit-input"
+                        aria-label="預繳收據號碼"
+                        value={formData.prepaid_receipt_number}
+                        disabled={isSaving}
+                        onChange={e => setFormData(prev => ({ ...prev, prepaid_receipt_number: e.target.value }))}
+                      />
+                    ) : (
+                      displayInvoiceNumber(enrollment.prepaid_receipt_number)
+                    )}
                   </span>
                 </div>
               </div>
@@ -156,30 +286,92 @@ export default function EnrollmentBillingDetailModal({
                 <h4 className="fee-details-card-title">正式費用</h4>
                 <div className="fee-breakdown">
                   <span>
-                    <span className="billing-receipt-label">學費</span>
-                    {displayAmount(enrollment.tuition_fee)}
+                    <label className="billing-receipt-label" htmlFor="billing-tuition-fee">學費</label>
+                    {isEditing ? (
+                      <input
+                        id="billing-tuition-fee"
+                        type="number"
+                        min="0"
+                        step="1"
+                        className="billing-edit-input"
+                        aria-label="學費"
+                        value={formData.tuition_fee}
+                        disabled={isSaving}
+                        onChange={e => setFormData(prev => ({ ...prev, tuition_fee: e.target.value }))}
+                      />
+                    ) : (
+                      displayAmount(enrollment.tuition_fee)
+                    )}
                   </span>
                   <span>
-                    <span className="billing-receipt-label">教材費</span>
-                    {displayAmount(enrollment.materials_fee)}
+                    <label className="billing-receipt-label" htmlFor="billing-materials-fee">教材費</label>
+                    {isEditing ? (
+                      <input
+                        id="billing-materials-fee"
+                        type="number"
+                        min="0"
+                        step="1"
+                        className="billing-edit-input"
+                        aria-label="教材費"
+                        value={formData.materials_fee}
+                        disabled={isSaving}
+                        onChange={e => setFormData(prev => ({ ...prev, materials_fee: e.target.value }))}
+                      />
+                    ) : (
+                      displayAmount(enrollment.materials_fee)
+                    )}
                   </span>
                   <span>
-                    <span className="billing-receipt-label">會友費</span>
-                    {displayAmount(enrollment.membership_fee)}
+                    <label className="billing-receipt-label" htmlFor="billing-membership-fee">會友費</label>
+                    {isEditing ? (
+                      <input
+                        id="billing-membership-fee"
+                        type="number"
+                        min="0"
+                        step="1"
+                        className="billing-edit-input"
+                        aria-label="會友費"
+                        value={formData.membership_fee}
+                        disabled={isSaving}
+                        onChange={e => setFormData(prev => ({ ...prev, membership_fee: e.target.value }))}
+                      />
+                    ) : (
+                      displayAmount(enrollment.membership_fee)
+                    )}
                   </span>
                 </div>
                 <div className="billing-receipt-values fee-total">
                   <span>
                     <span className="billing-receipt-label">合計</span>
-                    {displayAmount(
-                      (enrollment.tuition_fee != null || enrollment.materials_fee != null || enrollment.membership_fee != null)
-                        ? (enrollment.tuition_fee || 0) + (enrollment.materials_fee || 0) + (enrollment.membership_fee || 0)
-                        : null
-                    )}
+                    <span aria-label="正式費用合計">
+                      {isEditing
+                        ? displayAmount(
+                            (formData.tuition_fee !== '' || formData.materials_fee !== '' || formData.membership_fee !== '')
+                              ? (Number(formData.tuition_fee) || 0) + (Number(formData.materials_fee) || 0) + (Number(formData.membership_fee) || 0)
+                              : null
+                          )
+                        : displayAmount(
+                            (enrollment.tuition_fee != null || enrollment.materials_fee != null || enrollment.membership_fee != null)
+                              ? (enrollment.tuition_fee || 0) + (enrollment.materials_fee || 0) + (enrollment.membership_fee || 0)
+                              : null
+                          )}
+                    </span>
                   </span>
                   <span>
-                    <span className="billing-receipt-label">收據 No.</span>
-                    {displayInvoiceNumber(enrollment.fee_receipt_number)}
+                    <label className="billing-receipt-label" htmlFor="billing-fee-receipt">收據 No.</label>
+                    {isEditing ? (
+                      <input
+                        id="billing-fee-receipt"
+                        type="text"
+                        className="billing-edit-input"
+                        aria-label="正式收據號碼"
+                        value={formData.fee_receipt_number}
+                        disabled={isSaving}
+                        onChange={e => setFormData(prev => ({ ...prev, fee_receipt_number: e.target.value }))}
+                      />
+                    ) : (
+                      displayInvoiceNumber(enrollment.fee_receipt_number)
+                    )}
                   </span>
                 </div>
               </div>
@@ -194,23 +386,62 @@ export default function EnrollmentBillingDetailModal({
             <h3 id="handler-info-title">辦理資訊</h3>
             <div className="handler-info-grid">
               <span>
-                <span className="billing-receipt-label">經手人</span>
-                {enrollment.handled_by_name || '--'}
+                <label className="billing-receipt-label" htmlFor="billing-handled-by-name">經手人</label>
+                {isEditing ? (
+                  <input
+                    id="billing-handled-by-name"
+                    type="text"
+                    className="billing-edit-input"
+                    aria-label="經手人"
+                    value={formData.handled_by_name}
+                    disabled={isSaving}
+                    onChange={e => setFormData(prev => ({ ...prev, handled_by_name: e.target.value }))}
+                  />
+                ) : (
+                  enrollment.handled_by_name || '--'
+                )}
               </span>
               <span>
-                <span className="billing-receipt-label">辦理日期</span>
-                {enrollment.handled_on || '--'}
+                <label className="billing-receipt-label" htmlFor="billing-handled-on">辦理日期</label>
+                {isEditing ? (
+                  <input
+                    id="billing-handled-on"
+                    type="date"
+                    className="billing-edit-input"
+                    aria-label="辦理日期"
+                    value={formData.handled_on}
+                    disabled={isSaving}
+                    onChange={e => setFormData(prev => ({ ...prev, handled_on: e.target.value }))}
+                  />
+                ) : (
+                  enrollment.handled_on || '--'
+                )}
               </span>
               <span>
                 <span className="billing-receipt-label">登入帳號</span>
                 {enrollment.handled_by_account || '--'}
               </span>
             </div>
-            {enrollment.notes && (
+            {isEditing ? (
               <div className="handler-notes-box">
-                <span className="billing-receipt-label">備註</span>
-                <p className="handler-notes-text">{enrollment.notes}</p>
+                <label className="billing-receipt-label" htmlFor="billing-notes">備註</label>
+                <textarea
+                  id="billing-notes"
+                  className="billing-edit-textarea"
+                  aria-label="備註"
+                  rows="3"
+                  value={formData.notes}
+                  disabled={isSaving}
+                  onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                />
               </div>
+            ) : (
+              enrollment.notes && (
+                <div className="handler-notes-box">
+                  <span className="billing-receipt-label">備註</span>
+                  <p className="handler-notes-text">{enrollment.notes}</p>
+                </div>
+              )
             )}
           </section>
 
