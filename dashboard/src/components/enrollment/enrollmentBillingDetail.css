@@ -1,4 +1,4 @@
-/* Grouped payment rows render once per billing receipt header, with course membership shown as tags. */
+/* 帳單明細 Modal — 收費明細 + 辦理資訊 + 舊制帳單 + 學員資訊 */
 .enrollment-billing-dialog {
   width: min(760px, calc(100vw - 32px));
   max-height: calc(100vh - 48px);
@@ -7,6 +7,12 @@
 
 .enrollment-billing-overlay {
   z-index: 110;
+}
+
+.enrollment-billing-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .enrollment-billing-subtitle {
@@ -27,51 +33,67 @@
   gap: 16px;
 }
 
-.enrollment-billing-receipts,
+/* 收費明細 */
+.enrollment-fee-details,
+.enrollment-handler-info,
 .enrollment-legacy-billing,
 .enrollment-billing-student {
   padding-top: 20px;
   border-top: 1px solid var(--border-color);
 }
 
-.enrollment-billing-heading {
+.fee-details-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
 
-.enrollment-billing-heading h3,
+.fee-details-heading h3,
+.enrollment-handler-info h3,
 .enrollment-legacy-billing h3 {
   margin: 0;
 }
 
-.billing-receipt-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.enrollment-period-dates {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.fee-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
   margin-top: 12px;
 }
 
-.billing-receipt-row {
-  display: grid;
-  grid-template-columns: minmax(120px, 0.9fr) minmax(0, 1.8fr) auto;
-  align-items: center;
-  gap: 16px;
+.fee-details-card {
   padding: 14px;
   border: 1px solid var(--border-color);
   border-radius: 10px;
   background: var(--bg-primary);
 }
 
-.billing-receipt-courses {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
+.fee-details-card-title {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
+.fee-breakdown {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.fee-total {
+  border-top: 1px dashed var(--border-color);
+  padding-top: 10px;
+}
+
+/* 共用值顯示 */
 .billing-receipt-values {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -91,46 +113,28 @@
   font-size: 12px;
 }
 
-.billing-receipt-empty {
-  margin: 0;
-  color: var(--text-secondary);
+/* 辦理資訊 */
+.handler-info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 12px;
 }
 
-.billing-receipt-row-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 8px;
+.handler-notes-box {
+  margin-top: 10px;
+  border-top: 1px dashed var(--border-color);
+  padding-top: 10px;
 }
 
-.billing-receipt-editor {
-  margin-top: 16px;
-  padding: 16px;
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  background: var(--bg-primary);
+.handler-notes-text {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--text-primary);
+  white-space: pre-wrap;
 }
 
-.billing-receipt-create-editor .payment-records-header {
-  display: none;
-}
-
-.billing-receipt-editor .payment-records-record {
-  padding: 0;
-  border: 0;
-}
-
-.billing-receipt-editor .payment-records-record legend {
-  display: none;
-}
-
-.billing-receipt-row button:focus-visible,
-.billing-receipt-editor button:focus-visible,
-.billing-receipt-editor input:focus-visible {
-  outline: 3px solid var(--color-accent);
-  outline-offset: 2px;
-}
-
+/* 舊制帳單 */
 .enrollment-legacy-billing {
   padding: 20px 16px 16px;
   border-right: 1px solid var(--border-color);
@@ -144,35 +148,7 @@
   margin-top: 12px;
 }
 
-.enrollment-billing-fields {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-top: 12px;
-}
-
-.enrollment-billing-fields > label {
-  min-width: 0;
-}
-
-.enrollment-billing-fields .form-input {
-  box-sizing: border-box;
-  min-width: 0;
-  width: 100%;
-}
-
-.enrollment-billing-actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 16px;
-}
-
-.enrollment-billing-heading .enrollment-billing-actions {
-  margin-top: 0;
-}
-
+/* 訊息 */
 .enrollment-billing-message {
   margin-top: 12px;
   font-size: 13px;
@@ -186,99 +162,12 @@
   color: var(--color-success);
 }
 
-.enrollment-paper-billing {
-  padding-top: 20px;
-  border-top: 1px solid var(--border-color);
-}
-
-.paper-billing-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.paper-billing-heading h3 {
-  margin: 0;
-}
-
-.enrollment-period-dates {
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-
-.paper-billing-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-  margin-top: 12px;
-}
-
-.paper-billing-card {
-  padding: 14px;
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  background: var(--bg-primary);
-}
-
-.paper-billing-card.full-width {
-  grid-column: 1 / -1;
-}
-
-.paper-billing-card-title {
-  margin: 0 0 10px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.paper-fee-items {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin-bottom: 10px;
-}
-
-.paper-fee-summary {
-  border-top: 1px dashed var(--border-color);
-  padding-top: 10px;
-}
-
-.paper-handler-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-}
-
-.paper-notes-box {
-  margin-top: 10px;
-  border-top: 1px dashed var(--border-color);
-  padding-top: 10px;
-}
-
-.paper-notes-text {
-  margin: 4px 0 0;
-  font-size: 13px;
-  color: var(--text-primary);
-  white-space: pre-wrap;
-}
-
+/* RWD */
 @media (max-width: 640px) {
-  .billing-receipt-row,
-  .billing-receipt-values,
-  .enrollment-billing-fields,
-  .paper-billing-grid,
-  .paper-fee-items,
-  .paper-handler-grid {
+  .fee-details-grid,
+  .fee-breakdown,
+  .handler-info-grid,
+  .billing-receipt-values {
     grid-template-columns: 1fr;
-  }
-
-  .billing-receipt-row {
-    align-items: start;
-  }
-
-  .billing-receipt-row-actions {
-    justify-self: start;
-    justify-content: flex-start;
   }
 }
