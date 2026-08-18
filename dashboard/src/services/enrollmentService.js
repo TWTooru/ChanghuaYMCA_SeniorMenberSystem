@@ -125,7 +125,16 @@ function normalizeDate(value) {
 }
 
 export async function updateEnrollmentBillingDetails(client, enrollmentId, billingData = {}) {
+  const periodStartDate = normalizeDate(billingData.period_start_date)
+  const periodEndDate = normalizeDate(billingData.period_end_date)
+
+  if (periodStartDate && periodEndDate && periodStartDate > periodEndDate) {
+    throw new Error('結束日期不能早於開始日期')
+  }
+
   const payload = {
+    period_start_date: periodStartDate,
+    period_end_date: periodEndDate,
     prepaid_amount: normalizeAmount(billingData.prepaid_amount),
     prepaid_receipt_number: normalizeText(billingData.prepaid_receipt_number),
     tuition_fee: normalizeAmount(billingData.tuition_fee),

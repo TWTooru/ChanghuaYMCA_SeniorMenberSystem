@@ -298,6 +298,8 @@ describe('updateEnrollmentBillingDetails', () => {
     const { client, calls } = createUpdateClient()
 
     await updateEnrollmentBillingDetails(client, '42', {
+      period_start_date: ' 2026-09-01 ',
+      period_end_date: ' 2026-12-31 ',
       prepaid_amount: '500',
       prepaid_receipt_number: ' PRE-101 ',
       tuition_fee: 3000,
@@ -314,6 +316,8 @@ describe('updateEnrollmentBillingDetails', () => {
       {
         operation: 'update',
         values: {
+          period_start_date: '2026-09-01',
+          period_end_date: '2026-12-31',
           prepaid_amount: 500,
           prepaid_receipt_number: 'PRE-101',
           tuition_fee: 3000,
@@ -329,10 +333,23 @@ describe('updateEnrollmentBillingDetails', () => {
     ])
   })
 
+  it('throws error when period_start_date is after period_end_date', async () => {
+    const { client } = createUpdateClient()
+
+    await expect(
+      updateEnrollmentBillingDetails(client, 10, {
+        period_start_date: '2026-12-31',
+        period_end_date: '2026-09-01',
+      })
+    ).rejects.toThrow('結束日期不能早於開始日期')
+  })
+
   it('converts empty strings, null, and undefined values to null', async () => {
     const { client, calls } = createUpdateClient()
 
     await updateEnrollmentBillingDetails(client, 10, {
+      period_start_date: '',
+      period_end_date: '  ',
       prepaid_amount: '',
       prepaid_receipt_number: '   ',
       tuition_fee: null,
@@ -347,6 +364,8 @@ describe('updateEnrollmentBillingDetails', () => {
     expect(calls).toContainEqual({
       operation: 'update',
       values: {
+        period_start_date: null,
+        period_end_date: null,
         prepaid_amount: null,
         prepaid_receipt_number: null,
         tuition_fee: null,
@@ -368,6 +387,8 @@ describe('updateEnrollmentBillingDetails', () => {
     expect(calls).toContainEqual({
       operation: 'update',
       values: {
+        period_start_date: null,
+        period_end_date: null,
         prepaid_amount: null,
         prepaid_receipt_number: null,
         tuition_fee: null,

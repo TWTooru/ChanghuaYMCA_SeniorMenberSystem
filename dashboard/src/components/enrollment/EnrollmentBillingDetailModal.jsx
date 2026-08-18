@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { X } from 'lucide-react'
+import { Calendar, X } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import usePermissions from '../../hooks/usePermissions'
 import { supabase } from '../../lib/supabaseClient'
@@ -20,6 +20,8 @@ function displayInvoiceNumber(invoiceNumber) {
 
 function createInitialFormData(enrollment) {
   return {
+    period_start_date: enrollment?.period_start_date ?? '',
+    period_end_date: enrollment?.period_end_date ?? '',
     prepaid_amount: enrollment?.prepaid_amount ?? '',
     prepaid_receipt_number: enrollment?.prepaid_receipt_number ?? '',
     tuition_fee: enrollment?.tuition_fee ?? '',
@@ -87,6 +89,15 @@ export default function EnrollmentBillingDetailModal({
 
   const handleSave = async () => {
     if (!permissions.canEditEnrollment || saveInFlight.current) return
+
+    if (
+      formData.period_start_date &&
+      formData.period_end_date &&
+      formData.period_start_date > formData.period_end_date
+    ) {
+      setError('結束日期不能早於開始日期')
+      return
+    }
 
     const amountFields = [
       formData.prepaid_amount,
@@ -232,10 +243,35 @@ export default function EnrollmentBillingDetailModal({
           <section className="enrollment-fee-details" aria-labelledby="fee-details-title">
             <div className="fee-details-heading">
               <h3 id="fee-details-title">收費明細</h3>
-              {(enrollment.period_start_date || enrollment.period_end_date) && (
-                <span className="enrollment-period-dates">
-                  起訖：{enrollment.period_start_date || '--'} 至 {enrollment.period_end_date || '--'}
-                </span>
+              {isEditing ? (
+                <div className="enrollment-period-dates-edit">
+                  <Calendar size={14} className="date-icon" />
+                  <span className="billing-receipt-label" style={{ margin: 0 }}>起訖：</span>
+                  <input
+                    type="date"
+                    className="billing-edit-input billing-date-input"
+                    aria-label="期別開始日期"
+                    value={formData.period_start_date}
+                    disabled={isSaving}
+                    onChange={e => setFormData(prev => ({ ...prev, period_start_date: e.target.value }))}
+                  />
+                  <span style={{ margin: '0 4px', fontSize: '12px', color: 'var(--text-secondary)' }}>至</span>
+                  <input
+                    type="date"
+                    className="billing-edit-input billing-date-input"
+                    aria-label="期別結束日期"
+                    value={formData.period_end_date}
+                    disabled={isSaving}
+                    onChange={e => setFormData(prev => ({ ...prev, period_end_date: e.target.value }))}
+                  />
+                </div>
+              ) : (
+                (enrollment.period_start_date || enrollment.period_end_date) && (
+                  <span className="enrollment-period-dates">
+                    <Calendar size={13} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
+                    起訖：{enrollment.period_start_date || '--'} 至 {enrollment.period_end_date || '--'}
+                  </span>
+                )
               )}
             </div>
 
@@ -402,7 +438,10 @@ export default function EnrollmentBillingDetailModal({
                 )}
               </span>
               <span>
-                <label className="billing-receipt-label" htmlFor="billing-handled-on">辦理日期</label>
+                <label className="billing-receipt-label" htmlFor="billing-handled-on">
+                  <Calendar size={12} style={{ verticalAlign: 'middle', marginRight: '3px' }} />
+                  辦理日期
+                </label>
                 {isEditing ? (
                   <input
                     id="billing-handled-on"

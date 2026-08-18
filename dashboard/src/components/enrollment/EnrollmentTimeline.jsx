@@ -1,39 +1,38 @@
-import { Activity, Edit2, Trash2 } from 'lucide-react'
+import { Activity, Calendar, Edit2, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { summarizeEnrollmentBilling } from '../../domain/enrollmentBilling'
 import EnrollmentEditForm from './EnrollmentEditForm'
 
 function BillingSummary({ enrollment }) {
   const billing = summarizeEnrollmentBilling(enrollment)
-  const amountText = billing.amount == null ? '--' : `NT$ ${billing.amount}`
-  const invoiceText = billing.invoiceNumbers.length > 0
-    ? billing.invoiceNumbers.join(', ')
-    : '--'
-
   const hasPrepaid = enrollment.prepaid_amount != null || Boolean(String(enrollment.prepaid_receipt_number ?? '').trim())
   const hasFormal = enrollment.tuition_fee != null || enrollment.materials_fee != null || enrollment.membership_fee != null || Boolean(String(enrollment.fee_receipt_number ?? '').trim())
   const formalTotal = (enrollment.tuition_fee || 0) + (enrollment.materials_fee || 0) + (enrollment.membership_fee || 0)
 
+  const hasAnyBreakdown = hasPrepaid || hasFormal
+  const hasLegacy = billing.amount != null || billing.invoiceNumbers.length > 0
+
+  if (!hasAnyBreakdown && !hasLegacy) return null
+
   return (
     <div className="timeline-billing-summary" data-testid="timeline-billing-summary">
-      <div className="timeline-billing-row">
-        <span className="timeline-billing-amount">{amountText}</span>
-        <span className="timeline-billing-invoice">{invoiceText}</span>
+      <div className="timeline-billing-breakdown">
+        {hasPrepaid && (
+          <span className="breakdown-tag prepaid">
+            預繳: NT$ {enrollment.prepaid_amount ?? 0} {enrollment.prepaid_receipt_number ? `(${enrollment.prepaid_receipt_number})` : ''}
+          </span>
+        )}
+        {hasFormal && (
+          <span className="breakdown-tag formal">
+            正式: NT$ {formalTotal} {enrollment.fee_receipt_number ? `(${enrollment.fee_receipt_number})` : ''}
+          </span>
+        )}
+        {!hasAnyBreakdown && hasLegacy && (
+          <span className="breakdown-tag">
+            {billing.amount == null ? '--' : `NT$ ${billing.amount}`} {billing.invoiceNumbers.length > 0 ? `(${billing.invoiceNumbers.join(', ')})` : ''}
+          </span>
+        )}
       </div>
-      {(hasPrepaid || hasFormal) && (
-        <div className="timeline-billing-breakdown">
-          {hasPrepaid && (
-            <span className="breakdown-tag prepaid">
-              預繳: NT$ {enrollment.prepaid_amount ?? 0} {enrollment.prepaid_receipt_number ? `(${enrollment.prepaid_receipt_number})` : ''}
-            </span>
-          )}
-          {hasFormal && (
-            <span className="breakdown-tag formal">
-              正式: NT$ {formalTotal} {enrollment.fee_receipt_number ? `(${enrollment.fee_receipt_number})` : ''}
-            </span>
-          )}
-        </div>
-      )}
     </div>
   )
 }
@@ -54,6 +53,7 @@ function TimelineMeta({ item }) {
         <div className="timeline-meta-sub">
           {hasDates && (
             <span className="timeline-dates">
+              <Calendar size={12} style={{ verticalAlign: 'middle', marginRight: '3px' }} />
               {item.period_start_date || '--'} ~ {item.period_end_date || '--'}
             </span>
           )}

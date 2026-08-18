@@ -184,6 +184,8 @@ describe('EnrollmentBillingDetailModal', () => {
       expect(screen.getByRole('button', { name: '取消' })).toBeTruthy()
 
       // Inputs rendered with initial values
+      expect(screen.getByLabelText('期別開始日期').value).toBe('2026-09-01')
+      expect(screen.getByLabelText('期別結束日期').value).toBe('2026-12-31')
       expect(screen.getByLabelText('預繳金額').value).toBe('500')
       expect(screen.getByLabelText('預繳收據號碼').value).toBe('PRE-01')
       expect(screen.getByLabelText('學費').value).toBe('1900')
@@ -230,6 +232,21 @@ describe('EnrollmentBillingDetailModal', () => {
       expect(updateEnrollmentBillingDetails).not.toHaveBeenCalled()
     })
 
+    it('validates reversed period dates and does not call service', async () => {
+      renderModal()
+
+      fireEvent.click(screen.getByRole('button', { name: '編輯' }))
+      fireEvent.change(screen.getByLabelText('期別開始日期'), { target: { value: '2026-12-31' } })
+      fireEvent.change(screen.getByLabelText('期別結束日期'), { target: { value: '2026-09-01' } })
+
+      fireEvent.click(screen.getByRole('button', { name: '儲存' }))
+
+      expect(await screen.findByRole('alert')).toBeTruthy()
+      expect(screen.getByRole('alert').textContent).toContain('結束日期不能早於開始日期')
+      expect(updateEnrollmentBillingDetails).not.toHaveBeenCalled()
+      expect(screen.getByRole('button', { name: '儲存' })).toBeTruthy()
+    })
+
     it('validates negative amounts and does not call service', async () => {
       renderModal()
 
@@ -250,6 +267,8 @@ describe('EnrollmentBillingDetailModal', () => {
 
       fireEvent.click(screen.getByRole('button', { name: '編輯' }))
 
+      fireEvent.change(screen.getByLabelText('期別開始日期'), { target: { value: '2026-10-01' } })
+      fireEvent.change(screen.getByLabelText('期別結束日期'), { target: { value: '2026-11-30' } })
       fireEvent.change(screen.getByLabelText('學費'), { target: { value: '2500' } })
       fireEvent.change(screen.getByLabelText('教材費'), { target: { value: '300' } })
       fireEvent.change(screen.getByLabelText('經手人'), { target: { value: 'Manager Lee' } })
@@ -262,6 +281,8 @@ describe('EnrollmentBillingDetailModal', () => {
           expect.anything(),
           42,
           expect.objectContaining({
+            period_start_date: '2026-10-01',
+            period_end_date: '2026-11-30',
             prepaid_amount: 500,
             prepaid_receipt_number: 'PRE-01',
             tuition_fee: '2500',

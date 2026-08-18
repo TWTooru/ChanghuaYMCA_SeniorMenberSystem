@@ -66,11 +66,28 @@ describe('EnrollmentTimeline', () => {
     expect(summary.textContent).toContain('A-001, A-002')
   })
 
-  it('shows placeholders when no billing values exist', () => {
+  it('shows prepaid and formal breakdowns in billing summary', () => {
+    renderTimeline({
+      timeline: [{
+        ...baseEnrollment,
+        prepaid_amount: 500,
+        prepaid_receipt_number: 'P-01',
+        tuition_fee: 1500,
+        materials_fee: 200,
+        membership_fee: 100,
+        fee_receipt_number: 'F-01',
+      }],
+    })
+
+    const summary = screen.getByTestId('timeline-billing-summary')
+    expect(summary.textContent).toContain('預繳: NT$ 500 (P-01)')
+    expect(summary.textContent).toContain('正式: NT$ 1800 (F-01)')
+  })
+
+  it('omits billing summary when no billing values exist', () => {
     renderTimeline()
 
-    const values = screen.getByTestId('timeline-billing-summary').querySelectorAll('span')
-    expect(Array.from(values, value => value.textContent)).toEqual(['--', '--'])
+    expect(screen.queryByTestId('timeline-billing-summary')).toBeNull()
   })
 
   it('selects the enrollment when its card is clicked', () => {
