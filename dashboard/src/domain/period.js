@@ -1,4 +1,4 @@
-const PERIOD_PATTERN = /^第([1-9][0-9]*)期$/
+const PERIOD_PATTERN = /^(?:第)?([1-9][0-9]*)期?$/
 
 export function periodNumber(value) {
   const match = String(value ?? '').trim().match(PERIOD_PATTERN)

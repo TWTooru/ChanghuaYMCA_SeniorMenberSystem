@@ -177,7 +177,7 @@ export default function AddEnrollModal({ student, onClose, onRefresh, defaultPer
               disabled={isSubmitting}
               onChange={event => setNewEnroll(current => ({ ...current, period: event.target.value }))}
               required
-              placeholder="例如：第16期"
+              placeholder="例如：16"
             />
           </div>
           <div className="form-group">

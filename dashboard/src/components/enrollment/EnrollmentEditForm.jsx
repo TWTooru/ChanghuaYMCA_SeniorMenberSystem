@@ -41,7 +41,7 @@ export default function EnrollmentEditForm({ enrollment, onSave, onCancel }) {
 
   return (
     <div className="enrollment-edit-form">
-      <div className="form-group"><label className="form-label">修課期別</label><input type="text" className="form-input" value={form.period || ''} onChange={e => setForm({ ...form, period: e.target.value })} /></div>
+      <div className="form-group"><label className="form-label">修課期別</label><input type="text" className="form-input" placeholder="例如：16" value={form.period || ''} onChange={e => setForm({ ...form, period: e.target.value })} /></div>
       <div className="form-group"><label className="form-label">新生/續生</label><select className="form-select" value={form.reg_type || ''} onChange={e => setForm({ ...form, reg_type: e.target.value })}><option value="">請選擇</option><option value="新">新生</option><option value="續">續生</option></select></div>
       <div className="form-group" style={{ gridColumn: 'span 2' }}>
         <CourseTagPicker
