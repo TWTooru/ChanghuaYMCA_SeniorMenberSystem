@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import usePermissions from '../../hooks/usePermissions'
 import StudentFilters from './StudentFilters'
@@ -8,12 +8,31 @@ import './students.css'
 export default function StudentListTab({ students, enrollments, onSelectStudent, onShowAddStudent }) {
   const { role } = useAuth()
   const permissions = usePermissions(role)
+  const [studentSearchInput, setStudentSearchInput] = useState('')
   const [studentSearch, setStudentSearch] = useState('')
   const [studentGenderFilter, setStudentGenderFilter] = useState('')
   const [studentEduFilter, setStudentEduFilter] = useState('')
   const [studentPage, setStudentPage] = useState(1)
+  const [sortField, setSortField] = useState('student_id')
   const [sortOrder, setSortOrder] = useState('asc')
-  const itemsPerPage = 10
+  const [itemsPerPage, setItemsPerPage] = useState(10)
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setStudentSearch(studentSearchInput)
+      setStudentPage(1)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [studentSearchInput])
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortField(field)
+      setSortOrder('asc')
+    }
+  }
 
   const filteredStudents = useMemo(() => {
     const query = studentSearch.trim().toLowerCase()
@@ -28,10 +47,17 @@ export default function StudentListTab({ students, enrollments, onSelectStudent,
           && (!studentEduFilter || student.education === studentEduFilter)
       })
       .sort((a, b) => {
-        const comparison = Number(a.student_id) - Number(b.student_id)
+        let comparison = 0
+        if (sortField === 'student_id') {
+          comparison = Number(a.student_id) - Number(b.student_id)
+        } else if (sortField === 'name') {
+          comparison = (a.name || '').localeCompare(b.name || '', 'zh-Hant')
+        } else if (sortField === 'created_at') {
+          comparison = new Date(a.created_at || 0) - new Date(b.created_at || 0)
+        }
         return sortOrder === 'asc' ? comparison : -comparison
       })
-  }, [students, studentSearch, studentGenderFilter, studentEduFilter, sortOrder])
+  }, [students, studentSearch, studentGenderFilter, studentEduFilter, sortField, sortOrder])
 
   const totalStudentPages = Math.ceil(filteredStudents.length / itemsPerPage) || 1
   const paginatedStudents = filteredStudents.slice((studentPage - 1) * itemsPerPage, studentPage * itemsPerPage)
@@ -39,8 +65,8 @@ export default function StudentListTab({ students, enrollments, onSelectStudent,
 
   return <div>
     <StudentFilters
-      studentSearch={studentSearch}
-      onSearchChange={resetPage(setStudentSearch)}
+      studentSearch={studentSearchInput}
+      onSearchChange={setStudentSearchInput}
       studentGenderFilter={studentGenderFilter}
       onGenderChange={resetPage(setStudentGenderFilter)}
       studentEduFilter={studentEduFilter}
@@ -51,13 +77,16 @@ export default function StudentListTab({ students, enrollments, onSelectStudent,
     <StudentTable
       students={paginatedStudents}
       enrollments={enrollments}
+      sortField={sortField}
       sortOrder={sortOrder}
-      onToggleSort={() => setSortOrder(value => value === 'asc' ? 'desc' : 'asc')}
+      onSort={handleSort}
       onSelectStudent={onSelectStudent}
       studentPage={studentPage}
       totalStudentPages={totalStudentPages}
       onPageChange={setStudentPage}
       totalFilteredCount={filteredStudents.length}
+      itemsPerPage={itemsPerPage}
+      onPageSizeChange={resetPage(setItemsPerPage)}
     />
   </div>
 }
