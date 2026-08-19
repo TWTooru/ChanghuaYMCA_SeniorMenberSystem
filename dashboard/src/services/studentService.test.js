@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createStudent, createStudentWithInitialEnrollment, updateStudent } from './studentService'
+import { createStudent, createStudentWithInitialEnrollment, updateStudent, deleteStudent } from './studentService'
 
 const profile = {
   name: '王小明', gender: '男', phone: '0912-345-678', birth_date: '1980-07-01',
@@ -85,5 +85,13 @@ describe('member profile service', () => {
   it('maps member validation errors to stable messages', async () => {
     const client = { rpc: vi.fn().mockResolvedValue({ data: null, error: new Error('DUPLICATE_EMAIL') }) }
     await expect(updateStudent(client, 12, profile)).rejects.toThrow('電子郵件已被其他會員使用')
+  })
+
+  it('maps FK constraint error 23503 to friendly Chinese message on student delete', async () => {
+    const eq = vi.fn().mockResolvedValue({ error: { code: '23503' } })
+    const deleteFn = vi.fn(() => ({ eq }))
+    const client = { from: vi.fn(() => ({ delete: deleteFn })) }
+
+    await expect(deleteStudent(client, 12)).rejects.toThrow('無法刪除此學員：尚有關聯的報名紀錄或收據，請先清理後再試。')
   })
 })

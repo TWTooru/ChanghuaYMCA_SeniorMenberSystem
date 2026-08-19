@@ -80,5 +80,10 @@ export async function updateStudent(client, originalId, profile) {
 
 export async function deleteStudent(client, studentId) {
   const { error } = await client.from('students').delete().eq('student_id', studentId)
-  if (error) throw error
+  if (error) {
+    if (error.code === '23503') {
+      throw new Error('無法刪除此學員：尚有關聯的報名紀錄或收據，請先清理後再試。')
+    }
+    throw error
+  }
 }
