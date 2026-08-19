@@ -55,7 +55,7 @@ function AuthorizedAdminAccountPage() {
       <div className="admin-page-header">
         <div>
           <h1>帳號管理</h1>
-          <p>管理後台使用者、角色與操作紀錄。</p>
+          <p>管理後台使用者、角色與操作紀錄。因為資料庫是Free Tier，所以幾小時內能新增的使用者有限。</p>
         </div>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <button className="btn-secondary" type="button" onClick={refresh} disabled={loading} aria-label="重新整理帳號列表">
