@@ -16,9 +16,11 @@
   --panel-bg: rgba(31, 41, 55, 0.4);
   --input-bg: rgba(255, 255, 255, 0.05);
   --table-header-bg: rgba(17, 24, 39, 0.8);
+  --table-footer-bg: rgba(17, 24, 39, 0.5);
   --table-row-hover: rgba(255, 255, 255, 0.02);
-  --table-row-alt: transparent;
   --modal-overlay-bg: rgba(15, 23, 42, 0.75);
+  --tab-hover-bg: rgba(255, 255, 255, 0.04);
+  --card-border-subtle: rgba(255, 255, 255, 0.08);
 
   --badge-success-text: #6ee7b7;
   --badge-danger-text: #fca5a5;
@@ -76,9 +78,12 @@
   --panel-bg: #ffffff;
   --input-bg: #f8fafc;
   --table-header-bg: #f1f5f9;
+  --table-footer-bg: #f8fafc;
   --table-row-hover: #f8fafc;
   --table-row-alt: #ffffff;
   --modal-overlay-bg: rgba(15, 23, 42, 0.4);
+  --tab-hover-bg: rgba(0, 0, 0, 0.05);
+  --card-border-subtle: #e2e8f0;
 
   --badge-success-text: #047857;
   --badge-danger-text: #b91c1c;

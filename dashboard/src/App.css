@@ -226,7 +226,7 @@
 
 .tab-btn:hover {
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--tab-hover-bg, rgba(255, 255, 255, 0.04));
 }
 
 .tab-btn.active {
