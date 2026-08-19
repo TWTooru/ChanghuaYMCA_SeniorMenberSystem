@@ -140,6 +140,7 @@ function AuthenticatedDashboard() {
             enrollments={enrollments} 
             onSelectStudent={openStudentDetail}
             onShowAddStudent={() => setShowAddStudentModal(true)} 
+            onRefresh={handleRefresh}
           />
         )}
         {activeTab === 'history' && (
