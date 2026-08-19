@@ -7,7 +7,7 @@ describe('OverviewTab layout', () => {
     render(<OverviewTab stats={{ currentPeriod: '第16期', educationCounts: [], genderCounts: [] }} />)
     const content = document.body.textContent
     expect(content.indexOf('當期概況：第16期')).toBeLessThan(content.indexOf('整體 KPI'))
-    expect(content.indexOf('整體 KPI')).toBeLessThan(content.indexOf('會員教育程度'))
-    expect(screen.queryByText(/趨勢/)).toBeNull()
+    expect(content.indexOf('整體 KPI')).toBeLessThan(content.indexOf('歷期報名趨勢'))
+    expect(content.indexOf('歷期報名趨勢')).toBeLessThan(content.indexOf('會員教育程度'))
   })
 })

@@ -12,6 +12,7 @@ export default function KpiCards({ stats = {}, currentSeasonStats, previousSeaso
     [BookOpen, 'emerald', '總報名人次', stats.totalRegistrations ?? 0, '人次', currentSeasonStats && <>當季：{currentSeasonStats.enrollments} 人次 {delta(currentSeasonStats.enrollments, previousSeasonStats?.enrollments)}</>],
     [DollarSign, 'amber', '總退費人次', stats.totalRefunds ?? 0, '人次', currentSeasonStats?.refundRate != null && <>當季退費率：{currentSeasonStats.refundRate.toFixed(1)}% {delta(currentSeasonStats.refundRate, previousSeasonStats?.refundRate, true)}</>],
     [BarChart3, 'cyan', '平均每人報課數', average, '堂／人', currentSeasonStats?.avgCoursesPerStudent != null && <>當季：{currentSeasonStats.avgCoursesPerStudent.toFixed(1)} 堂／人</>],
+    [DollarSign, 'green', '總營收', stats.totalRevenue != null ? stats.totalRevenue.toLocaleString() : 0, '元', currentSeasonStats && <>當季營收：{currentSeasonStats.revenue != null ? currentSeasonStats.revenue.toLocaleString() : 0} 元 {delta(currentSeasonStats.revenue, previousSeasonStats?.revenue)}</>]
   ]
   return <div className="kpi-grid">{cards.map(([Icon, color, label, value, unit, subtitle]) => <div className="kpi-card" key={label}><div className={`kpi-icon-wrapper ${color}`}><Icon size={24} /></div><div><div className="kpi-label">{label}</div><div className="kpi-value-area"><span className="kpi-value">{value}</span><span className="kpi-unit">{unit}</span></div>{subtitle && <div className="kpi-subtitle">{subtitle}</div>}</div></div>)}</div>
 }

@@ -595,3 +595,45 @@
 .panel-card.collapsible-panel {
   padding: 0;
 }
+
+/* 歷期報名趨勢 */
+.period-trend-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.trend-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.trend-label {
+  width: 80px;
+  font-size: 14px;
+  color: var(--text-primary);
+  text-align: right;
+}
+
+.trend-bar-track {
+  flex: 1;
+  height: 12px;
+  background-color: var(--input-bg, rgba(255, 255, 255, 0.05));
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.trend-bar-fill {
+  height: 100%;
+  background-color: var(--color-accent, #6366f1);
+  border-radius: 6px;
+  transition: width 0.3s ease;
+}
+
+.trend-value {
+  width: 60px;
+  font-size: 14px;
+  color: var(--text-primary);
+  text-align: right;
+}
