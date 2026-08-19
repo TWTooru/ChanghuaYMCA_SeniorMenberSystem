@@ -3,10 +3,9 @@ import { useAuth } from '../../contexts/AuthContext'
 import usePermissions from '../../hooks/usePermissions'
 import StudentFilters from './StudentFilters'
 import StudentTable from './StudentTable'
-import StudentMergeDialog from '../admin/StudentMergeDialog'
 import './students.css'
 
-export default function StudentListTab({ students, enrollments, onSelectStudent, onShowAddStudent, onRefresh }) {
+export default function StudentListTab({ students, enrollments, onSelectStudent, onShowAddStudent }) {
   const { role } = useAuth()
   const permissions = usePermissions(role)
   const [studentSearchInput, setStudentSearchInput] = useState('')
@@ -17,7 +16,6 @@ export default function StudentListTab({ students, enrollments, onSelectStudent,
   const [sortField, setSortField] = useState('student_id')
   const [sortOrder, setSortOrder] = useState('asc')
   const [itemsPerPage, setItemsPerPage] = useState(10)
-  const [showMergeDialog, setShowMergeDialog] = useState(false)
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -75,7 +73,6 @@ export default function StudentListTab({ students, enrollments, onSelectStudent,
       onEduChange={resetPage(setStudentEduFilter)}
       permissions={permissions}
       onShowAddStudent={onShowAddStudent}
-      onShowMerge={role === 'admin' ? () => setShowMergeDialog(true) : undefined}
     />
     <StudentTable
       students={paginatedStudents}
@@ -91,12 +88,5 @@ export default function StudentListTab({ students, enrollments, onSelectStudent,
       itemsPerPage={itemsPerPage}
       onPageSizeChange={resetPage(setItemsPerPage)}
     />
-    {showMergeDialog && (
-      <StudentMergeDialog 
-        students={students} 
-        onClose={() => setShowMergeDialog(false)}
-        onRefresh={onRefresh}
-      />
-    )}
   </div>
 }

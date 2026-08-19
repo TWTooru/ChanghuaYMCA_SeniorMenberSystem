@@ -1,11 +1,10 @@
 import { Search, UserPlus } from 'lucide-react'
 import { EDUCATION_OPTIONS } from '../../domain/studentFields'
 
-export default function StudentFilters({ studentSearch, onSearchChange, studentGenderFilter, onGenderChange, studentEduFilter, onEduChange, permissions, onShowAddStudent, onShowMerge }) {
+export default function StudentFilters({ studentSearch, onSearchChange, studentGenderFilter, onGenderChange, studentEduFilter, onEduChange, permissions, onShowAddStudent }) {
   return <div>
-    {(permissions?.canAddStudent || onShowMerge) && <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px', gap: '8px' }}>
-      {onShowMerge && <button type="button" className="btn-primary" onClick={onShowMerge} style={{ backgroundColor: 'var(--color-danger, #ef4444)' }}>合併學員</button>}
-      {permissions?.canAddStudent && <button type="button" className="btn-primary" onClick={onShowAddStudent} id="btn-add-student"><UserPlus size={16} style={{ marginRight: '6px' }} />新增會員</button>}
+    {permissions?.canAddStudent && <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+      <button type="button" className="btn-primary" onClick={onShowAddStudent} id="btn-add-student"><UserPlus size={16} style={{ marginRight: '6px' }} />新增會員</button>
     </div>}
     <div className="filters-panel">
       <div className="filter-group">
