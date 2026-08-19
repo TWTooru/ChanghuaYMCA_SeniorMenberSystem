@@ -10,22 +10,35 @@ export default function StudentFilters({
   studentEduFilter,
   onEduChange,
   permissions,
-  onShowAddStudent
+  onShowAddStudent,
+  onShowMerge
 }) {
   /** 所有篩選欄位皆為受控輸入，實際篩選與頁碼重設由父元件集中管理。 */
   return (
     <div>
-      {permissions?.canAddStudent && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
-          <button 
-            type="button"
-            className="btn-primary"
-            onClick={onShowAddStudent}
-            id="btn-add-student"
-          >
-            <UserPlus size={16} style={{ marginRight: '6px' }} />
-            <span>+ 新增學員資料</span>
-          </button>
+      {(permissions?.canAddStudent || onShowMerge) && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px', gap: '8px' }}>
+          {onShowMerge && (
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={onShowMerge}
+              style={{ backgroundColor: 'var(--color-danger, #ef4444)', borderColor: 'var(--color-danger, #ef4444)' }}
+            >
+              <span>合併學員</span>
+            </button>
+          )}
+          {permissions?.canAddStudent && (
+            <button 
+              type="button"
+              className="btn-primary"
+              onClick={onShowAddStudent}
+              id="btn-add-student"
+            >
+              <UserPlus size={16} style={{ marginRight: '6px' }} />
+              <span>+ 新增學員資料</span>
+            </button>
+          )}
         </div>
       )}
       {/* Filters panel */}

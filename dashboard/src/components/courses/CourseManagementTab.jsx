@@ -25,7 +25,7 @@ export default function CourseManagementTab() {
       const data = await fetchCourseCatalog(supabase)
       if (generation !== requestGenerationRef.current) return
       setCatalog(data)
-    } catch (loadError) {
+    } catch {
       if (generation !== requestGenerationRef.current) return
       setError('課程名單載入失敗')
     } finally {
@@ -126,57 +126,59 @@ export default function CourseManagementTab() {
         <p className="course-management-empty">沒有符合條件的課程</p>
       )}
       {!loading && filteredCatalog.length > 0 && (
-        <table className="course-management-table">
-          <thead>
-            <tr>
-              <th>課程名稱</th>
-              <th>狀態</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredCatalog.map(course => (
-              <tr key={course.courseCatalogId}>
-                <td>{course.courseName}</td>
-                <td>
-                  <span className={`course-management-status ${course.active ? 'active' : 'inactive'}`}>
-                    {course.active ? '啟用中' : '已停用'}
-                  </span>
-                </td>
-                <td>
-                  {course.active ? (
-                    <button
-                      className="btn-secondary"
-                      onClick={() => setConfirmingCourse(course)}
-                      disabled={pending}
-                    >
-                      停用
-                    </button>
-                  ) : (
-                    <button
-                      className="btn-secondary"
-                      onClick={async () => {
-                        setPending(true)
-                        setError('')
-                        try {
-                          await saveCourseCatalogEntry(supabase, course.courseName)
-                          await refreshCatalog()
-                        } catch (err) {
-                          setError(err.message || '重新啟用失敗')
-                        } finally {
-                          setPending(false)
-                        }
-                      }}
-                      disabled={pending}
-                    >
-                      重新啟用
-                    </button>
-                  )}
-                </td>
+        <div className="course-management-table-wrapper">
+          <table className="course-management-table">
+            <thead>
+              <tr>
+                <th>課程名稱</th>
+                <th>狀態</th>
+                <th>操作</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filteredCatalog.map(course => (
+                <tr key={course.courseCatalogId}>
+                  <td>{course.courseName}</td>
+                  <td>
+                    <span className={`course-management-status ${course.active ? 'active' : 'inactive'}`}>
+                      {course.active ? '啟用中' : '已停用'}
+                    </span>
+                  </td>
+                  <td>
+                    {course.active ? (
+                      <button
+                        className="btn-secondary"
+                        onClick={() => setConfirmingCourse(course)}
+                        disabled={pending}
+                      >
+                        停用
+                      </button>
+                    ) : (
+                      <button
+                        className="btn-secondary"
+                        onClick={async () => {
+                          setPending(true)
+                          setError('')
+                          try {
+                            await saveCourseCatalogEntry(supabase, course.courseName)
+                            await refreshCatalog()
+                          } catch (err) {
+                            setError(err.message || '重新啟用失敗')
+                          } finally {
+                            setPending(false)
+                          }
+                        }}
+                        disabled={pending}
+                      >
+                        重新啟用
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   )

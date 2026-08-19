@@ -3,9 +3,10 @@ import { useAuth } from '../../contexts/AuthContext'
 import usePermissions from '../../hooks/usePermissions'
 import StudentFilters from './StudentFilters'
 import StudentTable from './StudentTable'
+import StudentMergeDialog from '../admin/StudentMergeDialog'
 import './students.css'
 
-export default function StudentListTab({ students, enrollments, onSelectStudent, onShowAddStudent }) {
+export default function StudentListTab({ students, enrollments, onSelectStudent, onShowAddStudent, onRefresh }) {
   /** 此容器保留篩選、排序與分頁狀態，並將列的呈現與操作委派給 StudentTable。 */
   const { role } = useAuth()
   const permissions = usePermissions(role)
@@ -15,6 +16,7 @@ export default function StudentListTab({ students, enrollments, onSelectStudent,
   const [studentEduFilter, setStudentEduFilter] = useState('')
   const [studentPage, setStudentPage] = useState(1)
   const [sortOrder, setSortOrder] = useState('asc') // 'asc' or 'desc'
+  const [showMergeDialog, setShowMergeDialog] = useState(false)
   const itemsPerPage = 10
 
   const filteredStudents = useMemo(() => {
@@ -94,6 +96,7 @@ export default function StudentListTab({ students, enrollments, onSelectStudent,
         }}
         permissions={permissions}
         onShowAddStudent={onShowAddStudent}
+        onShowMerge={role === 'admin' ? () => setShowMergeDialog(true) : undefined}
       />
       <StudentTable
         students={paginatedStudents}
@@ -106,6 +109,13 @@ export default function StudentListTab({ students, enrollments, onSelectStudent,
         onPageChange={setStudentPage}
         totalFilteredCount={filteredStudents.length}
       />
+      {showMergeDialog && (
+        <StudentMergeDialog
+          students={students}
+          onClose={() => setShowMergeDialog(false)}
+          onRefresh={onRefresh}
+        />
+      )}
     </div>
   )
 }
