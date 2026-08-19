@@ -2,11 +2,13 @@ import { useEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import usePermissions from '../../hooks/usePermissions'
+import useUnsavedChangesGuard from '../../hooks/useUnsavedChangesGuard'
 import { supabase } from '../../lib/supabaseClient'
 import {
   updateEnrollmentBillingDetails,
   updateEnrollmentRefundStatus,
 } from '../../services/enrollmentService'
+import ConfirmDialog from '../common/ConfirmDialog'
 import StudentInfoView from '../students/StudentInfoView'
 import './enrollmentBillingDetail.css'
 
@@ -48,6 +50,15 @@ export default function EnrollmentBillingDetailModal({
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [isRefundConfirmOpen, setRefundConfirmOpen] = useState(false)
+  const {
+    hasUnsavedChanges,
+    setHasUnsavedChanges,
+    pendingAction,
+    requestAction,
+    confirmPendingAction,
+    cancelPendingAction,
+  } = useUnsavedChangesGuard()
   const saveInFlight = useRef(false)
 
   useEffect(() => {
@@ -55,8 +66,10 @@ export default function EnrollmentBillingDetailModal({
     setIsSaving(false)
     setIsEditing(false)
     setFormData(createInitialFormData(enrollment))
+    setHasUnsavedChanges(false)
     setError('')
     setSuccess('')
+    cancelPendingAction()
   }, [enrollmentId, enrollment])
 
   if (!student || !enrollment) return null
@@ -70,21 +83,42 @@ export default function EnrollmentBillingDetailModal({
     setSuccess('')
   }
 
+  const handleFieldChange = (field, value) => {
+    setHasUnsavedChanges(true)
+    setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
   const handleClose = () => {
-    if (!saveInFlight.current) onClose?.()
+    if (!saveInFlight.current) {
+      if (isEditing && hasUnsavedChanges) {
+        requestAction(() => onClose?.())
+      } else {
+        onClose?.()
+      }
+    }
   }
 
   const handleStartEdit = () => {
     if (!permissions.canEditEnrollment || saveInFlight.current) return
     clearMessages()
     setFormData(createInitialFormData(enrollment))
+    setHasUnsavedChanges(false)
     setIsEditing(true)
   }
 
   const handleCancel = () => {
-    clearMessages()
-    setFormData(createInitialFormData(enrollment))
-    setIsEditing(false)
+    const doCancel = () => {
+      clearMessages()
+      setFormData(createInitialFormData(enrollment))
+      setIsEditing(false)
+      setHasUnsavedChanges(false)
+    }
+
+    if (hasUnsavedChanges) {
+      requestAction(doCancel)
+    } else {
+      doCancel()
+    }
   }
 
   const handleSave = async () => {
@@ -124,6 +158,7 @@ export default function EnrollmentBillingDetailModal({
       await updateEnrollmentBillingDetails(supabase, enrollmentId, formData)
       setSuccess('帳單明細已更新')
       setIsEditing(false)
+      setHasUnsavedChanges(false)
       onRefresh?.()
     } catch (err) {
       setError(err?.message || '帳單明細更新失敗')
@@ -133,9 +168,13 @@ export default function EnrollmentBillingDetailModal({
     }
   }
 
-  const handleRefundToggle = async () => {
+  const handleRefundClick = () => {
     if (!permissions.canEditEnrollment || saveInFlight.current) return
+    setRefundConfirmOpen(true)
+  }
 
+  const handleRefundConfirm = async () => {
+    setRefundConfirmOpen(false)
     const newRefunded = !enrollment.refunded
     saveInFlight.current = true
     setIsSaving(true)
@@ -175,7 +214,7 @@ export default function EnrollmentBillingDetailModal({
                     className={enrollment.refunded ? 'btn-secondary' : 'btn-danger'}
                     style={{ padding: '2px 8px', fontSize: '12px' }}
                     disabled={isSaving}
-                    onClick={handleRefundToggle}
+                    onClick={handleRefundClick}
                   >
                     {enrollment.refunded ? '取消退費' : '標記退費'}
                   </button>
@@ -252,7 +291,7 @@ export default function EnrollmentBillingDetailModal({
                     aria-label="期別開始日期"
                     value={formData.period_start_date}
                     disabled={isSaving}
-                    onChange={e => setFormData(prev => ({ ...prev, period_start_date: e.target.value }))}
+                    onChange={e => handleFieldChange('period_start_date', e.target.value)}
                   />
                   <span style={{ margin: '0 4px', fontSize: '12px', color: 'var(--text-secondary)' }}>至</span>
                   <input
@@ -261,7 +300,7 @@ export default function EnrollmentBillingDetailModal({
                     aria-label="期別結束日期"
                     value={formData.period_end_date}
                     disabled={isSaving}
-                    onChange={e => setFormData(prev => ({ ...prev, period_end_date: e.target.value }))}
+                    onChange={e => handleFieldChange('period_end_date', e.target.value)}
                   />
                 </div>
               ) : (
@@ -290,7 +329,7 @@ export default function EnrollmentBillingDetailModal({
                         aria-label="預繳金額"
                         value={formData.prepaid_amount}
                         disabled={isSaving}
-                        onChange={e => setFormData(prev => ({ ...prev, prepaid_amount: e.target.value }))}
+                        onChange={e => handleFieldChange('prepaid_amount', e.target.value)}
                       />
                     ) : (
                       <span className="billing-receipt-value">{displayAmount(enrollment.prepaid_amount)}</span>
@@ -306,7 +345,7 @@ export default function EnrollmentBillingDetailModal({
                         aria-label="預繳收據號碼"
                         value={formData.prepaid_receipt_number}
                         disabled={isSaving}
-                        onChange={e => setFormData(prev => ({ ...prev, prepaid_receipt_number: e.target.value }))}
+                        onChange={e => handleFieldChange('prepaid_receipt_number', e.target.value)}
                       />
                     ) : (
                       <span className="billing-receipt-value">{displayInvoiceNumber(enrollment.prepaid_receipt_number)}</span>
@@ -331,7 +370,7 @@ export default function EnrollmentBillingDetailModal({
                         aria-label="學費"
                         value={formData.tuition_fee}
                         disabled={isSaving}
-                        onChange={e => setFormData(prev => ({ ...prev, tuition_fee: e.target.value }))}
+                        onChange={e => handleFieldChange('tuition_fee', e.target.value)}
                       />
                     ) : (
                       <span className="billing-receipt-value">{displayAmount(enrollment.tuition_fee)}</span>
@@ -349,7 +388,7 @@ export default function EnrollmentBillingDetailModal({
                         aria-label="教材費"
                         value={formData.materials_fee}
                         disabled={isSaving}
-                        onChange={e => setFormData(prev => ({ ...prev, materials_fee: e.target.value }))}
+                        onChange={e => handleFieldChange('materials_fee', e.target.value)}
                       />
                     ) : (
                       <span className="billing-receipt-value">{displayAmount(enrollment.materials_fee)}</span>
@@ -367,7 +406,7 @@ export default function EnrollmentBillingDetailModal({
                         aria-label="會友費"
                         value={formData.membership_fee}
                         disabled={isSaving}
-                        onChange={e => setFormData(prev => ({ ...prev, membership_fee: e.target.value }))}
+                        onChange={e => handleFieldChange('membership_fee', e.target.value)}
                       />
                     ) : (
                       <span className="billing-receipt-value">{displayAmount(enrollment.membership_fee)}</span>
@@ -401,7 +440,7 @@ export default function EnrollmentBillingDetailModal({
                         aria-label="正式收據號碼"
                         value={formData.fee_receipt_number}
                         disabled={isSaving}
-                        onChange={e => setFormData(prev => ({ ...prev, fee_receipt_number: e.target.value }))}
+                        onChange={e => handleFieldChange('fee_receipt_number', e.target.value)}
                       />
                     ) : (
                       <span className="billing-receipt-value">{displayInvoiceNumber(enrollment.fee_receipt_number)}</span>
@@ -429,7 +468,7 @@ export default function EnrollmentBillingDetailModal({
                     aria-label="經手人"
                     value={formData.handled_by_name}
                     disabled={isSaving}
-                    onChange={e => setFormData(prev => ({ ...prev, handled_by_name: e.target.value }))}
+                    onChange={e => handleFieldChange('handled_by_name', e.target.value)}
                   />
                 ) : (
                   <span className="billing-receipt-value">{enrollment.handled_by_name || '--'}</span>
@@ -445,7 +484,7 @@ export default function EnrollmentBillingDetailModal({
                     aria-label="辦理日期"
                     value={formData.handled_on}
                     disabled={isSaving}
-                    onChange={e => setFormData(prev => ({ ...prev, handled_on: e.target.value }))}
+                    onChange={e => handleFieldChange('handled_on', e.target.value)}
                   />
                 ) : (
                   <span className="billing-receipt-value">{enrollment.handled_on || '--'}</span>
@@ -466,7 +505,7 @@ export default function EnrollmentBillingDetailModal({
                   rows="3"
                   value={formData.notes}
                   disabled={isSaving}
-                  onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                  onChange={e => handleFieldChange('notes', e.target.value)}
                 />
               </div>
             ) : (
@@ -500,6 +539,24 @@ export default function EnrollmentBillingDetailModal({
           </section>
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={!!pendingAction}
+        title="尚有未儲存變更"
+        message="離開後本次修改將不會保留，確定要放棄變更嗎？"
+        confirmLabel="放棄變更"
+        onConfirm={confirmPendingAction}
+        onCancel={cancelPendingAction}
+      />
+      
+      <ConfirmDialog
+        isOpen={isRefundConfirmOpen}
+        title={enrollment.refunded ? "取消退費確認" : "標記退費確認"}
+        message={enrollment.refunded ? "確定要將此筆報名恢復為正常狀態嗎？" : "確定要將此筆報名標記為退費嗎？此操作可透過「取消退費」復原。"}
+        confirmLabel={enrollment.refunded ? "確定恢復" : "確定退費"}
+        onConfirm={handleRefundConfirm}
+        onCancel={() => setRefundConfirmOpen(false)}
+      />
     </div>
   )
 }

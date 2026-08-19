@@ -132,11 +132,14 @@ describe('EnrollmentBillingDetailModal', () => {
     expect(container.querySelector('.enrollment-billing-context')).toBeNull()
   })
 
-  it('marks enrollment as refunded and refreshes on toggle click', async () => {
+  it('displays refund confirmation dialog and marks enrollment as refunded upon confirm', async () => {
     vi.mocked(updateEnrollmentRefundStatus).mockResolvedValue(undefined)
     const { props } = renderModal()
 
     fireEvent.click(screen.getByRole('button', { name: '標記退費' }))
+    expect(screen.getByText('確定要將此筆報名標記為退費嗎？此操作可透過「取消退費」復原。')).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: '確定退費' }))
 
     await waitFor(() => expect(updateEnrollmentRefundStatus).toHaveBeenCalledWith(
       expect.anything(),
@@ -147,11 +150,14 @@ describe('EnrollmentBillingDetailModal', () => {
     expect(props.onRefresh).toHaveBeenCalledOnce()
   })
 
-  it('cancels refund and refreshes on toggle click', async () => {
+  it('displays refund confirmation dialog and cancels refund upon confirm', async () => {
     vi.mocked(updateEnrollmentRefundStatus).mockResolvedValue(undefined)
     const { props } = renderModal({ enrollment: { ...enrollment, refunded: true } })
 
     fireEvent.click(screen.getByRole('button', { name: '取消退費' }))
+    expect(screen.getByText('確定要將此筆報名恢復為正常狀態嗎？')).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: '確定恢復' }))
 
     await waitFor(() => expect(updateEnrollmentRefundStatus).toHaveBeenCalledWith(
       expect.anything(),
@@ -167,6 +173,7 @@ describe('EnrollmentBillingDetailModal', () => {
     renderModal()
 
     fireEvent.click(screen.getByRole('button', { name: '標記退費' }))
+    fireEvent.click(screen.getByRole('button', { name: '確定退費' }))
 
     expect((await screen.findByRole('alert')).textContent).toContain('退費狀態更新失敗')
   })
@@ -217,7 +224,7 @@ describe('EnrollmentBillingDetailModal', () => {
       expect(screen.getByLabelText('正式費用合計').textContent).toBe('NT$ 2500')
     })
 
-    it('cancels edit mode and reverts changes', () => {
+    it('shows confirmation dialog when cancelling with unsaved changes and reverts changes upon confirm', () => {
       renderModal()
 
       fireEvent.click(screen.getByRole('button', { name: '編輯' }))
@@ -225,11 +232,40 @@ describe('EnrollmentBillingDetailModal', () => {
 
       fireEvent.click(screen.getByRole('button', { name: '取消' }))
 
+      expect(screen.getByText('離開後本次修改將不會保留，確定要放棄變更嗎？')).toBeTruthy()
+
+      fireEvent.click(screen.getByRole('button', { name: '放棄變更' }))
+
       // Back to view mode
       expect(screen.getByRole('button', { name: '編輯' })).toBeTruthy()
       expect(screen.queryByLabelText('學費')).toBeNull()
       expect(screen.getAllByText('NT$ 1900')).toHaveLength(2)
       expect(updateEnrollmentBillingDetails).not.toHaveBeenCalled()
+    })
+
+    it('cancels edit mode directly if there are no unsaved changes', () => {
+      renderModal()
+
+      fireEvent.click(screen.getByRole('button', { name: '編輯' }))
+      fireEvent.click(screen.getByRole('button', { name: '取消' }))
+
+      expect(screen.queryByText('離開後本次修改將不會保留，確定要放棄變更嗎？')).toBeNull()
+      expect(screen.getByRole('button', { name: '編輯' })).toBeTruthy()
+    })
+
+    it('shows confirmation dialog when closing modal with unsaved changes', () => {
+      const { props } = renderModal()
+
+      fireEvent.click(screen.getByRole('button', { name: '編輯' }))
+      fireEvent.change(screen.getByLabelText('學費'), { target: { value: '9999' } })
+
+      fireEvent.click(screen.getByRole('button', { name: 'Close enrollment billing details' }))
+
+      expect(screen.getByText('離開後本次修改將不會保留，確定要放棄變更嗎？')).toBeTruthy()
+      
+      fireEvent.click(screen.getByRole('button', { name: '放棄變更' }))
+
+      expect(props.onClose).toHaveBeenCalledOnce()
     })
 
     it('validates reversed period dates and does not call service', async () => {
