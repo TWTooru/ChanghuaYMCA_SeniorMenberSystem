@@ -532,13 +532,14 @@
 }
 
 .period-summary-stat {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  border-radius: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
   padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  box-shadow: var(--shadow-sm);
 }
 
 .period-summary-stat .stat-label {
@@ -578,17 +579,17 @@
 
 .period-summary-delta.good {
   color: var(--color-success);
-  background: rgba(16, 185, 129, 0.1);
+  background: var(--color-success-glow, rgba(16, 185, 129, 0.1));
 }
 
 .period-summary-delta.bad {
   color: var(--color-danger, #ef4444);
-  background: rgba(239, 68, 68, 0.1);
+  background: var(--color-danger-glow, rgba(239, 68, 68, 0.1));
 }
 
 .period-summary-delta.neutral {
   color: var(--text-muted);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--input-bg, rgba(255, 255, 255, 0.05));
 }
 
 /* Must follow the base .panel-card rule so collapsible panels do not inherit its outer padding. */
