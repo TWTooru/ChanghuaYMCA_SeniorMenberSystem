@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import './App.css'
-import { Activity, Users, Calendar, AlertCircle, ShieldCheck, BookOpen } from 'lucide-react'
+import { Activity, Users, Calendar, AlertCircle, ShieldCheck, BookOpen, CircleHelp } from 'lucide-react'
 
 import useApiData from './hooks/useApiData'
 import useStats from './hooks/useStats'
@@ -43,7 +43,7 @@ function AuthenticatedDashboard() {
 
   // 角色可能在 session 更新後降級；立即退出管理頁，避免保留已失效的管理介面。
   useEffect(() => {
-    if (role !== 'admin' && (activeTab === 'admin' || activeTab === 'courses')) setActiveTab('overview')
+    if (role !== 'admin' && (activeTab === 'admin' || activeTab === 'courses' || activeTab === 'question')) setActiveTab('overview')
   }, [role, activeTab])
 
   const { dbData, dbStatus, dbError } = useApiData(session, refreshCount)
@@ -113,7 +113,7 @@ function AuthenticatedDashboard() {
           )}
           {role === 'admin' && (
             <button className={`tab-btn ${activeTab === 'question' ? 'active' : ''}`} onClick={() => setActiveTab('question')} id="tab-question">
-              <ShieldCheck size={18} /><span>疑難雜症</span>
+              <CircleHelp size={18} /><span>疑難雜症</span>
             </button>
           )}
         </div>

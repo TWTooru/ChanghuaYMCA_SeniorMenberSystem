@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { detectPasswordFlow } from '../lib/authFlow';
 import { initialPasswordFlow, supabase } from '../lib/supabaseClient';
 
@@ -42,6 +42,8 @@ export const AuthProvider = ({ children }) => {
         supabase.auth.getSession().then(({ data: { session } }) => {
             setSession(session);
             setLoading(false);
+        }).catch(() => {
+            setLoading(false);
         });
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -60,12 +62,18 @@ export const AuthProvider = ({ children }) => {
     };
 
     const completePasswordFlow = () => {
-        window.history.replaceState({}, document.title, '/');
+        const basePath = window.location.pathname.replace(/\/set-password\/?$/, '') || '/';
+        window.history.replaceState({}, document.title, basePath);
         setPasswordFlow(null);
     };
 
+    const value = useMemo(
+        () => ({ session, user, role, loading, signOut, passwordFlow, completePasswordFlow }),
+        [session, user, role, loading, passwordFlow]
+    );
+
     return (
-        <AuthContext.Provider value={{ session, user, role, loading, signOut, passwordFlow, completePasswordFlow }}>
+        <AuthContext.Provider value={value}>
             {!loading && children}
         </AuthContext.Provider>
     );

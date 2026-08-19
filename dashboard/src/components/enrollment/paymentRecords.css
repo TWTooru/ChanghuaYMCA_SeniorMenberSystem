@@ -98,7 +98,7 @@
 
 .payment-records-editor button:focus-visible,
 .payment-records-editor input:focus-visible {
-  outline: 3px solid var(--primary-color);
+  outline: 3px solid var(--color-accent);
   outline-offset: 2px;
 }
 

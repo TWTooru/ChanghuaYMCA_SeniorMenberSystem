@@ -1,11 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
+import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabaseClient'
 import { createEnrollmentWithCourses } from '../../services/enrollmentService'
-import { normalizePeriod } from '../../domain/period'
-import { normalizePaymentRecords, reconcilePaymentRecords } from '../../domain/enrollmentPayments'
 import CourseTagPicker from './CourseTagPicker'
-import PaymentRecordsEditor from './PaymentRecordsEditor'
 import '../common/common.css'
 
 function getFocusableElements(container) {
@@ -15,16 +13,29 @@ function getFocusableElements(container) {
   )).filter(element => !element.hasAttribute('disabled'))
 }
 
-// 新增報名會連同課程與繳費紀錄，以單一 `createEnrollmentWithCourses` 請求原子儲存。
+const initialEnrollmentState = (defaultPeriod = '第1期') => ({
+  period: defaultPeriod,
+  reg_type: '續',
+  period_start_date: '',
+  period_end_date: '',
+  courses: [],
+  prepaid_amount: '',
+  prepaid_receipt_number: '',
+  tuition_fee: '',
+  materials_fee: '',
+  membership_fee: '',
+  fee_receipt_number: '',
+  refunded: false,
+  refund_info: '',
+  notes: '',
+  handled_by_name: '',
+  handled_on: '',
+})
+
+// 新增報名會連同課程與收據明細，以單一 `createEnrollmentWithCourses` 請求原子儲存。
 export default function AddEnrollModal({ student, onClose, onRefresh, defaultPeriod = '第1期' }) {
-  const [newEnroll, setNewEnroll] = useState({
-    period: defaultPeriod,
-    reg_type: '續',
-    refunded: false,
-    refund_info: '',
-    courses: [],
-    paymentRecords: [],
-  })
+  const { user } = useAuth()
+  const [newEnroll, setNewEnroll] = useState(() => initialEnrollmentState(defaultPeriod))
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const submitInFlightRef = useRef(false)
@@ -44,33 +55,25 @@ export default function AddEnrollModal({ student, onClose, onRefresh, defaultPer
     }
   }, [hasStudent])
 
+  const handleChange = event => {
+    const { name, value, type, checked } = event.target
+    setNewEnroll(current => ({
+      ...current,
+      [name]: type === 'checkbox' ? checked : value,
+    }))
+  }
+
   const handleAddEnrollSubmit = async event => {
     event.preventDefault()
     if (!student || submitInFlightRef.current) return
 
     setSubmitError('')
-    const period = normalizePeriod(newEnroll.period)
-    if (!period) {
-      setSubmitError('請輸入有效的期別，例如：第16期')
-      return
-    }
-    if (newEnroll.courses.length === 0) {
-      setSubmitError('請至少選擇一門課程')
-      return
-    }
-
-    try {
-      normalizePaymentRecords(newEnroll.paymentRecords, newEnroll.courses)
-    } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : '繳費資料格式不正確')
-      return
-    }
 
     submitInFlightRef.current = true
     setIsSubmitting(true)
     let succeeded = false
     try {
-      await createEnrollmentWithCourses(supabase, student.student_id, { ...newEnroll, period })
+      await createEnrollmentWithCourses(supabase, student.student_id, newEnroll)
       succeeded = true
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : '新增選課失敗')
@@ -167,81 +170,263 @@ export default function AddEnrollModal({ student, onClose, onRefresh, defaultPer
               style={{ opacity: 0.6, cursor: 'not-allowed' }}
             />
           </div>
-          <div className="form-group">
-            <label className="form-label" htmlFor="add-enrollment-period">修課期別 *</label>
-            <input
-              id="add-enrollment-period"
-              type="text"
-              className="form-input"
-              value={newEnroll.period}
-              disabled={isSubmitting}
-              onChange={event => setNewEnroll(current => ({ ...current, period: event.target.value }))}
-              required
-              placeholder="例如：16"
-            />
-          </div>
-          <div className="form-group">
-            <label className="form-label" htmlFor="add-enrollment-registration-type">新/續生</label>
-            <select
-              id="add-enrollment-registration-type"
-              className="form-select"
-              value={newEnroll.reg_type}
-              disabled={isSubmitting}
-              onChange={event => setNewEnroll(current => ({ ...current, reg_type: event.target.value }))}
-            >
-              <option value="新">新</option>
-              <option value="續">續</option>
-            </select>
-          </div>
-          <div className="form-group full-width">
-            <span className="form-label">選修課程 *</span>
-            <CourseTagPicker
-              selectedCourseNames={newEnroll.courses}
-              lockedCourseNames={[]}
-              disabled={isSubmitting}
-              onChange={courses => setNewEnroll(current => ({
-                ...current,
-                courses,
-                paymentRecords: reconcilePaymentRecords(current.paymentRecords, courses),
-              }))}
-            />
-          </div>
-          <div className="form-group full-width">
-            <PaymentRecordsEditor
-              selectedCourseNames={newEnroll.courses}
-              records={newEnroll.paymentRecords}
-              onChange={paymentRecords => setNewEnroll(current => ({ ...current, paymentRecords }))}
-              disabled={isSubmitting}
-            />
-          </div>
-          <div className="form-group form-checkbox-group">
-            <input
-              type="checkbox"
-              className="form-checkbox"
-              id="add-enrollment-refunded"
-              checked={newEnroll.refunded}
-              disabled={isSubmitting}
-              onChange={event => setNewEnroll(current => ({ ...current, refunded: event.target.checked }))}
-            />
-            <label className="form-label" htmlFor="add-enrollment-refunded" style={{ cursor: 'pointer' }}>是否已退費</label>
-          </div>
-          <div className="form-group">
-            {newEnroll.refunded && (
-              <>
-                <label className="form-label" htmlFor="add-enrollment-refund-notes">退費原因/備註</label>
+
+          <fieldset className="member-wizard-section">
+            <legend>報名資料</legend>
+            <div className="member-wizard-section-grid">
+              <div className="form-group">
+                <label className="form-label" htmlFor="add-enrollment-period">修課期別 *</label>
                 <input
-                  id="add-enrollment-refund-notes"
+                  id="add-enrollment-period"
+                  name="period"
                   type="text"
                   className="form-input"
-                  value={newEnroll.refund_info}
+                  value={newEnroll.period}
                   disabled={isSubmitting}
-                  onChange={event => setNewEnroll(current => ({ ...current, refund_info: event.target.value }))}
-                  placeholder="例如: 因身體不適退費"
+                  onChange={handleChange}
+                  required
+                  placeholder="例如：16"
                 />
-              </>
-            )}
-          </div>
-          {submitError && <div role="alert" className="full-width">{submitError}</div>}
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="add-enrollment-registration-type">新/續生</label>
+                <select
+                  id="add-enrollment-registration-type"
+                  name="reg_type"
+                  className="form-select"
+                  value={newEnroll.reg_type}
+                  disabled={isSubmitting}
+                  onChange={handleChange}
+                >
+                  <option value="新">新</option>
+                  <option value="續">續</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="add-enrollment-start-date">開始日期 *</label>
+                <input
+                  id="add-enrollment-start-date"
+                  name="period_start_date"
+                  type="date"
+                  className="form-input"
+                  value={newEnroll.period_start_date}
+                  disabled={isSubmitting}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="add-enrollment-end-date">結束日期 *</label>
+                <input
+                  id="add-enrollment-end-date"
+                  name="period_end_date"
+                  type="date"
+                  className="form-input"
+                  value={newEnroll.period_end_date}
+                  disabled={isSubmitting}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              <div className="form-group full-width">
+                <span className="form-label">選修課程 *</span>
+                <CourseTagPicker
+                  selectedCourseNames={newEnroll.courses}
+                  lockedCourseNames={[]}
+                  disabled={isSubmitting}
+                  onChange={courses => setNewEnroll(current => ({
+                    ...current,
+                    courses,
+                  }))}
+                />
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset className="member-wizard-section">
+            <legend>預繳</legend>
+            <div className="member-wizard-section-grid">
+              <div className="form-group">
+                <label className="form-label" htmlFor="add-enrollment-prepaid-amount">預繳金額</label>
+                <input
+                  id="add-enrollment-prepaid-amount"
+                  name="prepaid_amount"
+                  type="number"
+                  min="0"
+                  step="1"
+                  inputMode="numeric"
+                  className="form-input"
+                  value={newEnroll.prepaid_amount}
+                  disabled={isSubmitting}
+                  onChange={handleChange}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="add-enrollment-prepaid-no">預繳 No.</label>
+                <input
+                  id="add-enrollment-prepaid-no"
+                  name="prepaid_receipt_number"
+                  type="text"
+                  className="form-input"
+                  value={newEnroll.prepaid_receipt_number}
+                  disabled={isSubmitting}
+                  onChange={handleChange}
+                />
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset className="member-wizard-section">
+            <legend>正式收據</legend>
+            <div className="member-wizard-section-grid">
+              <div className="form-group">
+                <label className="form-label" htmlFor="add-enrollment-tuition-fee">學費</label>
+                <input
+                  id="add-enrollment-tuition-fee"
+                  name="tuition_fee"
+                  type="number"
+                  min="0"
+                  step="1"
+                  inputMode="numeric"
+                  className="form-input"
+                  value={newEnroll.tuition_fee}
+                  disabled={isSubmitting}
+                  onChange={handleChange}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="add-enrollment-materials-fee">教材費</label>
+                <input
+                  id="add-enrollment-materials-fee"
+                  name="materials_fee"
+                  type="number"
+                  min="0"
+                  step="1"
+                  inputMode="numeric"
+                  className="form-input"
+                  value={newEnroll.materials_fee}
+                  disabled={isSubmitting}
+                  onChange={handleChange}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="add-enrollment-membership-fee">會友費</label>
+                <input
+                  id="add-enrollment-membership-fee"
+                  name="membership_fee"
+                  type="number"
+                  min="0"
+                  step="1"
+                  inputMode="numeric"
+                  className="form-input"
+                  value={newEnroll.membership_fee}
+                  disabled={isSubmitting}
+                  onChange={handleChange}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="add-enrollment-fee-no">正式收據 No.</label>
+                <input
+                  id="add-enrollment-fee-no"
+                  name="fee_receipt_number"
+                  type="text"
+                  className="form-input"
+                  value={newEnroll.fee_receipt_number}
+                  disabled={isSubmitting}
+                  onChange={handleChange}
+                />
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset className="member-wizard-section">
+            <legend>退費狀態</legend>
+            <div className="member-wizard-section-grid">
+              <div className="form-group form-checkbox-group">
+                <input
+                  type="checkbox"
+                  className="form-checkbox"
+                  id="add-enrollment-refunded"
+                  name="refunded"
+                  checked={newEnroll.refunded}
+                  disabled={isSubmitting}
+                  onChange={handleChange}
+                />
+                <label className="form-label" htmlFor="add-enrollment-refunded" style={{ cursor: 'pointer' }}>是否已退費</label>
+              </div>
+              {newEnroll.refunded && (
+                <div className="form-group">
+                  <label className="form-label" htmlFor="add-enrollment-refund-notes">退費原因/備註</label>
+                  <input
+                    id="add-enrollment-refund-notes"
+                    name="refund_info"
+                    type="text"
+                    className="form-input"
+                    value={newEnroll.refund_info}
+                    disabled={isSubmitting}
+                    onChange={handleChange}
+                    placeholder="例如: 因身體不適退費"
+                  />
+                </div>
+              )}
+            </div>
+          </fieldset>
+
+          <fieldset className="member-wizard-section">
+            <legend>其他資料</legend>
+            <div className="member-wizard-section-grid">
+              <div className="form-group full-width">
+                <label className="form-label" htmlFor="add-enrollment-notes">備註</label>
+                <textarea
+                  id="add-enrollment-notes"
+                  name="notes"
+                  className="form-input form-textarea"
+                  rows={3}
+                  value={newEnroll.notes}
+                  disabled={isSubmitting}
+                  onChange={handleChange}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="add-enrollment-handled-by">經手人姓名</label>
+                <input
+                  id="add-enrollment-handled-by"
+                  name="handled_by_name"
+                  type="text"
+                  className="form-input"
+                  value={newEnroll.handled_by_name}
+                  disabled={isSubmitting}
+                  onChange={handleChange}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="add-enrollment-account">登入帳號（自動帶入）</label>
+                <input
+                  id="add-enrollment-account"
+                  className="form-input"
+                  value={user?.email || ''}
+                  readOnly
+                  aria-readonly="true"
+                  disabled
+                  style={{ opacity: 0.6, cursor: 'not-allowed' }}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="add-enrollment-handled-on">辦理日期</label>
+                <input
+                  id="add-enrollment-handled-on"
+                  name="handled_on"
+                  type="date"
+                  className="form-input"
+                  value={newEnroll.handled_on}
+                  disabled={isSubmitting}
+                  onChange={handleChange}
+                />
+              </div>
+            </div>
+          </fieldset>
+
+          {submitError && <div role="alert" className="full-width" style={{ color: 'var(--danger)' }}>{submitError}</div>}
           <div className="form-footer full-width">
             <button
               type="button"

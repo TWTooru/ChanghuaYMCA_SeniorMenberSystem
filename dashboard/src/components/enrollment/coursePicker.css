@@ -43,8 +43,8 @@
 }
 
 .course-tag-picker-tag.selected {
-  background: var(--primary-color);
-  border-color: var(--primary-color);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
   color: white;
 }
 
@@ -65,7 +65,7 @@
 .course-tag-picker-tag:focus-visible,
 .course-catalog-manager button:focus-visible,
 .course-catalog-manager input:focus-visible {
-  outline: 3px solid var(--primary-color);
+  outline: 3px solid var(--color-accent);
   outline-offset: 2px;
 }
 

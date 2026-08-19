@@ -66,8 +66,17 @@ export function exportToExcel(studentsData, enrollmentsData, courseData, filenam
         '新續狀況': e.reg_type,
         '報名課程': Array.isArray(e.courses) ? e.courses.join(', ') : e.courses,
         '是否退費': (e.refunded === 1 || e.refunded === true || e.refunded === '1' || String(e.refunded).toLowerCase() === 'true') ? '是' : '否',
-        '金額': e.amount,
-        '發票編號': e.invoice_number,
+        '預繳金額': e.prepaid_amount,
+        '預繳收據號碼': e.prepaid_receipt_number,
+        '學費': e.tuition_fee,
+        '材料費': e.materials_fee,
+        '會費': e.membership_fee,
+        '費用收據號碼': e.fee_receipt_number,
+        '經辦人': e.handled_by_name,
+        '經辦日期': e.handled_on,
+        '備註': e.notes,
+        '金額（舊版）': e.amount,
+        '發票編號（舊版）': e.invoice_number,
       };
       Object.keys(item).forEach(key => {
         if (item[key] === undefined) delete item[key];

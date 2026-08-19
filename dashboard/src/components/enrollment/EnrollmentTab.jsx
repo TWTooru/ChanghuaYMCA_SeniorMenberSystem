@@ -84,7 +84,7 @@ export default function EnrollmentTab({ students, enrollments, onSelectEnrollmen
               setHistoryPage(1)
             }}
           >
-            <option value="">全部期別</option>
+            <option key="all" value="">全部期別</option>
             {periodsList.map(period => (
               <option key={period} value={period}>{period}</option>
             ))}
@@ -154,7 +154,9 @@ export default function EnrollmentTab({ students, enrollments, onSelectEnrollmen
                     <td>
                       {billing.invoiceNumbers.length > 0 ? (
                         <div className="invoice-number-list">
-                          {billing.invoiceNumbers.map(invoice => <span key={invoice}>{invoice}</span>)}
+                          {billing.invoiceNumbers.map((invoice, i) => (
+                            <span key={`${invoice}-${i}`} className="invoice-number-tag">{invoice}</span>
+                          ))}
                         </div>
                       ) : '--'}
                     </td>

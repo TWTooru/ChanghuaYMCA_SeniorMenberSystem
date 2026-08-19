@@ -17,6 +17,9 @@ const ROLE_PERMISSIONS = {
     canDeleteEnrollment: false,
     canSyncExcel: false,
     canRefreshSync: false,
+    canManageUsers: false,
+    canManageCourses: false,
+    canViewFaq: false,
   },
   editor: {
     canViewData: true,
@@ -29,6 +32,9 @@ const ROLE_PERMISSIONS = {
     canDeleteEnrollment: false,
     canSyncExcel: true,
     canRefreshSync: true,
+    canManageUsers: false,
+    canManageCourses: false,
+    canViewFaq: false,
   },
   admin: {
     canViewData: true,
@@ -41,6 +47,9 @@ const ROLE_PERMISSIONS = {
     canDeleteEnrollment: true,
     canSyncExcel: true,
     canRefreshSync: true,
+    canManageUsers: true,
+    canManageCourses: true,
+    canViewFaq: true,
   },
 }
 

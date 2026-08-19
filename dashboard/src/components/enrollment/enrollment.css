@@ -265,3 +265,23 @@
 .enrollment-edit-form .form-group {
   margin-bottom: 0;
 }
+
+.invoice-number-list {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.invoice-number-tag {
+  display: inline-block;
+  padding: 1.5px 6px;
+  font-size: 11px;
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+

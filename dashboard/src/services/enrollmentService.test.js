@@ -8,31 +8,50 @@ import {
 } from './enrollmentService'
 
 describe('createEnrollmentWithCourses', () => {
-  it('sends normalized grouped payment records to the enrollment RPC', async () => {
+  it('sends normalized enrollment payload to the create_member_enrollment RPC', async () => {
     const client = {
-      rpc: vi.fn().mockResolvedValue({ data: 42, error: null }),
+      rpc: vi.fn().mockResolvedValue({ data: { enrollment_id: 42 }, error: null }),
     }
 
     const result = await createEnrollmentWithCourses(client, '1', {
-      period: '第16期', reg_type: '新生',
-      refunded: false, refund_info: '', courses: ['A', ' B ', 'A', 'C'],
-      paymentRecords: [
-        { localId: 'p1', courseNames: ['A'], amount: '1000', invoiceNumber: ' A001 ' },
-        { localId: 'p2', courseNames: ['B', 'C'], amount: '2000', invoiceNumber: '' },
-      ],
+      period: '第16期',
+      period_start_date: '2026-09-01',
+      period_end_date: '2026-12-31',
+      reg_type: '新生',
+      refunded: false,
+      refund_info: '',
+      courses: ['A', ' B ', 'A', 'C'],
+      prepaid_amount: '500',
+      prepaid_receipt_number: 'P-1',
+      tuition_fee: '2400',
+      materials_fee: '300',
+      membership_fee: '100',
+      fee_receipt_number: 'F-1',
+      handled_by_name: '經手人',
+      handled_on: '2026-08-18',
+      notes: '備註文字',
     })
 
-    expect(client.rpc).toHaveBeenCalledWith('create_enrollment_with_courses', {
+    expect(client.rpc).toHaveBeenCalledWith('create_member_enrollment', {
       p_student_id: 1,
-      p_period: '第16期',
-      p_reg_type: '新生',
-      p_refunded: 0,
-      p_refund_info: null,
-      p_course_names: ['A', 'B', 'C'],
-      p_payment_records: [
-        { course_names: ['A'], amount: 1000, invoice_number: 'A001' },
-        { course_names: ['B', 'C'], amount: 2000, invoice_number: null },
-      ],
+      p_enrollment: {
+        period: '第16期',
+        period_start_date: '2026-09-01',
+        period_end_date: '2026-12-31',
+        reg_type: '新生',
+        refunded: false,
+        refund_info: null,
+        courses: ['A', 'B', 'C'],
+        prepaid_amount: 500,
+        prepaid_receipt_number: 'P-1',
+        tuition_fee: 2400,
+        materials_fee: 300,
+        membership_fee: 100,
+        fee_receipt_number: 'F-1',
+        handled_by_name: '經手人',
+        handled_on: '2026-08-18',
+        notes: '備註文字',
+      },
     })
     expect(result).toEqual({ enrollment_id: 42 })
   })
@@ -43,8 +62,13 @@ describe('createEnrollmentWithCourses', () => {
     }
 
     await expect(createEnrollmentWithCourses(client, '1', {
-      period: '第16期', reg_type: '新生',
-      refunded: false, refund_info: '', courses: ['A'], paymentRecords: [],
+      period: '第16期',
+      period_start_date: '2026-09-01',
+      period_end_date: '2026-12-31',
+      reg_type: '新生',
+      refunded: false,
+      refund_info: '',
+      courses: ['A'],
     })).rejects.toThrow('該會員在這個期別已經有相同的報名紀錄')
   })
 
@@ -52,10 +76,28 @@ describe('createEnrollmentWithCourses', () => {
     const client = { rpc: vi.fn() }
     await expect(
       createEnrollmentWithCourses(client, '1', {
-      period: '第15期', reg_type: '新',
-        refunded: false, refund_info: '', courses: [],
+        period: '第15期',
+        period_start_date: '2026-09-01',
+        period_end_date: '2026-12-31',
+        reg_type: '新',
+        refunded: false,
+        refund_info: '',
+        courses: [],
       })
     ).rejects.toThrow('請至少選擇一門課程')
+    expect(client.rpc).not.toHaveBeenCalled()
+  })
+
+  it('throws when start or end date is missing', async () => {
+    const client = { rpc: vi.fn() }
+    await expect(
+      createEnrollmentWithCourses(client, '1', {
+        period: '第15期',
+        period_start_date: '',
+        period_end_date: '',
+        courses: ['瑜珈'],
+      })
+    ).rejects.toThrow('請選擇開始日期與結束日期')
     expect(client.rpc).not.toHaveBeenCalled()
   })
 
@@ -65,8 +107,13 @@ describe('createEnrollmentWithCourses', () => {
     }
     await expect(
       createEnrollmentWithCourses(client, '1', {
-        period: '第15期', reg_type: '續',
-        refunded: false, refund_info: '', courses: ['瑜珈'],
+        period: '第15期',
+        period_start_date: '2026-09-01',
+        period_end_date: '2026-12-31',
+        reg_type: '續',
+        refunded: false,
+        refund_info: '',
+        courses: ['瑜珈'],
       })
     ).rejects.toThrow('此學員在「第十五季」已存在選課紀錄')
   })
@@ -80,7 +127,6 @@ describe('deleteEnrollment', () => {
         calls.push(table)
         return {
           delete() {
-            calls.push('delete')
             return {
               eq: async (col, val) => {
                 calls.push({ col, val })

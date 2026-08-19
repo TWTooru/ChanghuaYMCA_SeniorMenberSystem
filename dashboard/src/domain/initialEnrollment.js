@@ -12,6 +12,7 @@ const INTEGER_MAX = 2147483647
 const MONEY_KEYS = ['prepaid_amount', 'tuition_fee', 'materials_fee', 'membership_fee']
 const OPTIONAL_TEXT_KEYS = [
   'notes', 'prepaid_receipt_number', 'fee_receipt_number', 'handled_by_name', 'handled_on',
+  'refund_info',
 ]
 
 function optionalMoney(value) {
@@ -46,6 +47,8 @@ export function normalizeInitialEnrollmentForm(form) {
     period_start_date: startDate,
     period_end_date: endDate,
     courses,
+    reg_type: String(form.reg_type ?? '').trim() || '續',
+    refunded: Boolean(form.refunded),
   }
   for (const key of OPTIONAL_TEXT_KEYS) normalized[key] = String(form[key] ?? '').trim() || null
   for (const key of MONEY_KEYS) normalized[key] = optionalMoney(form[key])

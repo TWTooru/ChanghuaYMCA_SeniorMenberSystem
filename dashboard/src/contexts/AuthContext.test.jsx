@@ -42,6 +42,13 @@ describe('detectPasswordFlow', () => {
     expect(detectPasswordFlow({ pathname: '/set-password', search: '?flow=invite' })).toBe('invite')
   })
 
+  it('recognizes invite setup links in subdirectories', () => {
+    expect(detectPasswordFlow({
+      pathname: '/YMCA_SocialEducationMenberSystem/set-password',
+      search: '?flow=invite',
+    })).toBe('invite')
+  })
+
   it('recognizes Supabase invite callbacks from the URL fragment', () => {
     expect(detectPasswordFlow({
       pathname: '/',
@@ -58,11 +65,20 @@ describe('detectPasswordFlow', () => {
     expect(detectPasswordFlow({ pathname: '/set-password', search: '?flow=recovery' })).toBe('recovery')
   })
 
+  it('recognizes recovery setup links in subdirectories', () => {
+    expect(detectPasswordFlow({
+      pathname: '/YMCA_SocialEducationMenberSystem/set-password',
+      search: '?flow=recovery',
+    })).toBe('recovery')
+  })
+
   it('ignores normal application URLs', () => {
     expect(detectPasswordFlow({ pathname: '/', search: '' })).toBeNull()
+    expect(detectPasswordFlow({ pathname: '/YMCA_SocialEducationMenberSystem/', search: '' })).toBeNull()
   })
 
   it('ignores unknown password flows', () => {
     expect(detectPasswordFlow({ pathname: '/set-password', search: '?flow=unknown' })).toBeNull()
+    expect(detectPasswordFlow({ pathname: '/YMCA_SocialEducationMenberSystem/set-password', search: '?flow=unknown' })).toBeNull()
   })
 })
