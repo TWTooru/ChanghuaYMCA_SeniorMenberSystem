@@ -119,7 +119,6 @@ export default function AddEnrollModal({ student, onClose, onRefresh, defaultPer
   return (
     <div
       className="modal-overlay-center"
-      onClick={isSubmitting ? undefined : onClose}
       id="modal-add-enrollment-overlay"
     >
       <div

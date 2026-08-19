@@ -5,7 +5,7 @@ export default function ConfirmDialog({ isOpen, title, message, confirmLabel = '
   if (!isOpen) return null
 
   return (
-    <div className="modal-overlay-center" onClick={onCancel}>
+    <div className="modal-overlay-center">
       <div className="form-modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '440px' }}>
         <div style={{ padding: '24px', textAlign: 'center' }}>
           <AlertCircle size={48} style={{ color: tone === 'danger' ? 'var(--color-danger)' : undefined, marginBottom: '16px' }} />

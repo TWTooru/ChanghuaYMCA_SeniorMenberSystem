@@ -93,7 +93,7 @@ export default function AddStudentModal({ onClose, onRefresh }) {
 
   const closeModal = isSubmitting ? undefined : onClose
 
-  return <div className="modal-overlay-center" onClick={closeModal} id="modal-add-student-overlay">
+  return <div className="modal-overlay-center" id="modal-add-student-overlay">
     <div className="form-modal-content" role="dialog" aria-modal="true" aria-labelledby="add-member-title" onClick={event => event.stopPropagation()}>
       <div className="modal-header-centered">
         <h2 id="add-member-title">新增會員與第一筆報名</h2>

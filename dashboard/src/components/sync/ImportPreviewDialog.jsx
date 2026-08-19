@@ -36,7 +36,7 @@ export default function ImportPreviewDialog({ preview, isImporting = false, onCo
   }
 
   return createPortal(
-    <div className="modal-overlay-center" onClick={onCancel}>
+    <div className="modal-overlay-center">
       <div className="form-modal-content import-preview-modal-content" ref={dialogRef} role="dialog" tabIndex={-1} aria-modal="true" aria-labelledby="import-preview-title" onClick={event => event.stopPropagation()} onKeyDown={handleKeyDown}>
         <div className="modal-header-centered"><h2 id="import-preview-title">匯入會員預覽</h2></div>
         <div className="form-grid">

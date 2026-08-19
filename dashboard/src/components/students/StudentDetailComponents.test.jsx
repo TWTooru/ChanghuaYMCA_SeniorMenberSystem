@@ -133,14 +133,14 @@ describe('Student detail components', () => {
     expect(onClose).toHaveBeenCalledOnce()
   })
 
-  it('guards overlay and Escape dismissal when profile edits are unsaved', () => {
+  it('guards close button and Escape dismissal when profile edits are unsaved', () => {
     const onClose = vi.fn()
     authState.role = 'admin'
     const { container } = render(<StudentDetailModal student={student} enrollments={[]} initialTab="profile" onClose={onClose} />)
     fireEvent.click(screen.getByRole('button', { name: /編輯/ }))
     fireEvent.change(screen.getByDisplayValue('王小明'), { target: { value: '王大明' } })
 
-    fireEvent.click(container.querySelector('#modal-overlay'))
+    fireEvent.click(container.querySelector('#btn-close-modal'))
     expect(screen.getByText('尚有未儲存變更')).not.toBeNull()
     expect(onClose).not.toHaveBeenCalled()
     fireEvent.click(screen.getByRole('button', { name: '繼續編輯' }))
