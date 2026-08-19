@@ -24,6 +24,7 @@ import { useAuth } from './contexts/AuthContext'
 import usePermissions from './hooks/usePermissions'
 import useTheme from './hooks/useTheme'
 import AppHeader from './components/common/AppHeader'
+import QuickSearch from './components/common/QuickSearch'
 
 /**
  * 應用程式組合根節點：依認證流程切換登入／設密碼畫面，登入後再串接
@@ -38,8 +39,20 @@ function AuthenticatedDashboard() {
   const [showAddStudentModal, setShowAddStudentModal] = useState(false)
   const [showAddEnrollModal, setShowAddEnrollModal] = useState(false)
   const [showExportModal, setShowExportModal] = useState(false)
+  const [showQuickSearch, setShowQuickSearch] = useState(false)
   const [selectedBillingRecord, setSelectedBillingRecord] = useState(null)
   const [refreshCount, setRefreshCount] = useState(0)
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault()
+        setShowQuickSearch(prev => !prev)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   // 角色可能在 session 更新後降級；立即退出管理頁，避免保留已失效的管理介面。
   useEffect(() => {
@@ -196,6 +209,14 @@ function AuthenticatedDashboard() {
             setShowExportModal(false)
             handleExport(params)
           }}
+        />
+      )}
+
+      {showQuickSearch && (
+        <QuickSearch
+          students={students}
+          onSelect={student => openStudentDetail(student, 'profile', true)}
+          onClose={() => setShowQuickSearch(false)}
         />
       )}
     </div>
