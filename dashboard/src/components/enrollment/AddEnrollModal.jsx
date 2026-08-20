@@ -3,6 +3,7 @@ import { X } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabaseClient'
 import { createEnrollmentWithCourses } from '../../services/enrollmentService'
+import { normalizePeriod, periodNumber } from '../../domain/period'
 import CourseTagPicker from './CourseTagPicker'
 import '../common/common.css'
 
@@ -13,24 +14,27 @@ function getFocusableElements(container) {
   )).filter(element => !element.hasAttribute('disabled'))
 }
 
-const initialEnrollmentState = (defaultPeriod = '第1期') => ({
-  period: defaultPeriod,
-  reg_type: '續',
-  period_start_date: '',
-  period_end_date: '',
-  courses: [],
-  prepaid_amount: '',
-  prepaid_receipt_number: '',
-  tuition_fee: '',
-  materials_fee: '',
-  membership_fee: '',
-  fee_receipt_number: '',
-  refunded: false,
-  refund_info: '',
-  notes: '',
-  handled_by_name: '',
-  handled_on: '',
-})
+const initialEnrollmentState = (defaultPeriod = '第1期') => {
+  const num = periodNumber(defaultPeriod)
+  return {
+    period: num > 0 ? String(num) : '',
+    reg_type: '續',
+    period_start_date: '',
+    period_end_date: '',
+    courses: [],
+    prepaid_amount: '',
+    prepaid_receipt_number: '',
+    tuition_fee: '',
+    materials_fee: '',
+    membership_fee: '',
+    fee_receipt_number: '',
+    refunded: false,
+    refund_info: '',
+    notes: '',
+    handled_by_name: '',
+    handled_on: '',
+  }
+}
 
 // 新增報名會連同課程與收據明細，以單一 `createEnrollmentWithCourses` 請求原子儲存。
 export default function AddEnrollModal({ student, onClose, onRefresh, defaultPeriod = '第1期' }) {
@@ -73,7 +77,11 @@ export default function AddEnrollModal({ student, onClose, onRefresh, defaultPer
     setIsSubmitting(true)
     let succeeded = false
     try {
-      await createEnrollmentWithCourses(supabase, student.student_id, newEnroll)
+      const payload = {
+        ...newEnroll,
+        period: normalizePeriod(newEnroll.period) || newEnroll.period,
+      }
+      await createEnrollmentWithCourses(supabase, student.student_id, payload)
       succeeded = true
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : '新增選課失敗')
@@ -175,17 +183,24 @@ export default function AddEnrollModal({ student, onClose, onRefresh, defaultPer
             <div className="member-wizard-section-grid">
               <div className="form-group">
                 <label className="form-label" htmlFor="add-enrollment-period">修課期別 *</label>
-                <input
-                  id="add-enrollment-period"
-                  name="period"
-                  type="text"
-                  className="form-input"
-                  value={newEnroll.period}
-                  disabled={isSubmitting}
-                  onChange={handleChange}
-                  required
-                  placeholder="例如：16"
-                />
+                <div className="period-input-group">
+                  <span className="period-prefix">第</span>
+                  <input
+                    id="add-enrollment-period"
+                    name="period"
+                    type="number"
+                    min="1"
+                    step="1"
+                    inputMode="numeric"
+                    className="form-input period-number-input"
+                    value={newEnroll.period}
+                    disabled={isSubmitting}
+                    onChange={handleChange}
+                    required
+                    placeholder="16"
+                  />
+                  <span className="period-suffix">期</span>
+                </div>
               </div>
               <div className="form-group">
                 <label className="form-label" htmlFor="add-enrollment-registration-type">新/續生</label>

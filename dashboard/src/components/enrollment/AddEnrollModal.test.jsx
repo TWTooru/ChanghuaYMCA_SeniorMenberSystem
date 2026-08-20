@@ -208,10 +208,36 @@ describe('AddEnrollModal', () => {
     expect(window.alert).not.toHaveBeenCalled()
   })
 
+  it('renders period as number input and submits canonical period format', async () => {
+    createEnrollmentWithCourses.mockResolvedValue({ enrollment_id: '42' })
+    const { onClose } = renderModal({ defaultPeriod: '第16期' })
+
+    const periodInput = screen.getByLabelText('修課期別 *')
+    expect(periodInput.type).toBe('number')
+    expect(periodInput.value).toBe('16')
+    expect(screen.getByText('第')).toBeTruthy()
+    expect(screen.getByText('期')).toBeTruthy()
+
+    fireEvent.change(periodInput, { target: { value: '18' } })
+    fireEvent.change(screen.getByLabelText('開始日期 *'), { target: { value: '2026-09-01' } })
+    fireEvent.change(screen.getByLabelText('結束日期 *'), { target: { value: '2026-12-31' } })
+    selectCourse('Course A')
+
+    fireEvent.click(screen.getByRole('button', { name: '新增選課' }))
+
+    await waitFor(() => expect(createEnrollmentWithCourses).toHaveBeenCalledOnce())
+    expect(createEnrollmentWithCourses.mock.calls[0][2]).toMatchObject({
+      period: '第18期',
+      period_start_date: '2026-09-01',
+      period_end_date: '2026-12-31',
+      courses: ['Course A'],
+    })
+  })
+
   it('initializes the period field from the supplied default', () => {
     renderModal({ defaultPeriod: '第16期' })
 
-    expect(screen.getByLabelText('修課期別 *').value).toBe('第16期')
+    expect(screen.getByLabelText('修課期別 *').value).toBe('16')
   })
 
   it('associates every enrollment field label with a stable control ID', () => {
