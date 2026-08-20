@@ -1,5 +1,5 @@
 begin;
-select plan(18);
+select plan(20);
 
 select has_table('public', 'billing_receipts', 'billing receipt headers exist');
 select has_table('public', 'billing_receipt_courses', 'billing receipt course links exist');
@@ -18,13 +18,15 @@ values ('A', true), ('B', true);
 
 select lives_ok(
   $$select set_config('test.enrollment_id', public.create_enrollment_with_courses(
-    9001, '第16期', '續', 0, null, array['A', 'B'],
+    9001::bigint, '第16期', '續', 0, null, array['A', 'B'],
     '[{"course_names":["A"],"amount":1200,"invoice_number":"R-001"}]'::jsonb
   )::text, true)$$,
   'editor can create a period enrollment with grouped payment'
 );
 select is((select count(*)::integer from public.courses where enrollment_id = current_setting('test.enrollment_id')::bigint), 2, 'both selected courses are created');
 select is((select count(*)::integer from public.billing_receipts), 1, 'one grouped receipt is created');
+select is((select receipt_kind from public.billing_receipts), 'other', 'grouped receipt has receipt_kind other');
+select ok(((select form_id from public.billing_receipts) > 0), 'grouped receipt has a valid form_id');
 select is((select count(*)::integer from public.billing_receipt_courses), 1, 'receipt links only its selected course');
 select throws_ok(
   $$select public.update_enrollment_with_courses(
@@ -51,7 +53,7 @@ select results_eq(
 );
 select set_config('request.jwt.claims', '{"app_metadata":{"app_role":"viewer"}}', true);
 select throws_ok(
-  $$select public.create_enrollment_with_courses(9001, '第17期', '續', 0, null, array['Viewer'], '[]'::jsonb)$$,
+  $$select public.create_enrollment_with_courses(9001::bigint, '第17期', '續', 0, null, array['Viewer'], '[]'::jsonb)$$,
   '42501', 'ENROLLMENT_CREATE_FORBIDDEN',
   'viewer cannot create an enrollment through RPC'
 );

@@ -1,5 +1,5 @@
 begin;
-select plan(31);
+select plan(33);
 
 truncate table public.students restart identity cascade;
 
@@ -31,7 +31,7 @@ select pg_catalog.set_config(
   'test.created',
   public.create_student_with_initial_enrollment(
     '{"email":" New.Member@Example.com ","name":"新會員","gender":"女","phone":" 0912-345-678 ","birth_date":"1985-07-01","address":" 彰化市 ","organization":" YMCA ","education":"專科/大學"}'::jsonb,
-    '{"period":"第6期","period_start_date":"2026-09-01","period_end_date":"2026-12-31","courses":["瑜伽入門","有氧舞蹈"],"notes":" 備註文字 ","prepaid_amount":500,"prepaid_receipt_number":" P-1 ","tuition_fee":2400,"materials_fee":300,"membership_fee":100,"fee_receipt_number":" F-1 ","handled_by_name":" 經手人 ","handled_on":"2026-08-17","handled_by_user_id":"99999999-9999-4999-8999-999999999999","handled_by_account":"spoof@example.com"}'::jsonb
+    '{"period":"第6期","period_start_date":"2026-09-01","period_end_date":"2026-12-31","courses":["瑜伽入門","有氧舞蹈"],"notes":" 備註文字 ","prepaid_amount":500,"prepaid_receipt_number":" P-1 ","tuition_fee":2400,"materials_fee":300,"membership_fee":100,"fee_receipt_number":" F-1 ","handled_by_name":" 經手人 ","reported_on":"2026-08-17","handled_by_user_id":"99999999-9999-4999-8999-999999999999","handled_by_account":"spoof@example.com"}'::jsonb
   )::text,
   true
 );
@@ -44,6 +44,10 @@ select ok(
   ((pg_catalog.current_setting('test.created')::jsonb ->> 'enrollment_id')::bigint > 0),
   'RPC returns a positive enrollment ID'
 );
+select ok(
+  ((pg_catalog.current_setting('test.created')::jsonb ->> 'form_id')::bigint > 0),
+  'RPC returns a positive form ID'
+);
 select is(
   (select pg_catalog.jsonb_build_array(email, name)
    from public.students
@@ -53,70 +57,70 @@ select is(
 );
 select is(
   (select pg_catalog.jsonb_build_object(
-      'period', period, 'start', period_start_date, 'end', period_end_date,
-      'notes', notes, 'prepaid', prepaid_amount, 'prepaid_no', prepaid_receipt_number,
-      'tuition', tuition_fee, 'materials', materials_fee, 'membership', membership_fee,
-      'fee_no', fee_receipt_number, 'handler', handled_by_name, 'handled_on', handled_on
+      'period', period, 'start', period_start_date, 'end', period_end_date
     )
    from public.enrollments
    where enrollment_id = (pg_catalog.current_setting('test.created')::jsonb ->> 'enrollment_id')::bigint),
-  '{"period":"第6期","start":"2026-09-01","end":"2026-12-31","notes":"備註文字","prepaid":500,"prepaid_no":"P-1","tuition":2400,"materials":300,"membership":100,"fee_no":"F-1","handler":"經手人","handled_on":"2026-08-17"}'::jsonb,
-  'paper-form enrollment values are stored and trimmed'
+  '{"period":"第6期","start":"2026-09-01","end":"2026-12-31"}'::jsonb,
+  'enrollment period and dates are stored'
 );
 select is(
-  (select handled_by_user_id from public.enrollments
-   where enrollment_id = (pg_catalog.current_setting('test.created')::jsonb ->> 'enrollment_id')::bigint),
+  (select pg_catalog.jsonb_build_object(
+      'notes', notes,
+      'tuition', tuition_fee, 'materials', materials_fee, 'membership', membership_fee,
+      'handler', handled_by_name, 'reported_on', reported_on
+    )
+   from public.enrollment_forms
+   where form_id = (pg_catalog.current_setting('test.created')::jsonb ->> 'form_id')::bigint),
+  '{"notes":"備註文字","tuition":2400,"materials":300,"membership":100,"handler":"經手人","reported_on":"2026-08-17"}'::jsonb,
+  'paper-form values are stored in enrollment_forms and trimmed'
+);
+select is(
+  (select handled_by_user_id from public.enrollment_forms
+   where form_id = (pg_catalog.current_setting('test.created')::jsonb ->> 'form_id')::bigint),
   '11111111-1111-4111-8111-111111111111'::uuid,
   'handler user ID comes from auth.uid rather than payload'
 );
 select is(
-  (select handled_by_account from public.enrollments
-   where enrollment_id = (pg_catalog.current_setting('test.created')::jsonb ->> 'enrollment_id')::bigint),
+  (select handled_by_account from public.enrollment_forms
+   where form_id = (pg_catalog.current_setting('test.created')::jsonb ->> 'form_id')::bigint),
   'editor@example.com',
   'handler account comes from the JWT rather than payload'
 );
 select is(
   (select pg_catalog.array_agg(course_name order by course_name) from public.courses
-   where enrollment_id = (pg_catalog.current_setting('test.created')::jsonb ->> 'enrollment_id')::bigint),
+   where form_id = (pg_catalog.current_setting('test.created')::jsonb ->> 'form_id')::bigint),
   array['有氧舞蹈', '瑜伽入門']::text[],
-  'all selected courses are created'
+  'all selected courses are created on the form'
 );
 select is(
   (select count(*)::integer from public.billing_receipt_courses link
    join public.courses c on c.course_id = link.course_id
-   where c.enrollment_id = (pg_catalog.current_setting('test.created')::jsonb ->> 'enrollment_id')::bigint),
+   where c.form_id = (pg_catalog.current_setting('test.created')::jsonb ->> 'form_id')::bigint),
   4,
   'both courses are linked to both prepaid and formal receipts'
 );
 select is(
   (select count(distinct r.receipt_id)::integer from public.billing_receipts r
-   join public.billing_receipt_courses link on link.receipt_id = r.receipt_id
-   join public.courses c on c.course_id = link.course_id
-   where c.enrollment_id = (pg_catalog.current_setting('test.created')::jsonb ->> 'enrollment_id')::bigint),
+   where r.form_id = (pg_catalog.current_setting('test.created')::jsonb ->> 'form_id')::bigint),
   2,
-  'two billing receipts are created for the enrollment'
+  'two billing receipts are created for the form'
 );
 select is(
-  (select pg_catalog.jsonb_build_object('amount', r.amount, 'invoice', r.invoice_number)
+  (select pg_catalog.jsonb_build_object('amount', r.amount, 'invoice', r.invoice_number, 'kind', r.receipt_kind)
    from public.billing_receipts r
-   join public.billing_receipt_courses link on link.receipt_id = r.receipt_id
-   join public.courses c on c.course_id = link.course_id
-   where c.enrollment_id = (pg_catalog.current_setting('test.created')::jsonb ->> 'enrollment_id')::bigint
-     and r.invoice_number = 'P-1'
-   group by r.receipt_id, r.amount, r.invoice_number),
-  '{"amount":500,"invoice":"P-1"}'::jsonb,
-  'prepaid receipt has correct amount and invoice number'
+   where r.form_id = (pg_catalog.current_setting('test.created')::jsonb ->> 'form_id')::bigint
+     and r.receipt_kind = 'prepaid'),
+  '{"amount":500,"invoice":"P-1","kind":"prepaid"}'::jsonb,
+  'prepaid receipt has correct amount, invoice number and kind'
 );
 select is(
-  (select pg_catalog.jsonb_build_object('amount', r.amount, 'invoice', r.invoice_number)
+  (select pg_catalog.jsonb_build_object('amount', r.amount, 'invoice', r.invoice_number, 'kind', r.receipt_kind)
    from public.billing_receipts r
-   join public.billing_receipt_courses link on link.receipt_id = r.receipt_id
-   join public.courses c on c.course_id = link.course_id
-   where c.enrollment_id = (pg_catalog.current_setting('test.created')::jsonb ->> 'enrollment_id')::bigint
-     and r.invoice_number = 'F-1'
-   group by r.receipt_id, r.amount, r.invoice_number),
-  '{"amount":2800,"invoice":"F-1"}'::jsonb,
-  'formal fee receipt has summed amount and invoice number'
+   where r.form_id = (pg_catalog.current_setting('test.created')::jsonb ->> 'form_id')::bigint
+     and r.receipt_kind = 'formal'),
+  '{"amount":2800,"invoice":"F-1","kind":"formal"}'::jsonb,
+  'formal fee receipt has summed amount, invoice number and kind'
 );
 
 select pg_catalog.set_config(
@@ -128,9 +132,8 @@ select pg_catalog.set_config(
   true
 );
 select is(
-  (select count(*)::integer from public.billing_receipt_courses link
-   join public.courses c on c.course_id = link.course_id
-   where c.enrollment_id = (pg_catalog.current_setting('test.zero_fees')::jsonb ->> 'enrollment_id')::bigint),
+  (select count(*)::integer from public.billing_receipts
+   where form_id = (pg_catalog.current_setting('test.zero_fees')::jsonb ->> 'form_id')::bigint),
   0,
   'zero fee enrollment creates no billing receipts'
 );
@@ -159,7 +162,7 @@ select throws_ok($$select public.create_student_with_initial_enrollment('{"name"
 select throws_ok($$select public.create_student_with_initial_enrollment('{"name":"測試三","gender":"女","education":"高中"}'::jsonb, '{"period":"第7期","period_start_date":"2026-12-31","period_end_date":"2026-09-01","courses":["瑜伽入門"]}'::jsonb)$$, 'P0001', 'PERIOD_DATE_ORDER_INVALID', 'reversed dates are rejected');
 select throws_ok($$select public.create_student_with_initial_enrollment('{"name":"測試四","gender":"女","education":"高中"}'::jsonb, '{"period":"第7期","period_start_date":"2026-09-01","period_end_date":"2026-12-31","courses":[]}'::jsonb)$$, 'P0001', 'COURSE_REQUIRED', 'missing courses are rejected');
 select throws_ok($$select public.create_student_with_initial_enrollment('{"name":"測試五","gender":"女","education":"高中"}'::jsonb, '{"period":"第7期","period_start_date":"2026-09-01","period_end_date":"2026-12-31","courses":["瑜伽入門"],"tuition_fee":-1}'::jsonb)$$, 'P0001', 'FEE_AMOUNT_INVALID', 'invalid money is rejected');
-select throws_ok($$select public.create_student_with_initial_enrollment('{"name":"測試六","gender":"女","education":"高中"}'::jsonb, '{"period":"第7期","period_start_date":"2026-09-01","period_end_date":"2026-12-31","courses":["瑜伽入門"],"handled_on":"2026-02-30"}'::jsonb)$$, 'P0001', 'HANDLED_ON_INVALID', 'invalid handled date is rejected');
+select throws_ok($$select public.create_student_with_initial_enrollment('{"name":"測試六","gender":"女","education":"高中"}'::jsonb, '{"period":"第7期","period_start_date":"2026-09-01","period_end_date":"2026-12-31","courses":["瑜伽入門"],"reported_on":"2026-02-30"}'::jsonb)$$, 'P0001', 'REPORTED_ON_INVALID', 'invalid reported date is rejected');
 select throws_ok($$select public.create_student_with_initial_enrollment('{"name":"測試七","gender":"女","education":"高中"}'::jsonb, '{"period":"第7期","period_start_date":"2026-02-30","period_end_date":"2026-12-31","courses":["瑜伽入門"]}'::jsonb)$$, 'P0001', 'PERIOD_DATE_INVALID', 'invalid calendar date is rejected');
 
 select lives_ok(
