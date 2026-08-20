@@ -70,7 +70,7 @@ describe('Student detail edit forms', () => {
       />
     )
 
-    expect(screen.getByDisplayValue('第15期')).not.toBeNull()
+    expect(screen.getByDisplayValue('15')).not.toBeNull()
     expect(await screen.findByRole('button', { name: '電腦課' })).not.toBeNull()
     expect(screen.getByRole('button', { name: '手機課' })).not.toBeNull()
     expect(screen.queryByDisplayValue('電腦課, 手機課')).toBeNull()

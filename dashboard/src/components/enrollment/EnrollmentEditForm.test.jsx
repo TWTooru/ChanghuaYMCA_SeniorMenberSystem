@@ -42,6 +42,10 @@ describe('EnrollmentEditForm', () => {
   it('canonicalizes a valid period before updating the enrollment', async () => {
     render(<EnrollmentEditForm enrollment={enrollment} onSave={vi.fn()} onCancel={vi.fn()} />)
 
+    const periodInput = screen.getByLabelText('修課期別')
+    expect(periodInput.value).toBe('16')
+    expect(periodInput.type).toBe('number')
+
     fireEvent.click(screen.getByRole('button', { name: '儲存' }))
 
     await waitFor(() => expect(updateEnrollmentWithCourses).toHaveBeenCalled())
@@ -53,7 +57,7 @@ describe('EnrollmentEditForm', () => {
 
   it('rejects an invalid period before calling Supabase', () => {
     render(<EnrollmentEditForm enrollment={enrollment} onSave={vi.fn()} onCancel={vi.fn()} />)
-    fireEvent.change(screen.getByDisplayValue('第16期'), { target: { value: '春季班' } })
+    fireEvent.change(screen.getByLabelText('修課期別'), { target: { value: '' } })
 
     fireEvent.click(screen.getByRole('button', { name: '儲存' }))
 
