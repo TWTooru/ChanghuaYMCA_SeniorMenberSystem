@@ -1,16 +1,21 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import EnrollmentBillingDetailModal from './EnrollmentBillingDetailModal'
-import { updateEnrollmentBillingDetails, updateEnrollmentRefundStatus } from '../../services/enrollmentService'
+import {
+  updateEnrollmentFormRefundStatus,
+  deleteEnrollmentForm,
+} from '../../services/enrollmentService'
 
 const authState = { role: 'editor' }
 
 vi.mock('../../contexts/AuthContext', () => ({
   useAuth: () => authState,
 }))
+
 vi.mock('../../services/enrollmentService', () => ({
-  updateEnrollmentRefundStatus: vi.fn(),
-  updateEnrollmentBillingDetails: vi.fn(),
+  updateEnrollmentFormRefundStatus: vi.fn(),
+  deleteEnrollmentForm: vi.fn(),
+  updateEnrollmentForm: vi.fn(),
 }))
 
 const student = {
@@ -24,23 +29,49 @@ const enrollment = {
   enrollment_id: 42,
   student_id: '1',
   student_name: 'Wang Student',
-  season: '第十六季',
-  refunded: false,
-  amount: 2400,
-  invoice_number: 'LEGACY-MULTI',
-  courses: ['水彩', '書法', '瑜珈'],
-  prepaid_amount: 500,
-  prepaid_receipt_number: 'PRE-01',
-  tuition_fee: 1900,
-  materials_fee: null,
-  membership_fee: 0,
-  fee_receipt_number: 'FEE-01',
-  handled_by_name: 'Admin',
-  handled_by_account: 'admin123',
-  handled_on: '2026-08-18',
+  period: '第16期',
   period_start_date: '2026-09-01',
   period_end_date: '2026-12-31',
-  notes: 'Test notes',
+  refundStatus: 'partial',
+  refunded: false,
+  formCount: 2,
+  forms: [
+    {
+      form_id: 11,
+      form_sequence: 1,
+      reg_type: '一般',
+      courses: ['水彩', '書法'],
+      prepaid_amount: 500,
+      prepaid_receipt_number: 'PRE-01',
+      tuition_fee: 1900,
+      materials_fee: null,
+      membership_fee: 0,
+      fee_receipt_number: 'FEE-01',
+      handled_by_name: 'Admin',
+      handled_by_account: 'admin123',
+      reported_on: '2026-08-18',
+      notes: 'Form 1 note',
+      refunded: false,
+    },
+    {
+      form_id: 12,
+      form_sequence: 2,
+      reg_type: '續',
+      courses: ['瑜珈'],
+      prepaid_amount: 300,
+      prepaid_receipt_number: 'PRE-02',
+      tuition_fee: 1200,
+      materials_fee: 100,
+      membership_fee: 0,
+      fee_receipt_number: 'FEE-02',
+      handled_by_name: 'Staff',
+      handled_by_account: 'staff123',
+      reported_on: '2026-08-19',
+      notes: 'Form 2 note',
+      refunded: true,
+      refund_info: '退費申請',
+    },
+  ],
 }
 
 function renderModal(overrides = {}) {
@@ -63,290 +94,108 @@ describe('EnrollmentBillingDetailModal', () => {
 
   beforeEach(() => {
     authState.role = 'editor'
-    vi.mocked(updateEnrollmentRefundStatus).mockReset()
-    vi.mocked(updateEnrollmentBillingDetails).mockReset()
+    vi.mocked(updateEnrollmentFormRefundStatus).mockReset()
+    vi.mocked(deleteEnrollmentForm).mockReset()
   })
 
-  it('renders refund badge, refund toggle, and edit button in the modal header', () => {
+  it('renders enrollment period dates and each form card separately', () => {
     const { container } = renderModal()
 
-    const header = container.querySelector('.modal-header')
-    expect(within(header).getByText('正常')).toBeTruthy()
-    expect(within(header).getByRole('button', { name: '標記退費' })).toBeTruthy()
-    expect(within(header).getByRole('button', { name: '編輯' })).toBeTruthy()
-  })
-
-  it('renders fee details with prepaid and formal fee breakdown', () => {
-    const { container } = renderModal()
-    const feeSection = container.querySelector('.enrollment-fee-details')
-
-    expect(feeSection).toBeTruthy()
-    expect(within(feeSection).getByText('收費明細')).toBeTruthy()
-    expect(within(feeSection).getByText('NT$ 500')).toBeTruthy()
-    expect(within(feeSection).getByText('PRE-01')).toBeTruthy()
-    expect(within(feeSection).getAllByText('NT$ 1900')).toHaveLength(2) // tuition + total
-    expect(within(feeSection).getByText('NT$ 0')).toBeTruthy()
-    expect(within(feeSection).getByText('FEE-01')).toBeTruthy()
+    expect(screen.getByText('Wang Student · 第16期')).toBeTruthy()
+    expect(screen.getByText('部分退費')).toBeTruthy()
 
     const dates = container.querySelector('.enrollment-period-dates')
     expect(dates.textContent).toContain('2026-09-01')
     expect(dates.textContent).toContain('2026-12-31')
+
+    // Form 1 card
+    expect(screen.getByText('報名表 1')).toBeTruthy()
+    expect(screen.getByText('水彩')).toBeTruthy()
+    expect(screen.getByText('書法')).toBeTruthy()
+    expect(screen.getByText('PRE-01')).toBeTruthy()
+    expect(screen.getByText('FEE-01')).toBeTruthy()
+
+    // Form 2 card
+    expect(screen.getByText('報名表 2')).toBeTruthy()
+    expect(screen.getByText('瑜珈')).toBeTruthy()
+    expect(screen.getByText('PRE-02')).toBeTruthy()
+    expect(screen.getByText('FEE-02')).toBeTruthy()
+    expect(screen.getByText('退費申請')).toBeTruthy()
   })
 
-  it('renders handler info in a separate section', () => {
-    const { container } = renderModal()
-    const handlerSection = container.querySelector('.enrollment-handler-info')
-
-    expect(handlerSection).toBeTruthy()
-    expect(within(handlerSection).getByText('辦理資訊')).toBeTruthy()
-    expect(within(handlerSection).getByText('Admin')).toBeTruthy()
-    expect(within(handlerSection).getByText('admin123')).toBeTruthy()
-    expect(within(handlerSection).getByText('2026-08-18')).toBeTruthy()
-    expect(within(handlerSection).getByText('Test notes')).toBeTruthy()
-  })
-
-  it('renders legacy billing section', () => {
-    const { container } = renderModal()
-    const legacy = container.querySelector('.enrollment-legacy-billing')
-
-    expect(legacy).toBeTruthy()
-    expect(legacy.textContent).toContain('NT$ 2400')
-    expect(legacy.textContent).toContain('LEGACY-MULTI')
-  })
-
-  it('hides refund toggle and edit button for viewers', () => {
-    authState.role = 'viewer'
-    const { container } = renderModal()
-    const header = container.querySelector('.modal-header')
-
-    expect(within(header).getByText('正常')).toBeTruthy()
-    expect(screen.queryByRole('button', { name: '標記退費' })).toBeNull()
-    expect(screen.queryByRole('button', { name: '編輯' })).toBeNull()
-  })
-
-  it('omits empty course context', () => {
-    const { container } = renderModal({
-      enrollment: { ...enrollment, courses: [] },
-    })
-
-    expect(container.querySelector('.enrollment-billing-context')).toBeNull()
-  })
-
-  it('displays refund confirmation dialog and marks enrollment as refunded upon confirm', async () => {
-    vi.mocked(updateEnrollmentRefundStatus).mockResolvedValue(undefined)
+  it('toggles refund status on a specific form card', async () => {
+    vi.mocked(updateEnrollmentFormRefundStatus).mockResolvedValue(undefined)
     const { props } = renderModal()
 
-    fireEvent.click(screen.getByRole('button', { name: '標記退費' }))
-    expect(screen.getByText('確定要將此筆報名標記為退費嗎？此操作可透過「取消退費」復原。')).toBeTruthy()
+    // Form 1 is not refunded, click mark refund
+    fireEvent.click(screen.getByRole('button', { name: '報名表 1 標記退費' }))
+    expect(screen.getByText('確定要將「報名表 1」標記為退費嗎？')).toBeTruthy()
 
     fireEvent.click(screen.getByRole('button', { name: '確定退費' }))
 
-    await waitFor(() => expect(updateEnrollmentRefundStatus).toHaveBeenCalledWith(
+    await waitFor(() => expect(updateEnrollmentFormRefundStatus).toHaveBeenCalledWith(
       expect.anything(),
-      42,
+      11,
       true,
       null,
     ))
     expect(props.onRefresh).toHaveBeenCalledOnce()
   })
 
-  it('displays refund confirmation dialog and cancels refund upon confirm', async () => {
-    vi.mocked(updateEnrollmentRefundStatus).mockResolvedValue(undefined)
-    const { props } = renderModal({ enrollment: { ...enrollment, refunded: true } })
+  it('allows admin to delete a form card with confirmation', async () => {
+    authState.role = 'admin'
+    vi.mocked(deleteEnrollmentForm).mockResolvedValue({ form_id: 12, enrollment_deleted: false })
+    const { props } = renderModal()
 
-    fireEvent.click(screen.getByRole('button', { name: '取消退費' }))
-    expect(screen.getByText('確定要將此筆報名恢復為正常狀態嗎？')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: '刪除報名表 2' }))
+    expect(screen.getByText('確定要刪除「報名表 2」嗎？此操作將刪除此報名表下的所有選課與收據，且無法復原。')).toBeTruthy()
 
-    fireEvent.click(screen.getByRole('button', { name: '確定恢復' }))
+    fireEvent.click(screen.getByRole('button', { name: '確定刪除' }))
 
-    await waitFor(() => expect(updateEnrollmentRefundStatus).toHaveBeenCalledWith(
+    await waitFor(() => expect(deleteEnrollmentForm).toHaveBeenCalledWith(
       expect.anything(),
-      42,
-      false,
-      null,
+      12,
     ))
+    expect(props.onRefresh).toHaveBeenCalledOnce()
+    expect(props.onClose).not.toHaveBeenCalled()
+  })
+
+  it('closes modal if admin deletes the last remaining form', async () => {
+    authState.role = 'admin'
+    vi.mocked(deleteEnrollmentForm).mockResolvedValue({ form_id: 11, enrollment_deleted: true })
+    const { props } = renderModal()
+
+    fireEvent.click(screen.getByRole('button', { name: '刪除報名表 1' }))
+    fireEvent.click(screen.getByRole('button', { name: '確定刪除' }))
+
+    await waitFor(() => expect(props.onClose).toHaveBeenCalledOnce())
     expect(props.onRefresh).toHaveBeenCalledOnce()
   })
 
-  it('shows an error when the refund toggle fails', async () => {
-    vi.mocked(updateEnrollmentRefundStatus).mockRejectedValue(new Error('update denied'))
+  it('switches a form to edit mode and cancels back', () => {
     renderModal()
 
-    fireEvent.click(screen.getByRole('button', { name: '標記退費' }))
-    fireEvent.click(screen.getByRole('button', { name: '確定退費' }))
+    fireEvent.click(screen.getByRole('button', { name: '編輯報名表 1' }))
 
-    expect((await screen.findByRole('alert')).textContent).toContain('退費狀態更新失敗')
+    // Form 1 is now an editor
+    expect(screen.getByTestId('form-editor-11')).toBeTruthy()
+    expect(screen.getByText('編輯報名表 1')).toBeTruthy()
+
+    // Form 2 remains a card
+    expect(screen.getByTestId('form-card-12')).toBeTruthy()
+
+    // Cancel edit
+    fireEvent.click(screen.getByRole('button', { name: '取消' }))
+    expect(screen.queryByTestId('form-editor-11')).toBeNull()
+    expect(screen.getByTestId('form-card-11')).toBeTruthy()
   })
 
-  describe('In-place Editing', () => {
-    it('switches to edit mode and renders editable input fields with initial values', () => {
-      renderModal()
+  it('hides edit, refund and delete controls for viewers', () => {
+    authState.role = 'viewer'
+    renderModal()
 
-      fireEvent.click(screen.getByRole('button', { name: '編輯' }))
-
-      // Buttons switched
-      expect(screen.queryByRole('button', { name: '編輯' })).toBeNull()
-      expect(screen.queryByRole('button', { name: '標記退費' })).toBeNull()
-      expect(screen.getByRole('button', { name: '儲存' })).toBeTruthy()
-      expect(screen.getByRole('button', { name: '取消' })).toBeTruthy()
-
-      // Inputs rendered with initial values
-      expect(screen.getByLabelText('期別開始日期').value).toBe('2026-09-01')
-      expect(screen.getByLabelText('期別結束日期').value).toBe('2026-12-31')
-      expect(screen.getByLabelText('預繳金額').value).toBe('500')
-      expect(screen.getByLabelText('預繳收據號碼').value).toBe('PRE-01')
-      expect(screen.getByLabelText('學費').value).toBe('1900')
-      expect(screen.getByLabelText('教材費').value).toBe('')
-      expect(screen.getByLabelText('會友費').value).toBe('0')
-      expect(screen.getByLabelText('正式收據號碼').value).toBe('FEE-01')
-      expect(screen.getByLabelText('經手人').value).toBe('Admin')
-      expect(screen.getByLabelText('辦理日期').value).toBe('2026-08-18')
-      expect(screen.getByLabelText('備註').value).toBe('Test notes')
-
-      // Handled by account remains read-only text
-      expect(screen.getByText('admin123')).toBeTruthy()
-      expect(screen.queryByLabelText('登入帳號')).toBeNull()
-    })
-
-    it('dynamically calculates total formal fee in edit mode', () => {
-      renderModal()
-
-      fireEvent.click(screen.getByRole('button', { name: '編輯' }))
-
-      const tuitionInput = screen.getByLabelText('學費')
-      const materialsInput = screen.getByLabelText('教材費')
-      const membershipInput = screen.getByLabelText('會友費')
-
-      fireEvent.change(tuitionInput, { target: { value: '2000' } })
-      fireEvent.change(materialsInput, { target: { value: '350' } })
-      fireEvent.change(membershipInput, { target: { value: '150' } })
-
-      expect(screen.getByLabelText('正式費用合計').textContent).toBe('NT$ 2500')
-    })
-
-    it('shows confirmation dialog when cancelling with unsaved changes and reverts changes upon confirm', () => {
-      renderModal()
-
-      fireEvent.click(screen.getByRole('button', { name: '編輯' }))
-      fireEvent.change(screen.getByLabelText('學費'), { target: { value: '9999' } })
-
-      fireEvent.click(screen.getByRole('button', { name: '取消' }))
-
-      expect(screen.getByText('離開後本次修改將不會保留，確定要放棄變更嗎？')).toBeTruthy()
-
-      fireEvent.click(screen.getByRole('button', { name: '放棄變更' }))
-
-      // Back to view mode
-      expect(screen.getByRole('button', { name: '編輯' })).toBeTruthy()
-      expect(screen.queryByLabelText('學費')).toBeNull()
-      expect(screen.getAllByText('NT$ 1900')).toHaveLength(2)
-      expect(updateEnrollmentBillingDetails).not.toHaveBeenCalled()
-    })
-
-    it('cancels edit mode directly if there are no unsaved changes', () => {
-      renderModal()
-
-      fireEvent.click(screen.getByRole('button', { name: '編輯' }))
-      fireEvent.click(screen.getByRole('button', { name: '取消' }))
-
-      expect(screen.queryByText('離開後本次修改將不會保留，確定要放棄變更嗎？')).toBeNull()
-      expect(screen.getByRole('button', { name: '編輯' })).toBeTruthy()
-    })
-
-    it('shows confirmation dialog when closing modal with unsaved changes', () => {
-      const { props } = renderModal()
-
-      fireEvent.click(screen.getByRole('button', { name: '編輯' }))
-      fireEvent.change(screen.getByLabelText('學費'), { target: { value: '9999' } })
-
-      fireEvent.click(screen.getByRole('button', { name: 'Close enrollment billing details' }))
-
-      expect(screen.getByText('離開後本次修改將不會保留，確定要放棄變更嗎？')).toBeTruthy()
-      
-      fireEvent.click(screen.getByRole('button', { name: '放棄變更' }))
-
-      expect(props.onClose).toHaveBeenCalledOnce()
-    })
-
-    it('validates reversed period dates and does not call service', async () => {
-      renderModal()
-
-      fireEvent.click(screen.getByRole('button', { name: '編輯' }))
-      fireEvent.change(screen.getByLabelText('期別開始日期'), { target: { value: '2026-12-31' } })
-      fireEvent.change(screen.getByLabelText('期別結束日期'), { target: { value: '2026-09-01' } })
-
-      fireEvent.click(screen.getByRole('button', { name: '儲存' }))
-
-      expect(await screen.findByRole('alert')).toBeTruthy()
-      expect(screen.getByRole('alert').textContent).toContain('結束日期不能早於開始日期')
-      expect(updateEnrollmentBillingDetails).not.toHaveBeenCalled()
-      expect(screen.getByRole('button', { name: '儲存' })).toBeTruthy()
-    })
-
-    it('validates negative amounts and does not call service', async () => {
-      renderModal()
-
-      fireEvent.click(screen.getByRole('button', { name: '編輯' }))
-      fireEvent.change(screen.getByLabelText('預繳金額'), { target: { value: '-100' } })
-
-      fireEvent.click(screen.getByRole('button', { name: '儲存' }))
-
-      expect(await screen.findByRole('alert')).toBeTruthy()
-      expect(screen.getByRole('alert').textContent).toContain('金額必須為非負整數')
-      expect(updateEnrollmentBillingDetails).not.toHaveBeenCalled()
-      expect(screen.getByRole('button', { name: '儲存' })).toBeTruthy()
-    })
-
-    it('saves billing details successfully, calls onRefresh, and returns to view mode', async () => {
-      vi.mocked(updateEnrollmentBillingDetails).mockResolvedValue(undefined)
-      const { props } = renderModal()
-
-      fireEvent.click(screen.getByRole('button', { name: '編輯' }))
-
-      fireEvent.change(screen.getByLabelText('期別開始日期'), { target: { value: '2026-10-01' } })
-      fireEvent.change(screen.getByLabelText('期別結束日期'), { target: { value: '2026-11-30' } })
-      fireEvent.change(screen.getByLabelText('學費'), { target: { value: '2500' } })
-      fireEvent.change(screen.getByLabelText('教材費'), { target: { value: '300' } })
-      fireEvent.change(screen.getByLabelText('經手人'), { target: { value: 'Manager Lee' } })
-      fireEvent.change(screen.getByLabelText('備註'), { target: { value: 'Updated note' } })
-
-      fireEvent.click(screen.getByRole('button', { name: '儲存' }))
-
-      await waitFor(() => {
-        expect(updateEnrollmentBillingDetails).toHaveBeenCalledWith(
-          expect.anything(),
-          42,
-          expect.objectContaining({
-            period_start_date: '2026-10-01',
-            period_end_date: '2026-11-30',
-            prepaid_amount: 500,
-            prepaid_receipt_number: 'PRE-01',
-            tuition_fee: '2500',
-            materials_fee: '300',
-            membership_fee: 0,
-            fee_receipt_number: 'FEE-01',
-            handled_by_name: 'Manager Lee',
-            handled_on: '2026-08-18',
-            notes: 'Updated note',
-          }),
-        )
-      })
-
-      expect(await screen.findByText('帳單明細已更新')).toBeTruthy()
-      expect(props.onRefresh).toHaveBeenCalledOnce()
-      expect(screen.getByRole('button', { name: '編輯' })).toBeTruthy()
-      expect(screen.queryByRole('button', { name: '儲存' })).toBeNull()
-    })
-
-    it('shows error when save fails and remains in edit mode', async () => {
-      vi.mocked(updateEnrollmentBillingDetails).mockRejectedValue(new Error('Update failed'))
-      renderModal()
-
-      fireEvent.click(screen.getByRole('button', { name: '編輯' }))
-      fireEvent.click(screen.getByRole('button', { name: '儲存' }))
-
-      expect((await screen.findByRole('alert')).textContent).toContain('Update failed')
-      expect(screen.getByRole('button', { name: '儲存' })).toBeTruthy()
-    })
+    expect(screen.queryByRole('button', { name: /標記退費|取消退費/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /編輯報名表/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /刪除報名表/ })).toBeNull()
   })
 })

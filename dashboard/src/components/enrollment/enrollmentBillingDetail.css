@@ -264,7 +264,105 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   .fee-details-grid,
   .fee-breakdown,
   .handler-info-grid,
-  .billing-receipt-values {
+  .billing-receipt-values,
+  .form-card-fee-grid {
     grid-template-columns: 1fr;
   }
 }
+
+/* Enrollment Form Cards & Editor */
+.enrollment-form-card,
+.enrollment-form-editor {
+  margin-bottom: 16px;
+  background: var(--bg-card, var(--bg-primary));
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.enrollment-form-card.is-refunded {
+  border-left: 4px solid var(--color-danger, #ef4444);
+  background: rgba(239, 68, 68, 0.03);
+}
+
+.enrollment-form-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.enrollment-form-card-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.enrollment-form-card-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.enrollment-form-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.reg-type-badge {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--bg-secondary, #e2e8f0);
+  color: var(--text-secondary, #475569);
+  font-weight: 500;
+}
+
+.form-card-courses {
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.form-card-fee-grid {
+  display: grid;
+  grid-template-columns: 2fr 3fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.fee-details-card.sub-card {
+  padding: 10px 12px;
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.02));
+}
+
+.form-card-other-receipts {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.02));
+  border: 1px dashed var(--border-color);
+}
+
+.other-receipts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12.5px;
+}
+
+.other-receipt-item {
+  display: flex;
+  justify-content: space-between;
+  color: var(--text-secondary);
+}
+
+.form-card-handler-info {
+  border-top: 1px dashed var(--border-color);
+  padding-top: 10px;
+}
+
