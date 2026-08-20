@@ -7,7 +7,7 @@ vi.mock('../enrollment/CourseTagPicker', () => ({
 }))
 
 const enrollment = {
-  period: '第16期',
+  period: '16',
   period_start_date: '2026-09-01',
   period_end_date: '2026-12-31',
   courses: [],
@@ -34,6 +34,13 @@ describe('InitialEnrollmentStep', () => {
       '學費', '教材費', '會友費', '正式收據 No.', '備註',
       '經手人姓名', '登入帳號（自動帶入）', '辦理日期',
     ]) expect(screen.getByLabelText(label)).not.toBeNull()
+
+    const periodField = screen.getByLabelText('期別')
+    expect(periodField.type).toBe('number')
+    expect(periodField.min).toBe('1')
+    expect(periodField.step).toBe('1')
+    expect(screen.getByText('第')).toBeTruthy()
+    expect(screen.getByText('期')).toBeTruthy()
 
     expect(screen.getByLabelText('開始日期').type).toBe('date')
     expect(screen.getByLabelText('結束日期').type).toBe('date')

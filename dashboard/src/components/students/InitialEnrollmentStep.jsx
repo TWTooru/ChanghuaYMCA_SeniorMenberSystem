@@ -13,7 +13,26 @@ export default function InitialEnrollmentStep({
     <fieldset className="member-wizard-section">
       <legend>報名資料</legend>
       <div className="member-wizard-section-grid">
-        <Field label="期別" id="initial-enrollment-period">{input('initial-enrollment-period', 'period', 'text', { required: true, placeholder: '例如：16' })}</Field>
+        <Field label="期別" id="initial-enrollment-period">
+          <div className="period-input-group">
+            <span className="period-prefix">第</span>
+            <input
+              id="initial-enrollment-period"
+              className="form-input period-number-input"
+              name="period"
+              type="number"
+              min="1"
+              step="1"
+              inputMode="numeric"
+              value={enrollment.period ?? ''}
+              onChange={onChange}
+              disabled={disabled}
+              required
+              placeholder="16"
+            />
+            <span className="period-suffix">期</span>
+          </div>
+        </Field>
         <Field label="開始日期" id="initial-enrollment-start">{input('initial-enrollment-start', 'period_start_date', 'date', { required: true })}</Field>
         <Field label="結束日期" id="initial-enrollment-end">{input('initial-enrollment-end', 'period_end_date', 'date', { required: true })}</Field>
         <div className="form-group full-width"><span className="form-label">報名課程</span><CourseTagPicker selectedCourseNames={enrollment.courses ?? []} lockedCourseNames={[]} onChange={onCoursesChange} disabled={disabled} /></div>

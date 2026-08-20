@@ -35,7 +35,7 @@ const goToEnrollment = () => {
 }
 
 const completeEnrollment = ({ course = true } = {}) => {
-  fireEvent.change(screen.getByLabelText('期別'), { target: { value: '第16期' } })
+  fireEvent.change(screen.getByLabelText('期別'), { target: { value: '16' } })
   fireEvent.change(screen.getByLabelText('開始日期'), { target: { value: '2026-09-01' } })
   fireEvent.change(screen.getByLabelText('結束日期'), { target: { value: '2026-12-31' } })
   if (course) fireEvent.click(screen.getByRole('button', { name: '選擇瑜珈基礎' }))
@@ -95,7 +95,7 @@ describe('AddStudentModal', () => {
   it('shows the missing-date error and does not call the service', () => {
     renderModal()
     goToEnrollment()
-    fireEvent.change(screen.getByLabelText('期別'), { target: { value: '第16期' } })
+    fireEvent.change(screen.getByLabelText('期別'), { target: { value: '16' } })
     fireEvent.click(screen.getByRole('button', { name: '選擇瑜珈基礎' }))
     submitForm()
 
