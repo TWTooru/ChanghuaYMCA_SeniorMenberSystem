@@ -47,9 +47,12 @@ export async function createStudentWithInitialEnrollment(client, student, enroll
     'period', 'period_start_date', 'period_end_date', 'courses', 'notes',
     'prepaid_amount', 'prepaid_receipt_number', 'tuition_fee', 'materials_fee',
     'membership_fee', 'fee_receipt_number', 'handled_by_name', 'handled_on',
+    'reported_on', 'reg_type',
   ]
   const pEnrollment = Object.fromEntries(
-    enrollmentFields.map(key => [key, enrollment[key]]),
+    enrollmentFields
+      .filter(key => enrollment[key] !== undefined)
+      .map(key => [key, enrollment[key]]),
   )
 
   const { data, error } = await client.rpc('create_student_with_initial_enrollment', {
@@ -66,6 +69,7 @@ export async function createStudentWithInitialEnrollment(client, student, enroll
   return {
     student_id: Number(data.student_id),
     enrollment_id: Number(data.enrollment_id),
+    form_id: Number(data.form_id),
   }
 }
 

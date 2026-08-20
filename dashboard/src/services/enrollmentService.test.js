@@ -1,19 +1,23 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
+  createEnrollmentForm,
   createEnrollmentWithCourses,
   deleteEnrollment,
-  updateEnrollmentBillingDetails,
+  deleteEnrollmentForm,
+  updateEnrollmentForm,
+  updateEnrollmentFormRefundStatus,
+  updateEnrollmentPeriod,
   updateEnrollmentRefundStatus,
   updateEnrollmentWithCourses,
 } from './enrollmentService'
 
-describe('createEnrollmentWithCourses', () => {
+describe('createEnrollmentForm / createEnrollmentWithCourses', () => {
   it('sends normalized enrollment payload to the create_member_enrollment RPC', async () => {
     const client = {
-      rpc: vi.fn().mockResolvedValue({ data: { enrollment_id: 42 }, error: null }),
+      rpc: vi.fn().mockResolvedValue({ data: { enrollment_id: 42, form_id: 101, form_sequence: 1 }, error: null }),
     }
 
-    const result = await createEnrollmentWithCourses(client, '1', {
+    const result = await createEnrollmentForm(client, '1', {
       period: '第16期',
       period_start_date: '2026-09-01',
       period_end_date: '2026-12-31',
@@ -50,10 +54,11 @@ describe('createEnrollmentWithCourses', () => {
         fee_receipt_number: 'F-1',
         handled_by_name: '經手人',
         handled_on: '2026-08-18',
+        reported_on: '2026-08-18',
         notes: '備註文字',
       },
     })
-    expect(result).toEqual({ enrollment_id: 42 })
+    expect(result).toEqual({ enrollment_id: 42, form_id: 101, form_sequence: 1 })
   })
 
   it('maps enrollment creation RPC errors to user-facing messages', async () => {
@@ -61,7 +66,7 @@ describe('createEnrollmentWithCourses', () => {
       rpc: vi.fn().mockResolvedValue({ data: null, error: { message: 'ENROLLMENT_ALREADY_EXISTS' } }),
     }
 
-    await expect(createEnrollmentWithCourses(client, '1', {
+    await expect(createEnrollmentForm(client, '1', {
       period: '第16期',
       period_start_date: '2026-09-01',
       period_end_date: '2026-12-31',
@@ -72,400 +77,264 @@ describe('createEnrollmentWithCourses', () => {
     })).rejects.toThrow('該會員在這個期別已經有相同的報名紀錄')
   })
 
+  it('maps duplicate course in enrollment error', async () => {
+    const client = {
+      rpc: vi.fn().mockResolvedValue({ data: null, error: { message: 'DUPLICATE_COURSE_IN_ENROLLMENT' } }),
+    }
+
+    await expect(createEnrollmentForm(client, '1', {
+      period: '第16期',
+      period_start_date: '2026-09-01',
+      period_end_date: '2026-12-31',
+      reg_type: '續',
+      courses: ['瑜伽'],
+    })).rejects.toThrow('同一期別內已有其他報名表包含相同的課程')
+  })
+
+  it('maps period date mismatch error', async () => {
+    const client = {
+      rpc: vi.fn().mockResolvedValue({ data: null, error: { message: 'PERIOD_DATE_MISMATCH' } }),
+    }
+
+    await expect(createEnrollmentForm(client, '1', {
+      period: '第16期',
+      period_start_date: '2026-09-01',
+      period_end_date: '2026-12-31',
+      reg_type: '續',
+      courses: ['瑜伽'],
+    })).rejects.toThrow('報名表所屬期別的起訖日期與現有紀錄不一致')
+  })
+})
+
+describe('updateEnrollmentForm', () => {
+  it('updates form fields and courses via update_enrollment_form RPC', async () => {
+    const client = {
+      rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
+    }
+
+    await updateEnrollmentForm(client, 101, {
+      reg_type: ' 一般 ',
+      courses: [' 瑜伽 ', '有氧 '],
+      notes: ' 備註 ',
+      prepaid_amount: '500',
+      prepaid_receipt_number: ' P-1 ',
+      tuition_fee: 2000,
+      materials_fee: '200',
+      membership_fee: 100,
+      fee_receipt_number: ' F-1 ',
+      handled_by_name: ' 經手人 ',
+      reported_on: ' 2026-08-20 ',
+    })
+
+    expect(client.rpc).toHaveBeenCalledWith('update_enrollment_form', {
+      p_form_id: 101,
+      p_form: {
+        reg_type: '一般',
+        courses: ['瑜伽', '有氧'],
+        notes: '備註',
+        prepaid_amount: 500,
+        prepaid_receipt_number: 'P-1',
+        tuition_fee: 2000,
+        materials_fee: 200,
+        membership_fee: 100,
+        fee_receipt_number: 'F-1',
+        handled_by_name: '經手人',
+        reported_on: '2026-08-20',
+        handled_on: '2026-08-20',
+      },
+    })
+  })
+
   it('throws when no courses are selected', async () => {
     const client = { rpc: vi.fn() }
     await expect(
-      createEnrollmentWithCourses(client, '1', {
-        period: '第15期',
-        period_start_date: '2026-09-01',
-        period_end_date: '2026-12-31',
-        reg_type: '新',
-        refunded: false,
-        refund_info: '',
-        courses: [],
-      })
+      updateEnrollmentForm(client, 101, { courses: [] })
     ).rejects.toThrow('請至少選擇一門課程')
     expect(client.rpc).not.toHaveBeenCalled()
   })
 
-  it('throws when start or end date is missing', async () => {
-    const client = { rpc: vi.fn() }
+  it('maps COURSE_RECEIPT_LOCKED error', async () => {
+    const client = {
+      rpc: vi.fn().mockResolvedValue({ data: null, error: { message: 'COURSE_RECEIPT_LOCKED' } }),
+    }
+
     await expect(
-      createEnrollmentWithCourses(client, '1', {
-        period: '第15期',
-        period_start_date: '',
-        period_end_date: '',
-        courses: ['瑜珈'],
-      })
+      updateEnrollmentForm(client, 101, { courses: ['有氧'] })
+    ).rejects.toThrow('已有收據的課程不能移除')
+  })
+})
+
+describe('updateEnrollmentFormRefundStatus', () => {
+  it('calls set_enrollment_form_refund RPC with formId and refund details', async () => {
+    const client = {
+      rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
+    }
+
+    await updateEnrollmentFormRefundStatus(client, 101, true, '退費原因')
+
+    expect(client.rpc).toHaveBeenCalledWith('set_enrollment_form_refund', {
+      p_form_id: 101,
+      p_refunded: true,
+      p_refund_info: '退費原因',
+    })
+  })
+})
+
+describe('deleteEnrollmentForm', () => {
+  it('calls delete_enrollment_form RPC and returns result', async () => {
+    const client = {
+      rpc: vi.fn().mockResolvedValue({ data: { form_id: 101, enrollment_deleted: true }, error: null }),
+    }
+
+    const result = await deleteEnrollmentForm(client, 101)
+
+    expect(client.rpc).toHaveBeenCalledWith('delete_enrollment_form', {
+      p_form_id: 101,
+    })
+    expect(result).toEqual({ form_id: 101, enrollment_deleted: true })
+  })
+
+  it('maps permission error', async () => {
+    const client = {
+      rpc: vi.fn().mockResolvedValue({ data: null, error: { message: 'ENROLLMENT_DELETE_FORBIDDEN' } }),
+    }
+
+    await expect(deleteEnrollmentForm(client, 101)).rejects.toThrow('只有管理員可以刪除報名單')
+  })
+})
+
+describe('updateEnrollmentPeriod', () => {
+  it('updates period and dates via update_enrollment_period RPC', async () => {
+    const client = {
+      rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
+    }
+
+    await updateEnrollmentPeriod(client, 10, {
+      period: '第16期',
+      period_start_date: '2026-09-01',
+      period_end_date: '2026-12-31',
+    })
+
+    expect(client.rpc).toHaveBeenCalledWith('update_enrollment_period', {
+      p_enrollment_id: 10,
+      p_period: '第16期',
+      p_period_start_date: '2026-09-01',
+      p_period_end_date: '2026-12-31',
+    })
+  })
+
+  it('validates period and date inputs before calling RPC', async () => {
+    const client = { rpc: vi.fn() }
+
+    await expect(
+      updateEnrollmentPeriod(client, 10, { period: '無效期別', period_start_date: '2026-09-01', period_end_date: '2026-12-31' })
+    ).rejects.toThrow('請輸入有效期別，例如：第16期')
+
+    await expect(
+      updateEnrollmentPeriod(client, 10, { period: '第16期', period_start_date: '', period_end_date: '2026-12-31' })
     ).rejects.toThrow('請選擇開始日期與結束日期')
+
+    await expect(
+      updateEnrollmentPeriod(client, 10, { period: '第16期', period_start_date: '2026-12-31', period_end_date: '2026-09-01' })
+    ).rejects.toThrow('結束日期不能早於開始日期')
+
     expect(client.rpc).not.toHaveBeenCalled()
   })
-
-  it('throws when RPC returns an error', async () => {
-    const client = {
-      rpc: vi.fn().mockResolvedValue({ data: null, error: { message: '此學員在「第十五季」已存在選課紀錄' } }),
-    }
-    await expect(
-      createEnrollmentWithCourses(client, '1', {
-        period: '第15期',
-        period_start_date: '2026-09-01',
-        period_end_date: '2026-12-31',
-        reg_type: '續',
-        refunded: false,
-        refund_info: '',
-        courses: ['瑜珈'],
-      })
-    ).rejects.toThrow('此學員在「第十五季」已存在選課紀錄')
-  })
 })
 
-describe('deleteEnrollment', () => {
-  it('deletes an enrollment by enrollment_id (DB cascade handles courses)', async () => {
-    const calls = []
-    const client = {
-      from(table) {
-        calls.push(table)
-        return {
-          delete() {
-            return {
-              eq: async (col, val) => {
-                calls.push({ col, val })
-                return { error: null }
-              }
-            }
-          }
-        }
-      }
-    }
-
-    await deleteEnrollment(client, 42)
-    expect(calls).toContain('enrollments')
-    expect(calls).toContainEqual({ col: 'enrollment_id', val: 42 })
-  })
-
-  it('throws when delete fails', async () => {
-    const client = {
-      from() {
-        return {
-          delete() {
-            return {
-              eq: async () => ({ error: new Error('delete denied') })
-            }
-          }
-        }
-      }
-    }
-
-    await expect(deleteEnrollment(client, 1)).rejects.toThrow('delete denied')
-  })
-
-  it('maps foreign key violation to a user-friendly receipt error', async () => {
-    const client = {
-      from: vi.fn().mockReturnValue({
-        delete: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({
-            error: { code: '23503', message: 'violates foreign key constraint "course_receipts_course_id_fkey"' },
-          }),
-        }),
-      }),
-    }
-
-    await expect(deleteEnrollment(client, 1)).rejects.toThrow(
-      '此選課紀錄的課程仍有收據，請先刪除所有課程收據後再刪除選課'
-    )
-  })
-
-  it('maps grouped billing link violations to the same paid-course deletion error', async () => {
-    const client = {
-      from: vi.fn().mockReturnValue({
-        delete: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({
-            error: {
-              code: '23503',
-              message: 'update or delete on table "courses" violates foreign key constraint "billing_receipt_courses_course_id_fkey" on table "billing_receipt_courses"',
-            },
-          }),
-        }),
-      }),
-    }
-
-    await expect(deleteEnrollment(client, 1)).rejects.toThrow(
-      '此選課紀錄的課程仍有收據，請先刪除所有課程收據後再刪除選課'
-    )
-  })
-})
-
-describe('updateEnrollmentRefundStatus', () => {
-  function createUpdateClient(result = { error: null }) {
-    const calls = []
-    return {
-      calls,
-      client: {
+describe('legacy helpers', () => {
+  describe('deleteEnrollment', () => {
+    it('deletes an enrollment by enrollment_id', async () => {
+      const calls = []
+      const client = {
         from(table) {
-          calls.push({ table })
+          calls.push(table)
           return {
-            update(values) {
-              calls.push({ operation: 'update', values })
+            delete() {
               return {
-                eq: async (column, value) => {
-                  calls.push({ operation: 'eq', column, value })
-                  return result
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  it('marks an enrollment refunded with null refund info', async () => {
-    const { client, calls } = createUpdateClient()
-
-    await expect(updateEnrollmentRefundStatus(client, 42, true, null)).resolves.toBeUndefined()
-
-    expect(calls).toEqual([
-      { table: 'enrollments' },
-      { operation: 'update', values: { refunded: 1, refund_info: null } },
-      { operation: 'eq', column: 'enrollment_id', value: 42 },
-    ])
-  })
-
-  it('unmarks a refund and clears the refund info', async () => {
-    const { client, calls } = createUpdateClient()
-
-    await updateEnrollmentRefundStatus(client, 43, false, null)
-
-    expect(calls).toContainEqual({ operation: 'update', values: { refunded: 0, refund_info: null } })
-  })
-
-  it('retains supplied refund info when marking an enrollment refunded', async () => {
-    const { client, calls } = createUpdateClient()
-
-    await updateEnrollmentRefundStatus(client, 44, true, 'Customer request')
-
-    expect(calls).toContainEqual({ operation: 'update', values: { refunded: 1, refund_info: 'Customer request' } })
-  })
-
-  it('throws update errors', async () => {
-    const updateError = new Error('update denied')
-    const { client } = createUpdateClient({ error: updateError })
-
-    await expect(updateEnrollmentRefundStatus(client, 45, true, null)).rejects.toBe(updateError)
-  })
-})
-
-describe('updateEnrollmentWithCourses', () => {
-  it('updates enrollment metadata and selected courses through one atomic RPC', async () => {
-    const rpc = vi.fn().mockResolvedValue({ data: null, error: null })
-    const client = { rpc }
-
-    await updateEnrollmentWithCourses(client, 42, {
-      period: '第16期',
-      reg_type: '續',
-      refunded: false,
-      refund_info: '',
-      courses: [' 肌力訓練 ', '北歐健走', '肌力訓練'],
-    })
-
-    expect(rpc).toHaveBeenCalledWith('update_enrollment_with_courses', {
-      p_enrollment_id: 42,
-      p_period: '第16期',
-      p_reg_type: '續',
-      p_refunded: 0,
-      p_refund_info: null,
-      p_course_names: ['肌力訓練', '北歐健走'],
-      p_payment_records: [],
-    })
-  })
-
-  it('rejects an empty normalized course list before calling Supabase', async () => {
-    const rpc = vi.fn()
-
-    await expect(updateEnrollmentWithCourses({ rpc }, 42, {
-      period: '第16期',
-      reg_type: '續',
-      refunded: false,
-      refund_info: '',
-      courses: [' ', ''],
-    })).rejects.toThrow('請至少選擇一門課程')
-    expect(rpc).not.toHaveBeenCalled()
-  })
-
-  it.each([
-    ['COURSE_RECEIPT_LOCKED', '已有收據的課程不能移除'],
-    ['COURSE_REQUIRED', '請至少選擇一門課程'],
-    ['database unavailable', 'database unavailable'],
-  ])('maps RPC error "%s" to "%s"', async (message, expectedMessage) => {
-    const client = {
-      rpc: vi.fn().mockResolvedValue({
-        data: null,
-        error: { message },
-      }),
-    }
-
-    await expect(updateEnrollmentWithCourses(client, 42, {
-      season: '第十六季',
-      reg_type: '續',
-      pre_test: '',
-      post_test: '',
-      refunded: false,
-      refund_info: '',
-      courses: ['肌力訓練'],
-    })).rejects.toThrow(expectedMessage)
-  })
-})
-
-describe('updateEnrollmentBillingDetails', () => {
-  function createUpdateClient(result = { error: null }) {
-    const calls = []
-    return {
-      calls,
-      client: {
-        from(table) {
-          calls.push({ table })
-          return {
-            update(values) {
-              calls.push({ operation: 'update', values })
-              return {
-                eq: async (column, value) => {
-                  calls.push({ operation: 'eq', column, value })
-                  return result
+                eq: async (col, val) => {
+                  calls.push({ col, val })
+                  return { error: null }
                 },
               }
             },
           }
         },
-      },
-    }
-  }
+      }
 
-  it('normalizes inputs and updates enrollment billing details', async () => {
-    const { client, calls } = createUpdateClient()
-
-    await updateEnrollmentBillingDetails(client, '42', {
-      period_start_date: ' 2026-09-01 ',
-      period_end_date: ' 2026-12-31 ',
-      prepaid_amount: '500',
-      prepaid_receipt_number: ' PRE-101 ',
-      tuition_fee: 3000,
-      materials_fee: '200',
-      membership_fee: 100,
-      fee_receipt_number: ' REC-202 ',
-      handled_by_name: ' 王小明 ',
-      handled_on: ' 2026-08-18 ',
-      notes: ' 備註事項 ',
+      await deleteEnrollment(client, 42)
+      expect(calls).toContain('enrollments')
+      expect(calls).toContainEqual({ col: 'enrollment_id', val: 42 })
     })
 
-    expect(calls).toEqual([
-      { table: 'enrollments' },
-      {
-        operation: 'update',
-        values: {
-          period_start_date: '2026-09-01',
-          period_end_date: '2026-12-31',
-          prepaid_amount: 500,
-          prepaid_receipt_number: 'PRE-101',
-          tuition_fee: 3000,
-          materials_fee: 200,
-          membership_fee: 100,
-          fee_receipt_number: 'REC-202',
-          handled_by_name: '王小明',
-          handled_on: '2026-08-18',
-          notes: '備註事項',
+    it('maps foreign key violation to a user-friendly receipt error', async () => {
+      const client = {
+        from: vi.fn().mockReturnValue({
+          delete: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({
+              error: { code: '23503', message: 'violates foreign key constraint "course_receipts_course_id_fkey"' },
+            }),
+          }),
+        }),
+      }
+
+      await expect(deleteEnrollment(client, 1)).rejects.toThrow(
+        '此選課紀錄的課程仍有收據，請先刪除所有課程收據後再刪除選課'
+      )
+    })
+  })
+
+  describe('updateEnrollmentRefundStatus', () => {
+    it('updates enrollment refund status', async () => {
+      const calls = []
+      const client = {
+        from(table) {
+          calls.push({ table })
+          return {
+            update(values) {
+              calls.push({ operation: 'update', values })
+              return {
+                eq: async (column, value) => {
+                  calls.push({ operation: 'eq', column, value })
+                  return { error: null }
+                },
+              }
+            },
+          }
         },
-      },
-      { operation: 'eq', column: 'enrollment_id', value: 42 },
-    ])
+      }
+
+      await updateEnrollmentRefundStatus(client, 42, true, null)
+      expect(calls).toEqual([
+        { table: 'enrollments' },
+        { operation: 'update', values: { refunded: 1, refund_info: null } },
+        { operation: 'eq', column: 'enrollment_id', value: 42 },
+      ])
+    })
   })
 
-  it('throws error when period_start_date is after period_end_date', async () => {
-    const { client } = createUpdateClient()
+  describe('updateEnrollmentWithCourses', () => {
+    it('updates enrollment metadata and selected courses through one atomic RPC', async () => {
+      const rpc = vi.fn().mockResolvedValue({ data: null, error: null })
+      const client = { rpc }
 
-    await expect(
-      updateEnrollmentBillingDetails(client, 10, {
-        period_start_date: '2026-12-31',
-        period_end_date: '2026-09-01',
+      await updateEnrollmentWithCourses(client, 42, {
+        period: '第16期',
+        reg_type: '續',
+        refunded: false,
+        refund_info: '',
+        courses: [' 肌力訓練 ', '北歐健走', '肌力訓練'],
       })
-    ).rejects.toThrow('結束日期不能早於開始日期')
-  })
 
-  it('converts empty strings, null, and undefined values to null', async () => {
-    const { client, calls } = createUpdateClient()
-
-    await updateEnrollmentBillingDetails(client, 10, {
-      period_start_date: '',
-      period_end_date: '  ',
-      prepaid_amount: '',
-      prepaid_receipt_number: '   ',
-      tuition_fee: null,
-      materials_fee: undefined,
-      membership_fee: '',
-      fee_receipt_number: null,
-      handled_by_name: '  ',
-      handled_on: null,
-      notes: undefined,
+      expect(rpc).toHaveBeenCalledWith('update_enrollment_with_courses', {
+        p_enrollment_id: 42,
+        p_period: '第16期',
+        p_reg_type: '續',
+        p_refunded: 0,
+        p_refund_info: null,
+        p_course_names: ['肌力訓練', '北歐健走'],
+        p_payment_records: [],
+      })
     })
-
-    expect(calls).toContainEqual({
-      operation: 'update',
-      values: {
-        period_start_date: null,
-        period_end_date: null,
-        prepaid_amount: null,
-        prepaid_receipt_number: null,
-        tuition_fee: null,
-        materials_fee: null,
-        membership_fee: null,
-        fee_receipt_number: null,
-        handled_by_name: null,
-        handled_on: null,
-        notes: null,
-      },
-    })
-  })
-
-  it('handles empty billingData object with defaults', async () => {
-    const { client, calls } = createUpdateClient()
-
-    await updateEnrollmentBillingDetails(client, 10)
-
-    expect(calls).toContainEqual({
-      operation: 'update',
-      values: {
-        period_start_date: null,
-        period_end_date: null,
-        prepaid_amount: null,
-        prepaid_receipt_number: null,
-        tuition_fee: null,
-        materials_fee: null,
-        membership_fee: null,
-        fee_receipt_number: null,
-        handled_by_name: null,
-        handled_on: null,
-        notes: null,
-      },
-    })
-  })
-
-  it('throws error when amount is invalid or negative', async () => {
-    const { client } = createUpdateClient()
-
-    await expect(
-      updateEnrollmentBillingDetails(client, 10, { prepaid_amount: -50 })
-    ).rejects.toThrow('金額必須為非負整數')
-
-    await expect(
-      updateEnrollmentBillingDetails(client, 10, { tuition_fee: 'invalid' })
-    ).rejects.toThrow('金額必須為非負整數')
-  })
-
-  it('throws when database update fails', async () => {
-    const updateError = new Error('update permission denied')
-    const { client } = createUpdateClient({ error: updateError })
-
-    await expect(
-      updateEnrollmentBillingDetails(client, 10, { tuition_fee: 1000 })
-    ).rejects.toBe(updateError)
   })
 })

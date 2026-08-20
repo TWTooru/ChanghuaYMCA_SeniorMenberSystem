@@ -11,7 +11,7 @@ export const INITIAL_ENROLLMENT_ERROR_MESSAGES = {
 const INTEGER_MAX = 2147483647
 const MONEY_KEYS = ['prepaid_amount', 'tuition_fee', 'materials_fee', 'membership_fee']
 const OPTIONAL_TEXT_KEYS = [
-  'notes', 'prepaid_receipt_number', 'fee_receipt_number', 'handled_by_name', 'handled_on',
+  'notes', 'prepaid_receipt_number', 'fee_receipt_number', 'handled_by_name',
   'refund_info',
 ]
 
@@ -42,6 +42,8 @@ export function normalizeInitialEnrollmentForm(form) {
   )]
   if (courses.length === 0) throw new Error(INITIAL_ENROLLMENT_ERROR_MESSAGES.courses)
 
+  const reportedOn = String(form.reported_on ?? form.handled_on ?? '').trim() || null
+
   const normalized = {
     period,
     period_start_date: startDate,
@@ -49,6 +51,8 @@ export function normalizeInitialEnrollmentForm(form) {
     courses,
     reg_type: String(form.reg_type ?? '').trim() || '續',
     refunded: Boolean(form.refunded),
+    reported_on: reportedOn,
+    handled_on: reportedOn,
   }
   for (const key of OPTIONAL_TEXT_KEYS) normalized[key] = String(form[key] ?? '').trim() || null
   for (const key of MONEY_KEYS) normalized[key] = optionalMoney(form[key])

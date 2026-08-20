@@ -16,11 +16,12 @@ const enrollment = {
 
 describe('member profile service', () => {
   it('creates a member and first enrollment through one RPC without trusted actor fields', async () => {
-    const client = { rpc: vi.fn().mockResolvedValue({ data: { student_id: '61', enrollment_id: '91' }, error: null }) }
+    const client = { rpc: vi.fn().mockResolvedValue({ data: { student_id: '61', enrollment_id: '91', form_id: '101' }, error: null }) }
 
     await expect(createStudentWithInitialEnrollment(client, profile, enrollment)).resolves.toEqual({
       student_id: 61,
       enrollment_id: 91,
+      form_id: 101,
     })
     expect(client.rpc).toHaveBeenCalledWith('create_student_with_initial_enrollment', expect.anything())
     const [, payload] = client.rpc.mock.calls[0]

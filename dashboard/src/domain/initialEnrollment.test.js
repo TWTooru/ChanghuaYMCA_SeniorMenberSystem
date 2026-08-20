@@ -36,6 +36,7 @@ describe('normalizeInitialEnrollmentForm', () => {
       fee_receipt_number: 'F-001',
       handled_by_name: '王小姐',
       handled_on: '2026-08-17',
+      reported_on: '2026-08-17',
     })
   })
 
