@@ -54,7 +54,7 @@ export default function EnrollmentEditForm({ enrollment, onSave, onCancel }) {
             inputMode="numeric"
             className="form-input period-number-input"
             placeholder="16"
-            value={form.period || ''}
+            value={form.period ?? ''}
             onChange={e => setForm({ ...form, period: e.target.value })}
           />
           <span className="period-suffix">期</span>
