@@ -100,6 +100,45 @@ describe('EnrollmentTimeline', () => {
     expect(summary.textContent).toContain('正式: NT$ 1800 (No.F-01)')
   })
 
+  it('aggregates prepaid, formal, and handler details from enrollment forms in billing summary', () => {
+    renderTimeline({
+      timeline: [{
+        ...baseEnrollment,
+        forms: [
+          {
+            form_id: 1,
+            form_sequence: 1,
+            prepaid_amount: 500,
+            prepaid_receipt_number: 'P-1',
+            tuition_fee: 1000,
+            materials_fee: 200,
+            membership_fee: 100,
+            fee_receipt_number: 'F-1',
+            handled_by_name: '張組長',
+            reported_on: '2026-08-18',
+            refunded: false,
+          },
+          {
+            form_id: 2,
+            form_sequence: 2,
+            tuition_fee: 800,
+            materials_fee: 0,
+            membership_fee: 0,
+            fee_receipt_number: 'F-2',
+            handled_by_name: '李幹事',
+            reported_on: '2026-08-20',
+            refunded: false,
+          },
+        ],
+      }],
+    })
+
+    const summary = screen.getByTestId('timeline-billing-summary')
+    expect(summary.textContent).toContain('預繳: NT$ 500 (No.P-1)')
+    expect(summary.textContent).toContain('正式: NT$ 2100 (No.F-1, F-2)')
+    expect(summary.textContent).toContain('經手: 張組長, 李幹事 (2026-08-20)')
+  })
+
   it('renders handler name and date inside billing summary on the right', () => {
     renderTimeline({
       timeline: [{

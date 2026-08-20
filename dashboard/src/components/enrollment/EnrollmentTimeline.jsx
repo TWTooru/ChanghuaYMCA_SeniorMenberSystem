@@ -5,13 +5,50 @@ import EnrollmentEditForm from './EnrollmentEditForm'
 
 function BillingSummary({ enrollment }) {
   const billing = summarizeEnrollmentBilling(enrollment)
-  const hasPrepaid = enrollment.prepaid_amount != null || Boolean(String(enrollment.prepaid_receipt_number ?? '').trim())
-  const hasFormal = enrollment.tuition_fee != null || enrollment.materials_fee != null || enrollment.membership_fee != null || Boolean(String(enrollment.fee_receipt_number ?? '').trim())
-  const formalTotal = (enrollment.tuition_fee || 0) + (enrollment.materials_fee || 0) + (enrollment.membership_fee || 0)
+  const forms = Array.isArray(enrollment.forms) && enrollment.forms.length > 0
+    ? (enrollment.forms.some(f => !f.refunded) ? enrollment.forms.filter(f => !f.refunded) : enrollment.forms)
+    : null
+
+  let hasPrepaid = false
+  let prepaidTotal = 0
+  let prepaidReceiptNo = ''
+  let hasFormal = false
+  let formalTotal = 0
+  let feeReceiptNo = ''
+  let handlerName = ''
+  let handledOn = ''
+
+  if (forms) {
+    const prepaids = forms.map(f => f.prepaid_amount).filter(v => v != null)
+    prepaidTotal = prepaids.reduce((a, b) => a + b, 0)
+    const prepaidNos = forms.map(f => String(f.prepaid_receipt_number ?? '').trim()).filter(Boolean)
+    prepaidReceiptNo = prepaidNos.join(', ')
+    hasPrepaid = prepaids.length > 0 || prepaidNos.length > 0
+
+    const formalForms = forms.filter(f => f.tuition_fee != null || f.materials_fee != null || f.membership_fee != null || Boolean(String(f.fee_receipt_number ?? '').trim()))
+    formalTotal = forms.reduce((sum, f) => sum + (f.tuition_fee || 0) + (f.materials_fee || 0) + (f.membership_fee || 0), 0)
+    const feeNos = forms.map(f => String(f.fee_receipt_number ?? '').trim()).filter(Boolean)
+    feeReceiptNo = feeNos.join(', ')
+    hasFormal = formalForms.length > 0 || feeNos.length > 0
+
+    const handlers = forms.map(f => String(f.handled_by_name ?? '').trim()).filter(Boolean)
+    handlerName = [...new Set(handlers)].join(', ')
+    const dates = forms.map(f => f.reported_on || f.handled_on).filter(Boolean)
+    handledOn = dates.length > 0 ? dates[dates.length - 1] : ''
+  } else {
+    hasPrepaid = enrollment.prepaid_amount != null || Boolean(String(enrollment.prepaid_receipt_number ?? '').trim())
+    prepaidTotal = enrollment.prepaid_amount ?? 0
+    prepaidReceiptNo = enrollment.prepaid_receipt_number
+    hasFormal = enrollment.tuition_fee != null || enrollment.materials_fee != null || enrollment.membership_fee != null || Boolean(String(enrollment.fee_receipt_number ?? '').trim())
+    formalTotal = (enrollment.tuition_fee || 0) + (enrollment.materials_fee || 0) + (enrollment.membership_fee || 0)
+    feeReceiptNo = enrollment.fee_receipt_number
+    handlerName = enrollment.handled_by_name
+    handledOn = enrollment.reported_on || enrollment.handled_on
+  }
 
   const hasAnyBreakdown = hasPrepaid || hasFormal
   const hasLegacy = billing.amount != null || billing.invoiceNumbers.length > 0
-  const hasHandler = Boolean(enrollment.handled_by_name || enrollment.handled_on)
+  const hasHandler = Boolean(handlerName || handledOn)
 
   if (!hasAnyBreakdown && !hasLegacy && !hasHandler) return null
 
@@ -20,12 +57,12 @@ function BillingSummary({ enrollment }) {
       <div className="timeline-billing-breakdown">
         {hasPrepaid && (
           <span className="breakdown-tag prepaid">
-            預繳: NT$ {enrollment.prepaid_amount ?? 0} {enrollment.prepaid_receipt_number ? `(No.${enrollment.prepaid_receipt_number})` : ''}
+            預繳: NT$ {prepaidTotal} {prepaidReceiptNo ? `(No.${prepaidReceiptNo})` : ''}
           </span>
         )}
         {hasFormal && (
           <span className="breakdown-tag formal">
-            正式: NT$ {formalTotal} {enrollment.fee_receipt_number ? `(No.${enrollment.fee_receipt_number})` : ''}
+            正式: NT$ {formalTotal} {feeReceiptNo ? `(No.${feeReceiptNo})` : ''}
           </span>
         )}
         {!hasAnyBreakdown && hasLegacy && (
@@ -36,7 +73,7 @@ function BillingSummary({ enrollment }) {
       </div>
       {hasHandler && (
         <span className="timeline-handler">
-          經手: {enrollment.handled_by_name || '未填'} {enrollment.handled_on ? `(${enrollment.handled_on})` : ''}
+          經手: {handlerName || '未填'} {handledOn ? `(${handledOn})` : ''}
         </span>
       )}
     </div>
