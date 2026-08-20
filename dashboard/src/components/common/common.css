@@ -331,3 +331,56 @@
   min-width: 0;
 }
 
+/* 新增會員第二步的期別欄位：將前後綴與數字輸入視為同一個控制項。 */
+.member-wizard-period-input {
+  min-height: 42px;
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.member-wizard-period-input:focus-within {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px var(--color-accent-glow);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.member-wizard-period-input .period-prefix,
+.member-wizard-period-input .period-suffix {
+  display: grid;
+  align-self: stretch;
+  min-width: 42px;
+  place-items: center;
+  padding: 0 12px;
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.member-wizard-period-input .period-prefix {
+  border-right: 1px solid var(--border-color);
+}
+
+.member-wizard-period-input .period-suffix {
+  border-left: 1px solid var(--border-color);
+}
+
+.member-wizard-period-input .period-number-input {
+  min-height: 40px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  text-align: center;
+}
+
+.member-wizard-period-input .period-number-input:focus {
+  box-shadow: none;
+  background: transparent;
+}
+
+.member-wizard-period-input:has(.period-number-input:disabled) {
+  opacity: 0.62;
+}
+

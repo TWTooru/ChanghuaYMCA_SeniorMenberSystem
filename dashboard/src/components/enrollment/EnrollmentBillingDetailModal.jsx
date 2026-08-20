@@ -59,7 +59,7 @@ export default function EnrollmentBillingDetailModal({
     setError('')
     setSuccess('')
     cancelPendingAction()
-  }, [enrollmentId, enrollment])
+  }, [enrollmentId, enrollment, setHasUnsavedChanges, cancelPendingAction])
 
   if (!student || !enrollment) return null
 

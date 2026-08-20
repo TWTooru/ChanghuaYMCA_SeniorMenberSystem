@@ -1,4 +1,3 @@
-import { Edit2, RotateCcw, Trash2 } from 'lucide-react'
 import './enrollmentBillingDetail.css'
 
 function displayAmount(amount) {

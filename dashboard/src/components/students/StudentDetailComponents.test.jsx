@@ -491,7 +491,7 @@ describe('Student detail components', () => {
 
     it('recovers Tab containment when focus falls to document body inside billing details', () => {
       authState.role = 'admin'
-      const { container } = openBillingDetail()
+      openBillingDetail()
       const closeBtn = screen.getByRole('button', { name: 'Close enrollment billing details' })
       closeBtn.focus()
       closeBtn.blur()
