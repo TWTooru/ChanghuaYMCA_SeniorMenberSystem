@@ -1,3 +1,5 @@
+import { summarizeEnrollmentFormBilling } from './enrollmentForms'
+
 function firstReceipt(value) {
   if (Array.isArray(value)) return value[0] || null
   return value || null
@@ -74,10 +76,32 @@ export function normalizeEnrollmentBilling(courseRows = []) {
 }
 
 /**
- * 有收據時彙整以收據為準的帳務；否則保留舊版報名資料的
- * `amount` 與 `invoice_number` 欄位作為備援。
+ * 若包含 forms 則依表單彙整有效或全部帳務；
+ * 否則以收據為準或保留舊版報名資料作為備援。
  */
-export function summarizeEnrollmentBilling(enrollment) {
+export function summarizeEnrollmentBilling(enrollment, options = {}) {
+  if (Array.isArray(enrollment.forms) && enrollment.forms.length > 0) {
+    const targetForms = options.includeRefunded
+      ? enrollment.forms
+      : enrollment.forms.filter(f => !f.refunded)
+
+    const formSummaries = targetForms.map(summarizeEnrollmentFormBilling)
+    const formalAmounts = formSummaries.map(s => s.formalAmount).filter(a => a != null)
+    const prepaidAmounts = formSummaries.map(s => s.prepaidAmount).filter(a => a != null)
+
+    const amount = formalAmounts.length ? formalAmounts.reduce((sum, a) => sum + a, 0) : null
+    const prepaidAmount = prepaidAmounts.length ? prepaidAmounts.reduce((sum, a) => sum + a, 0) : null
+
+    const invoiceNumbers = [...new Set(formSummaries.flatMap(s => s.invoiceNumbers).filter(Boolean))]
+
+    return {
+      amount,
+      prepaidAmount,
+      invoiceNumbers,
+      source: 'forms',
+    }
+  }
+
   const receipts = Array.isArray(enrollment.billingReceipts)
     ? enrollment.billingReceipts
     : (enrollment.courseDetails || []).map(course => course.receipt).filter(Boolean)

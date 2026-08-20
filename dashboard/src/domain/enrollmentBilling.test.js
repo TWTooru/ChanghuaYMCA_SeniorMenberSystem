@@ -165,4 +165,47 @@ describe('summarizeEnrollmentBilling', () => {
       courseDetails: [{ receipt: { amount: null, invoiceNumber: null } }],
     })).toEqual({ amount: null, invoiceNumbers: [], source: 'receipts' })
   })
+
+  it('summarizes billing from active forms and excludes refunded forms by default', () => {
+    const enrollment = {
+      forms: [
+        {
+          form_id: 1,
+          form_sequence: 1,
+          tuition_fee: 2000,
+          materials_fee: 200,
+          membership_fee: 100,
+          prepaid_amount: 500,
+          prepaid_receipt_number: 'P-1',
+          fee_receipt_number: 'F-1',
+          refunded: false,
+        },
+        {
+          form_id: 2,
+          form_sequence: 2,
+          tuition_fee: 1800,
+          materials_fee: 100,
+          membership_fee: 0,
+          prepaid_amount: 300,
+          prepaid_receipt_number: 'P-2',
+          fee_receipt_number: 'F-2',
+          refunded: true,
+        },
+      ],
+    }
+
+    expect(summarizeEnrollmentBilling(enrollment)).toEqual({
+      amount: 2300,
+      prepaidAmount: 500,
+      invoiceNumbers: ['P-1', 'F-1'],
+      source: 'forms',
+    })
+
+    expect(summarizeEnrollmentBilling(enrollment, { includeRefunded: true })).toEqual({
+      amount: 4200,
+      prepaidAmount: 800,
+      invoiceNumbers: ['P-1', 'F-1', 'P-2', 'F-2'],
+      source: 'forms',
+    })
+  })
 })
