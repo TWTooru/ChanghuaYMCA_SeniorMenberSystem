@@ -14,7 +14,7 @@ export default function InitialEnrollmentStep({
       <legend>報名資料</legend>
       <div className="member-wizard-section-grid">
         <Field label="期別" id="initial-enrollment-period">
-          <div className="period-input-group">
+          <div className="period-input-group member-wizard-period-input">
             <span className="period-prefix">第</span>
             <input
               id="initial-enrollment-period"
@@ -60,7 +60,7 @@ export default function InitialEnrollmentStep({
         <Field label="備註" id="initial-enrollment-notes" fullWidth><textarea id="initial-enrollment-notes" className="form-input form-textarea" name="notes" rows={3} value={enrollment.notes ?? ''} onChange={onChange} disabled={disabled} /></Field>
         <Field label="經手人姓名" id="initial-enrollment-handler">{input('initial-enrollment-handler', 'handled_by_name')}</Field>
         <Field label="登入帳號（自動帶入）" id="initial-enrollment-account"><input id="initial-enrollment-account" className="form-input" value={account || ''} readOnly aria-readonly="true" /></Field>
-        <Field label="辦理日期" id="initial-enrollment-handled-on">{input('initial-enrollment-handled-on', 'handled_on', 'date')}</Field>
+        <Field label="報到日期" id="initial-enrollment-reported-on">{input('initial-enrollment-reported-on', 'reported_on', 'date')}</Field>
       </div>
     </fieldset>
   </>

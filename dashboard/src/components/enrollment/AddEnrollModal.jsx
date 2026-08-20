@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabaseClient'
-import { createEnrollmentWithCourses } from '../../services/enrollmentService'
+import { createEnrollmentForm } from '../../services/enrollmentService'
 import { normalizePeriod, periodNumber } from '../../domain/period'
 import CourseTagPicker from './CourseTagPicker'
 import '../common/common.css'
@@ -32,12 +32,12 @@ const initialEnrollmentState = (defaultPeriod = '第1期') => {
     refund_info: '',
     notes: '',
     handled_by_name: '',
-    handled_on: '',
+    reported_on: '',
   }
 }
 
-// 新增報名會連同課程與收據明細，以單一 `createEnrollmentWithCourses` 請求原子儲存。
-export default function AddEnrollModal({ student, onClose, onRefresh, defaultPeriod = '第1期' }) {
+// 新增報名會連同課程與收據明細，以單一 `createEnrollmentForm` 請求原子儲存。
+export default function AddEnrollModal({ student, enrollments = [], onClose, onRefresh, defaultPeriod = '第1期' }) {
   const { user } = useAuth()
   const [newEnroll, setNewEnroll] = useState(() => initialEnrollmentState(defaultPeriod))
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -46,6 +46,22 @@ export default function AddEnrollModal({ student, onClose, onRefresh, defaultPer
   const dialogRef = useRef(null)
   const previousFocusRef = useRef(null)
   const hasStudent = Boolean(student)
+
+  const selectedPeriodName = normalizePeriod(newEnroll.period) || (newEnroll.period ? `第${newEnroll.period}期` : '')
+  const existingEnrollment = selectedPeriodName
+    ? enrollments.find(e => normalizePeriod(e.period) === selectedPeriodName)
+    : null
+  const isAppended = Boolean(existingEnrollment)
+  const nextSequence = isAppended
+    ? (existingEnrollment.forms?.length || existingEnrollment.formCount || 1) + 1
+    : 1
+
+  const effectiveStartDate = isAppended
+    ? (existingEnrollment.period_start_date || '')
+    : newEnroll.period_start_date
+  const effectiveEndDate = isAppended
+    ? (existingEnrollment.period_end_date || '')
+    : newEnroll.period_end_date
 
   useEffect(() => {
     if (!hasStudent) return undefined
@@ -73,15 +89,26 @@ export default function AddEnrollModal({ student, onClose, onRefresh, defaultPer
 
     setSubmitError('')
 
+    if (isAppended && existingEnrollment.courses?.length > 0) {
+      const hasDuplicate = newEnroll.courses.some(c => existingEnrollment.courses.includes(c))
+      if (hasDuplicate) {
+        setSubmitError('同一期別內已有其他報名表包含相同的課程')
+        return
+      }
+    }
+
     submitInFlightRef.current = true
     setIsSubmitting(true)
     let succeeded = false
     try {
       const payload = {
         ...newEnroll,
-        period: normalizePeriod(newEnroll.period) || newEnroll.period,
+        period: selectedPeriodName || newEnroll.period,
+        period_start_date: effectiveStartDate,
+        period_end_date: effectiveEndDate,
+        reported_on: newEnroll.reported_on || null,
       }
-      await createEnrollmentWithCourses(supabase, student.student_id, payload)
+      await createEnrollmentForm(supabase, student.student_id, payload)
       succeeded = true
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : '新增選課失敗')
@@ -216,6 +243,18 @@ export default function AddEnrollModal({ student, onClose, onRefresh, defaultPer
                   <option value="續">續</option>
                 </select>
               </div>
+
+              {isAppended && (
+                <div className="append-notice full-width" role="status" style={{ gridColumn: '1 / -1', padding: '10px 14px', background: 'var(--bg-secondary, #f1f5f9)', borderRadius: '8px', borderLeft: '4px solid var(--color-accent, #6366f1)', marginBottom: '8px' }}>
+                  <p className="append-notice-title" style={{ margin: 0, fontWeight: 600 }}>已有本期報名，將新增第 {nextSequence} 張報名表</p>
+                  {existingEnrollment.courses?.length > 0 && (
+                    <p className="append-notice-courses" style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-secondary, #64748b)' }}>
+                      既有課程：{existingEnrollment.courses.join('、')}
+                    </p>
+                  )}
+                </div>
+              )}
+
               <div className="form-group">
                 <label className="form-label" htmlFor="add-enrollment-start-date">開始日期 *</label>
                 <input
@@ -223,8 +262,8 @@ export default function AddEnrollModal({ student, onClose, onRefresh, defaultPer
                   name="period_start_date"
                   type="date"
                   className="form-input"
-                  value={newEnroll.period_start_date}
-                  disabled={isSubmitting}
+                  value={effectiveStartDate}
+                  disabled={isSubmitting || isAppended}
                   onChange={handleChange}
                   required
                 />
@@ -236,8 +275,8 @@ export default function AddEnrollModal({ student, onClose, onRefresh, defaultPer
                   name="period_end_date"
                   type="date"
                   className="form-input"
-                  value={newEnroll.period_end_date}
-                  disabled={isSubmitting}
+                  value={effectiveEndDate}
+                  disabled={isSubmitting || isAppended}
                   onChange={handleChange}
                   required
                 />
@@ -246,7 +285,7 @@ export default function AddEnrollModal({ student, onClose, onRefresh, defaultPer
                 <span className="form-label">選修課程 *</span>
                 <CourseTagPicker
                   selectedCourseNames={newEnroll.courses}
-                  lockedCourseNames={[]}
+                  lockedCourseNames={existingEnrollment?.courses || []}
                   disabled={isSubmitting}
                   onChange={courses => setNewEnroll(current => ({
                     ...current,
@@ -426,13 +465,13 @@ export default function AddEnrollModal({ student, onClose, onRefresh, defaultPer
                 />
               </div>
               <div className="form-group">
-                <label className="form-label" htmlFor="add-enrollment-handled-on">辦理日期</label>
+                <label className="form-label" htmlFor="add-enrollment-reported-on">報到日期</label>
                 <input
-                  id="add-enrollment-handled-on"
-                  name="handled_on"
+                  id="add-enrollment-reported-on"
+                  name="reported_on"
                   type="date"
                   className="form-input"
-                  value={newEnroll.handled_on}
+                  value={newEnroll.reported_on}
                   disabled={isSubmitting}
                   onChange={handleChange}
                 />

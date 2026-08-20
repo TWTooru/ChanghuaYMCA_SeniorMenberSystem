@@ -19,7 +19,7 @@ const enrollment = {
   membership_fee: '',
   fee_receipt_number: '',
   handled_by_name: '',
-  handled_on: '',
+  reported_on: '',
 }
 
 describe('InitialEnrollmentStep', () => {
@@ -32,7 +32,7 @@ describe('InitialEnrollmentStep', () => {
     for (const label of [
       '期別', '開始日期', '結束日期', '預繳金額', '預繳 No.',
       '學費', '教材費', '會友費', '正式收據 No.', '備註',
-      '經手人姓名', '登入帳號（自動帶入）', '辦理日期',
+      '經手人姓名', '登入帳號（自動帶入）', '報到日期',
     ]) expect(screen.getByLabelText(label)).not.toBeNull()
 
     const periodField = screen.getByLabelText('期別')
@@ -44,7 +44,7 @@ describe('InitialEnrollmentStep', () => {
 
     expect(screen.getByLabelText('開始日期').type).toBe('date')
     expect(screen.getByLabelText('結束日期').type).toBe('date')
-    expect(screen.getByLabelText('辦理日期').type).toBe('date')
+    expect(screen.getByLabelText('報到日期').type).toBe('date')
     expect(screen.getByLabelText('登入帳號（自動帶入）').readOnly).toBe(true)
     expect(screen.getByLabelText('登入帳號（自動帶入）').value).toBe('editor@example.com')
     expect(screen.getByLabelText('備註').tagName).toBe('TEXTAREA')
@@ -56,7 +56,7 @@ describe('InitialEnrollmentStep', () => {
       expect(field.step).toBe('1')
     }
     for (const label of ['期別', '開始日期', '結束日期']) expect(screen.getByLabelText(label).required).toBe(true)
-    for (const label of ['預繳金額', '預繳 No.', '學費', '教材費', '會友費', '正式收據 No.', '備註', '經手人姓名', '登入帳號（自動帶入）', '辦理日期']) expect(screen.getByLabelText(label).required).toBe(false)
+    for (const label of ['預繳金額', '預繳 No.', '學費', '教材費', '會友費', '正式收據 No.', '備註', '經手人姓名', '登入帳號（自動帶入）', '報到日期']) expect(screen.getByLabelText(label).required).toBe(false)
 
     fireEvent.click(screen.getByRole('button', { name: '選擇瑜珈基礎' }))
     expect(onCoursesChange).toHaveBeenCalledWith(['瑜珈基礎'])

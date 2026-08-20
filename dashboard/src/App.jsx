@@ -196,6 +196,7 @@ function AuthenticatedDashboard() {
       {showAddEnrollModal && selectedStudent && (
         <AddEnrollModal 
           student={selectedStudent} 
+          enrollments={enrollments.filter(item => String(item.student_id) === String(selectedStudent.student_id))}
           onClose={() => setShowAddEnrollModal(false)} 
           onRefresh={handleRefresh} 
         />

@@ -17,7 +17,7 @@ const initialProfile = {
 const initialEnrollment = {
   period: '', period_start_date: '', period_end_date: '', courses: [], notes: '',
   prepaid_amount: '', prepaid_receipt_number: '', tuition_fee: '', materials_fee: '',
-  membership_fee: '', fee_receipt_number: '', handled_by_name: '', handled_on: '',
+  membership_fee: '', fee_receipt_number: '', handled_by_name: '', reported_on: '',
 }
 
 const EMAIL_VALIDATION_MESSAGE = '電子郵件格式不正確'

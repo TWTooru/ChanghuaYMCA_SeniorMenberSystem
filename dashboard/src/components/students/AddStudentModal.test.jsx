@@ -62,7 +62,7 @@ describe('AddStudentModal', () => {
     goToEnrollment()
 
     expect(screen.getByText('步驟 2 / 2')).not.toBeNull()
-    for (const label of ['期別', '開始日期', '結束日期', '預繳金額', '預繳 No.', '學費', '教材費', '會友費', '正式收據 No.', '備註', '經手人姓名', '登入帳號（自動帶入）', '辦理日期']) {
+    for (const label of ['期別', '開始日期', '結束日期', '預繳金額', '預繳 No.', '學費', '教材費', '會友費', '正式收據 No.', '備註', '經手人姓名', '登入帳號（自動帶入）', '報到日期']) {
       expect(screen.getByLabelText(label)).not.toBeNull()
     }
     expect(screen.getByLabelText('登入帳號（自動帶入）').value).toBe('editor@example.com')
