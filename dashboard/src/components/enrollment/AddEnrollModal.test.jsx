@@ -210,7 +210,7 @@ describe('AddEnrollModal', () => {
 
   it('renders period as number input and submits canonical period format', async () => {
     createEnrollmentWithCourses.mockResolvedValue({ enrollment_id: '42' })
-    const { onClose } = renderModal({ defaultPeriod: '第16期' })
+    renderModal({ defaultPeriod: '第16期' })
 
     const periodInput = screen.getByLabelText('修課期別 *')
     expect(periodInput.type).toBe('number')
