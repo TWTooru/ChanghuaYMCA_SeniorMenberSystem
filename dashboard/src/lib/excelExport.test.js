@@ -63,9 +63,104 @@ describe('excelExport', () => {
     expect(XLSX.utils.json_to_sheet).toHaveBeenNthCalledWith(2, [expect.objectContaining({
       ID: 9, 會員ID: 7, 姓名: '王小明', 期別: '第16期', 報名課程: '瑜珈', 是否退費: '否',
       預繳金額: 500, 預繳收據號碼: 'P001', 學費: 1000, 材料費: 200, 會費: 100, 費用收據號碼: 'F001',
-      經辦人: '陳小美', 經辦日期: '2026-08-01', 備註: '備註',
+      經辦人: '陳小美', 報到日期: '2026-08-01', 備註: '備註',
       '金額（舊版）': 1200, '發票編號（舊版）': 'A001',
     })])
+  })
+
+  it('exports separate rows for each enrollment form within a period', () => {
+    vi.clearAllMocks()
+    exportToExcel(
+      [],
+      [
+        {
+          enrollment_id: 10,
+          student_id: 1,
+          student_name: '王小明',
+          period: '第16期',
+          forms: [
+            {
+              form_id: 101,
+              form_sequence: 1,
+              reg_type: '新',
+              courses: ['瑜珈'],
+              refunded: false,
+              prepaid_amount: 500,
+              prepaid_receipt_number: 'P001',
+              tuition_fee: 1000,
+              materials_fee: 200,
+              membership_fee: 100,
+              fee_receipt_number: 'F001',
+              handled_by_name: '陳小美',
+              reported_on: '2026-08-01',
+              notes: '第一張',
+            },
+            {
+              form_id: 102,
+              form_sequence: 2,
+              reg_type: '續',
+              courses: ['電腦'],
+              refunded: true,
+              refund_info: '退費',
+              prepaid_amount: 300,
+              prepaid_receipt_number: 'P002',
+              tuition_fee: 1500,
+              materials_fee: 0,
+              membership_fee: 0,
+              fee_receipt_number: 'F002',
+              handled_by_name: '李專員',
+              reported_on: '2026-08-05',
+              notes: '第二張',
+            },
+          ],
+        },
+      ],
+      [],
+      'export.xlsx',
+      { includeStats: false, includeStudents: false, includeCourses: false },
+    )
+
+    expect(XLSX.utils.json_to_sheet).toHaveBeenCalledWith([
+      expect.objectContaining({
+        ID: 10,
+        會員ID: 1,
+        姓名: '王小明',
+        期別: '第16期',
+        報名表序號: 1,
+        新續狀況: '新',
+        報名課程: '瑜珈',
+        是否退費: '否',
+        預繳金額: 500,
+        預繳收據號碼: 'P001',
+        學費: 1000,
+        材料費: 200,
+        會費: 100,
+        費用收據號碼: 'F001',
+        經辦人: '陳小美',
+        報到日期: '2026-08-01',
+        備註: '第一張',
+      }),
+      expect.objectContaining({
+        ID: 10,
+        會員ID: 1,
+        姓名: '王小明',
+        期別: '第16期',
+        報名表序號: 2,
+        新續狀況: '續',
+        報名課程: '電腦',
+        是否退費: '是',
+        退費原因: '退費',
+        預繳金額: 300,
+        預繳收據號碼: 'P002',
+        學費: 1500,
+        材料費: 0,
+        會費: 0,
+        費用收據號碼: 'F002',
+        經辦人: '李專員',
+        報到日期: '2026-08-05',
+        備註: '第二張',
+      }),
+    ])
   })
 
   it('aborts early and does not call writeFile if no sheets are included', () => {

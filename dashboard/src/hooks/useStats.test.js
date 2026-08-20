@@ -33,4 +33,52 @@ describe('useStats', () => {
       expect.objectContaining({ period: '第17期', revenue: 2000, prepaid: 100 }),
     ])
   })
+
+  it('aggregates multi-form enrollment stats with partial refunds', () => {
+    const enrollments = [
+      {
+        period: '第16期',
+        student_id: 1,
+        refunded: false,
+        refundStatus: 'partial',
+        forms: [
+          {
+            form_id: 1,
+            form_sequence: 1,
+            courses: ['A', 'B'],
+            refunded: false,
+            tuition_fee: 2000,
+            materials_fee: 200,
+            membership_fee: 100,
+            prepaid_amount: 500,
+          },
+          {
+            form_id: 2,
+            form_sequence: 2,
+            courses: ['C'],
+            refunded: true,
+            tuition_fee: 1000,
+            materials_fee: 100,
+            membership_fee: 0,
+            prepaid_amount: 200,
+          },
+        ],
+      },
+    ]
+
+    const { result } = renderHook(() => useStats([], enrollments))
+    expect(result.current.totalRegistrations).toBe(1)
+    expect(result.current.totalRefunds).toBe(1)
+    expect(result.current.totalRevenue).toBe(2300)
+    expect(result.current.totalPrepaid).toBe(500)
+    expect(result.current.periodStats[0]).toMatchObject({
+      period: '第16期',
+      enrollments: 1,
+      forms: 2,
+      refunds: 1,
+      courses: 2,
+      revenue: 2300,
+      prepaid: 500,
+    })
+  })
 })

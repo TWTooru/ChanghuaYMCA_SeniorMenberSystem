@@ -55,17 +55,50 @@ export function exportToExcel(studentsData, enrollmentsData, courseData, filenam
     XLSX.utils.book_append_sheet(workbook, studentsSheet, '學員個人資料');
   }
 
-  // 3. 將報名資料轉換為工作表欄位。
+  // 3. 將報名資料轉換為工作表欄位（以報名表為單元匯出）。
   if (includeEnrollments) {
-    const formattedEnrollments = (enrollmentsData || []).map(e => {
+    const formattedEnrollments = (enrollmentsData || []).flatMap(e => {
+      const forms = e.forms && e.forms.length > 0 ? e.forms : null;
+
+      if (forms) {
+        return forms.map(form => {
+          const item = {
+            ID: e.enrollment_id,
+            '會員ID': e.student_id,
+            '姓名': e.student_name || '未知',
+            '期別': e.period,
+            '報名表序號': form.form_sequence,
+            '新續狀況': form.reg_type || e.reg_type,
+            '報名課程': Array.isArray(form.courses) ? form.courses.join(', ') : form.courses,
+            '是否退費': form.refunded ? '是' : '否',
+            '退費原因': form.refund_info || undefined,
+            '預繳金額': form.prepaid_amount,
+            '預繳收據號碼': form.prepaid_receipt_number,
+            '學費': form.tuition_fee,
+            '材料費': form.materials_fee,
+            '會費': form.membership_fee,
+            '費用收據號碼': form.fee_receipt_number,
+            '經辦人': form.handled_by_name || e.handled_by_name,
+            '報到日期': form.reported_on || form.handled_on || e.reported_on || e.handled_on,
+            '備註': form.notes || e.notes,
+          };
+          Object.keys(item).forEach(key => {
+            if (item[key] === undefined) delete item[key];
+          });
+          return item;
+        });
+      }
+
       const item = {
         ID: e.enrollment_id,
         '會員ID': e.student_id,
-        '姓名': e.student_name || '未知', // 學生姓名缺漏時顯示預設文字。
+        '姓名': e.student_name || '未知',
         '期別': e.period,
+        '報名表序號': 1,
         '新續狀況': e.reg_type,
         '報名課程': Array.isArray(e.courses) ? e.courses.join(', ') : e.courses,
         '是否退費': (e.refunded === 1 || e.refunded === true || e.refunded === '1' || String(e.refunded).toLowerCase() === 'true') ? '是' : '否',
+        '退費原因': e.refund_info || undefined,
         '預繳金額': e.prepaid_amount,
         '預繳收據號碼': e.prepaid_receipt_number,
         '學費': e.tuition_fee,
@@ -73,7 +106,7 @@ export function exportToExcel(studentsData, enrollmentsData, courseData, filenam
         '會費': e.membership_fee,
         '費用收據號碼': e.fee_receipt_number,
         '經辦人': e.handled_by_name,
-        '經辦日期': e.handled_on,
+        '報到日期': e.reported_on || e.handled_on,
         '備註': e.notes,
         '金額（舊版）': e.amount,
         '發票編號（舊版）': e.invoice_number,
@@ -81,7 +114,7 @@ export function exportToExcel(studentsData, enrollmentsData, courseData, filenam
       Object.keys(item).forEach(key => {
         if (item[key] === undefined) delete item[key];
       });
-      return item;
+      return [item];
     });
     const enrollmentsSheet = XLSX.utils.json_to_sheet(formattedEnrollments);
     XLSX.utils.book_append_sheet(workbook, enrollmentsSheet, '報名明細紀錄');
@@ -108,4 +141,3 @@ export function exportToExcel(studentsData, enrollmentsData, courseData, filenam
   // 將 `workbook` 寫入指定檔名以觸發下載。
   XLSX.writeFile(workbook, filename);
 }
-
