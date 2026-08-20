@@ -210,8 +210,9 @@ describe('EnrollmentTab', () => {
   it('keeps name/course, period, and refund filters without a registration filter', () => {
     render(
       <EnrollmentTab students={[]} enrollments={[
-        { enrollment_id: 21, student_id: '1', student_name: 'Alice', period: '第1期', reg_type: 'New', refunded: false, courses: ['Course A'] },
-        { enrollment_id: 22, student_id: '2', student_name: 'Bob', period: '第2期', reg_type: 'Returning', refunded: true, courses: ['Phone Course'] }
+        { enrollment_id: 21, student_id: '1', student_name: 'Alice', period: '第1期', reg_type: 'New', refunded: false, refundStatus: 'normal', courses: ['Course A'] },
+        { enrollment_id: 22, student_id: '2', student_name: 'Bob', period: '第2期', reg_type: 'Returning', refunded: true, refundStatus: 'refunded', courses: ['Phone Course'] },
+        { enrollment_id: 23, student_id: '3', student_name: 'Charlie', period: '第3期', reg_type: 'Returning', refunded: false, refundStatus: 'partial', courses: ['Yoga Course'] },
       ]} onSelectEnrollment={vi.fn()} />
     )
 
@@ -227,6 +228,11 @@ describe('EnrollmentTab', () => {
     fireEvent.change(screen.getByLabelText('退費狀況'), { target: { value: 'refunded' } })
     expect(screen.getByText('Bob')).not.toBeNull()
     expect(screen.queryByText('Alice')).toBeNull()
+    expect(screen.queryByText('Charlie')).toBeNull()
+    fireEvent.change(screen.getByLabelText('退費狀況'), { target: { value: 'partial' } })
+    expect(screen.getByText('Charlie')).not.toBeNull()
+    expect(screen.queryByText('Alice')).toBeNull()
+    expect(screen.queryByText('Bob')).toBeNull()
   })
 
   it('spans all history columns for an empty enrollment state', () => {

@@ -30,15 +30,16 @@ export default function EnrollmentTab({ students, enrollments, onSelectEnrollmen
     return enrollments.filter(e => {
       const normalizedSearch = historySearch.toLowerCase()
       const matchesSearch =
-        e.student_name.toLowerCase().includes(normalizedSearch) ||
-        e.courses.some(c => c.toLowerCase().includes(normalizedSearch))
+        (e.student_name || '').toLowerCase().includes(normalizedSearch) ||
+        (e.courses || []).some(c => c.toLowerCase().includes(normalizedSearch))
       
       const matchesPeriod = historyPeriodFilter === '' || e.period === historyPeriodFilter
       
       let matchesRefund = true
       if (historyRefundFilter !== '') {
-        if (historyRefundFilter === 'refunded') matchesRefund = e.refunded
-        else if (historyRefundFilter === 'normal') matchesRefund = !e.refunded
+        if (historyRefundFilter === 'refunded') matchesRefund = e.refundStatus === 'refunded' || e.refunded === true
+        else if (historyRefundFilter === 'partial') matchesRefund = e.refundStatus === 'partial'
+        else if (historyRefundFilter === 'normal') matchesRefund = e.refundStatus === 'normal' || (!e.refunded && e.refundStatus !== 'partial')
       }
       
       return matchesSearch && matchesPeriod && matchesRefund
@@ -84,9 +85,9 @@ export default function EnrollmentTab({ students, enrollments, onSelectEnrollmen
               setHistoryPage(1)
             }}
           >
-            <option key="all" value="">全部期別</option>
-            {periodsList.map(period => (
-              <option key={period} value={period}>{period}</option>
+            <option value="">全部期別</option>
+            {periodsList.map((period, index) => (
+              <option key={`period-${period}-${index}`} value={period}>{period}</option>
             ))}
           </select>
         </div>
@@ -103,6 +104,7 @@ export default function EnrollmentTab({ students, enrollments, onSelectEnrollmen
           >
             <option value="">全部狀態</option>
             <option value="normal">正常 (無退費)</option>
+            <option value="partial">部分退費</option>
             <option value="refunded">已退費</option>
           </select>
         </div>
@@ -126,6 +128,8 @@ export default function EnrollmentTab({ students, enrollments, onSelectEnrollmen
               {paginatedHistory.length > 0 ? (
                 paginatedHistory.map((e, idx) => {
                   const billing = summarizeEnrollmentBilling(e)
+                  const isRefunded = e.refundStatus === 'refunded' || e.refunded === true
+                  const isPartial = e.refundStatus === 'partial'
 
                   return (
                   <tr 
@@ -140,14 +144,14 @@ export default function EnrollmentTab({ students, enrollments, onSelectEnrollmen
                     <td>{e.period}</td>
                     <td>
                       <div className="timeline-courses">
-                        {e.courses.map(c => (
+                        {(e.courses || []).map(c => (
                           <span className="course-tag" key={c}>{c}</span>
                         ))}
                       </div>
                     </td>
                     <td>
-                      <span className={`badge ${e.refunded ? 'danger' : 'success'}`}>
-                        {e.refunded ? '已退費' : '正常'}
+                      <span className={`badge ${isRefunded ? 'danger' : isPartial ? 'warning' : 'success'}`}>
+                        {isRefunded ? '已退費' : isPartial ? '部分退費' : '正常'}
                       </span>
                     </td>
                     <td>{billing.amount == null ? '--' : `NT$ ${billing.amount}`}</td>

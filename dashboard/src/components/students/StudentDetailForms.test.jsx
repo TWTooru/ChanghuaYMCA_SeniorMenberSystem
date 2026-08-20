@@ -61,19 +61,23 @@ describe('Student detail edit forms', () => {
     expect(screen.getByDisplayValue('王小明')).not.toBeNull()
   })
 
-  it('prefills the enrollment edit form including its course tags', async () => {
+  it('prefills the enrollment edit form with period and dates', () => {
     render(
       <EnrollmentEditForm
-        enrollment={{ enrollment_id: 1, period: '第15期', reg_type: '新', refunded: 0, courses: ['電腦課', '手機課'] }}
+        enrollment={{
+          enrollment_id: 1,
+          period: '第15期',
+          period_start_date: '2026-09-01',
+          period_end_date: '2026-12-31',
+        }}
         onSave={vi.fn()}
         onCancel={vi.fn()}
       />
     )
 
     expect(screen.getByDisplayValue('15')).not.toBeNull()
-    expect(await screen.findByRole('button', { name: '電腦課' })).not.toBeNull()
-    expect(screen.getByRole('button', { name: '手機課' })).not.toBeNull()
-    expect(screen.queryByDisplayValue('電腦課, 手機課')).toBeNull()
+    expect(screen.getByLabelText('開始日期').value).toBe('2026-09-01')
+    expect(screen.getByLabelText('結束日期').value).toBe('2026-12-31')
   })
 
   it('reports dirty state when a profile field changes', () => {

@@ -342,12 +342,20 @@ describe('Student detail components', () => {
       gender: '男',
     }
     const billingEnrollment = {
-      enrollment_id: 101,
-      student_id: 'billing-student',
+      enrollment_id: 42,
+      student_id: billingStudent.student_id,
       period: 'Integration Period',
       reg_type: 'regular',
       refunded: false,
       courses: ['Integration Course'],
+      forms: [
+        {
+          form_id: 1,
+          form_sequence: 1,
+          courses: ['Integration Course'],
+          refunded: false,
+        },
+      ],
       billingReceipts: [
         {
           receiptId: 1,
@@ -484,14 +492,14 @@ describe('Student detail components', () => {
     it('recovers Tab containment when focus falls to document body inside billing details', () => {
       authState.role = 'admin'
       const { container } = openBillingDetail()
-      const refundBtn = within(container.querySelector('.enrollment-billing-dialog')).getByRole('button', { name: '標記退費' })
-      refundBtn.focus()
-      refundBtn.blur()
+      const closeBtn = screen.getByRole('button', { name: 'Close enrollment billing details' })
+      closeBtn.focus()
+      closeBtn.blur()
       expect(document.activeElement).toBe(document.body)
 
       fireEvent.keyDown(document.body, { key: 'Tab' })
 
-      expect(document.activeElement).toBe(screen.getByRole('button', { name: '標記退費' }))
+      expect(document.activeElement).toBe(closeBtn)
     })
 
     it('keeps Escape owned by billing details after focus is lost from the child layer', () => {

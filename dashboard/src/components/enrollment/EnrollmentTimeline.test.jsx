@@ -66,6 +66,22 @@ describe('EnrollmentTimeline', () => {
     expect(summary.textContent).toContain('A-001, A-002')
   })
 
+  it('renders multi-form batch count, partial refund badge, and flattened courses', () => {
+    renderTimeline({
+      timeline: [{
+        ...baseEnrollment,
+        formCount: 2,
+        refundStatus: 'partial',
+        courses: ['課程A', '課程D'],
+      }],
+    })
+
+    expect(screen.getByText('2 張報名表')).toBeTruthy()
+    expect(screen.getByText('部分退費')).toBeTruthy()
+    expect(screen.getByText('課程A')).toBeTruthy()
+    expect(screen.getByText('課程D')).toBeTruthy()
+  })
+
   it('shows prepaid and formal breakdowns in billing summary', () => {
     renderTimeline({
       timeline: [{

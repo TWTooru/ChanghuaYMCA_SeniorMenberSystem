@@ -45,6 +45,9 @@ function BillingSummary({ enrollment }) {
 
 function TimelineMeta({ item }) {
   const hasDates = item.period_start_date || item.period_end_date
+  const formCount = item.formCount || item.forms?.length || 1
+  const isRefunded = item.refundStatus === 'refunded' || item.refunded === true
+  const isPartial = item.refundStatus === 'partial'
 
   return (
     <div className="timeline-meta">
@@ -58,8 +61,14 @@ function TimelineMeta({ item }) {
           )}
         </div>
         <div className="timeline-badges">
+          {formCount > 1 && (
+            <span className="timeline-form-count" style={{ fontSize: '11px', padding: '1px 6px', borderRadius: '4px', background: 'var(--bg-secondary, #e2e8f0)', color: 'var(--text-secondary, #475569)' }}>
+              {formCount} 張報名表
+            </span>
+          )}
           {item.reg_type && <span className="timeline-reg-type">{item.reg_type === '新' ? '新生' : '續生'}</span>}
-          {item.refunded && <span className="badge danger" style={{ padding: '1px 6px', fontSize: '10px' }}>已退費</span>}
+          {isRefunded && <span className="badge danger" style={{ padding: '1px 6px', fontSize: '10px' }}>已退費</span>}
+          {isPartial && <span className="badge warning" style={{ padding: '1px 6px', fontSize: '10px' }}>部分退費</span>}
         </div>
       </div>
     </div>
@@ -93,7 +102,7 @@ export default function EnrollmentTimeline({ timeline, onDelete, onAddEnrollment
       {timeline.length > 0 ? (
         <div className="timeline-container">
           {timeline.map((item, idx) => (
-            <div className={`timeline-item ${idx === timeline.length - 1 ? 'active' : ''} ${item.refunded ? 'refunded' : ''}`} key={item.enrollment_id}>
+            <div className={`timeline-item ${idx === timeline.length - 1 ? 'active' : ''} ${item.refundStatus === 'refunded' || item.refunded ? 'refunded' : ''}`} key={item.enrollment_id}>
               <div className="timeline-dot" />
               <div className={`timeline-card ${onEditEnrollment && editingEnrollId === item.enrollment_id ? 'is-editing' : ''} ${onEditEnrollment && onDelete ? 'has-two-actions' : ''}`}>
                 {onEditEnrollment && editingEnrollId === item.enrollment_id ? <>
