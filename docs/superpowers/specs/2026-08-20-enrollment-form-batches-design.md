@@ -51,6 +51,7 @@ students
 - `reported_on date`，使用者所稱的報到日期
 - `notes text`
 - `refunded boolean not null default false`
+- `refund_info text`
 - `created_at timestamptz not null default now()`
 - `updated_at timestamptz not null default now()`
 
@@ -72,10 +73,11 @@ students
 `billing_receipts` 新增：
 
 - `form_id bigint not null`，外鍵連到 `enrollment_forms`
-- `receipt_kind text not null`，限制為 `prepaid` 或 `formal`
+- `receipt_kind text not null`，限制為 `prepaid`、`formal` 或相容舊資料的 `other`
 
-同一張表每種收據最多一筆，以 `unique (form_id, receipt_kind)` 保護。收據的金額與
-No. 以 `billing_receipts.amount`、`billing_receipts.invoice_number` 為唯一帳務來源：
+同一張表的 `prepaid` 與 `formal` 各最多一筆，以 partial unique index 保護；`other`
+只供無法可靠分類的既有分組收據使用，可保留多筆且不由新表單建立。收據的金額與 No.
+以 `billing_receipts.amount`、`billing_receipts.invoice_number` 為唯一帳務來源：
 
 - 預繳金額與 No. 存在 `prepaid` 收據。
 - 正式收據金額由該表的學費、教材費、會友費加總，No. 存在 `formal` 收據。
@@ -84,6 +86,9 @@ No. 以 `billing_receipts.amount`、`billing_receipts.invoice_number` 為唯一�
 既有 `billing_receipt_courses` 暫時保留，報名表的收據會連結該表所有課程；所有新增與
 編輯皆經交易型 RPC 同步維護，不允許前端分開更新表單欄位與收據，避免目前
 `enrollments` 欄位和收據紀錄不一致的問題。
+
+資料庫必須保證 receipt 與其所有 course 具有相同 `form_id`；舊制 `other` 收據保持唯讀，
+若仍連結某門課，編輯報名表時不得移除該課，以免破壞歷史收據。
 
 `enrollments` 上既有的費用、收據、辦理資訊與 `refunded` 欄位在資料回填後不再作為
 畫面或統計來源。第一階段保留欄位供相容與回滾，待新流程穩定後再以獨立清理工作移除。
@@ -95,7 +100,8 @@ No. 以 `billing_receipts.amount`、`billing_receipts.invoice_number` 為唯一�
 ### 新增報名表
 
 1. 依 `student_id + period` 查找 enrollment。
-2. 若不存在，先建立 enrollment；若已存在則沿用，不再回報重複期別錯誤。
+2. 若不存在，先建立 enrollment；若已存在則沿用，不再回報重複期別錯誤。既有期別已有
+   起訖日時，新輸入必須一致；歷史資料兩個日期皆為空時，使用本次有效日期補齊。
 3. 鎖定該 enrollment，計算下一個 `form_sequence`，避免同時新增造成序號碰撞。
 4. 建立 enrollment form。
 5. 驗證並建立該表課程。
@@ -160,8 +166,8 @@ Excel／CSV 會員匯入目前只處理會員主檔，不在本功能中增加�
 2. 每筆既有 enrollment 建立 sequence 1 的預設 form，複製報名類型、費用、辦理資訊、
    備註及退費狀態；既有 `handled_on` 明確轉入 `reported_on`，作為報到日期。
 3. 將既有課程回填 `form_id`。
-4. 依課程關聯把既有 receipts 歸到該預設 form；無法唯一判定的異常資料使 migration 失敗，
-   不以猜測方式繼續。
+4. 依課程關聯把既有 receipts 歸到該預設 form；能由既有報名欄位唯一判定的資料標為
+   `prepaid` 或 `formal`，無法可靠判定的舊分組收據標為唯讀的 `other`，不猜測其用途。
 5. 加入 not-null、複合外鍵與收據唯一約束。
 6. 更新 RPC、查詢及前端後，停止讀寫 enrollment 上的舊表單欄位。
 
