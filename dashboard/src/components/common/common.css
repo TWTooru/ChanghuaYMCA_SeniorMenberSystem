@@ -311,3 +311,23 @@
     grid-template-columns: 1fr;
   }
 }
+
+.period-input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.period-prefix,
+.period-suffix {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  user-select: none;
+}
+
+.period-number-input {
+  flex: 1;
+  min-width: 0;
+}
+
