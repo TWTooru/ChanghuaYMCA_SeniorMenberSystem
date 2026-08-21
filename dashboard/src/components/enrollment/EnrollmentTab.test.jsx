@@ -133,7 +133,7 @@ describe('EnrollmentTab', () => {
 
     expect(table.className).toBe('data-table')
     expect(historyTable.getAllByRole('columnheader').map(header => header.textContent)).toEqual([
-      '姓名', '季別', '課程', '退費狀況', '金額', '發票編號'
+      '姓名', '季別', '課程', '收費狀況', '金額', '收據 No.'
     ])
     expect(historyTable.queryByText('Pre-test: 8')).toBeNull()
     expect(historyTable.queryByText('Post-test: 5')).toBeNull()
@@ -218,10 +218,10 @@ describe('EnrollmentTab', () => {
     )
 
     expect(screen.queryByLabelText('新/續生')).toBeNull()
-    fireEvent.change(screen.getByLabelText('搜尋姓名或課程'), { target: { value: 'Phone' } })
+    fireEvent.change(screen.getByLabelText('搜尋姓名、課程或收據 No.'), { target: { value: 'Phone' } })
     expect(screen.getByText('Bob')).not.toBeNull()
     expect(screen.queryByText('Alice')).toBeNull()
-    fireEvent.change(screen.getByLabelText('搜尋姓名或課程'), { target: { value: '' } })
+    fireEvent.change(screen.getByLabelText('搜尋姓名、課程或收據 No.'), { target: { value: '' } })
     fireEvent.change(screen.getByLabelText('篩選季別'), { target: { value: 'Season A' } })
     expect(screen.getByText('Alice')).not.toBeNull()
     expect(screen.queryByText('Bob')).toBeNull()
@@ -229,6 +229,49 @@ describe('EnrollmentTab', () => {
     fireEvent.change(screen.getByLabelText('退費狀況'), { target: { value: 'refunded' } })
     expect(screen.getByText('Bob')).not.toBeNull()
     expect(screen.queryByText('Alice')).toBeNull()
+  })
+
+  it('searches receipt numbers from grouped and legacy billing case-insensitively', () => {
+    render(
+      <EnrollmentTab students={[]} enrollments={[
+        {
+          enrollment_id: 31,
+          student_id: '1',
+          student_name: 'Grouped receipt',
+          season: 'Season A',
+          refunded: false,
+          courses: ['Course A'],
+          billingReceipts: [{ receiptId: 1, amount: 100, invoiceNumber: 'GROUP-100', courses: [] }],
+        },
+        {
+          enrollment_id: 32,
+          student_id: '2',
+          student_name: 'Legacy receipt',
+          season: 'Season A',
+          refunded: false,
+          courses: ['Course B'],
+          amount: 200,
+          invoice_number: 'LEGACY-200',
+        },
+      ]} onSelectEnrollment={vi.fn()} />
+    )
+
+    const search = screen.getByLabelText(/收據 No\./)
+    fireEvent.change(search, { target: { value: 'group-100' } })
+    expect(screen.getByText('Grouped receipt')).not.toBeNull()
+    expect(screen.queryByText('Legacy receipt')).toBeNull()
+
+    fireEvent.change(search, { target: { value: 'legacy-200' } })
+    expect(screen.queryByText('Grouped receipt')).toBeNull()
+    expect(screen.getByText('Legacy receipt')).not.toBeNull()
+  })
+
+  it('uses billing labels that mention 收據 No. and 收費狀況', () => {
+    render(<EnrollmentTab students={[]} enrollments={[]} onSelectEnrollment={vi.fn()} />)
+
+    expect(screen.getByLabelText(/收據 No\./)).not.toBeNull()
+    expect(screen.getByPlaceholderText(/收據 No\./)).not.toBeNull()
+    expect(screen.getByText('收費狀況')).not.toBeNull()
   })
 
   it('spans all history columns for an empty enrollment state', () => {

@@ -29,9 +29,11 @@ export default function EnrollmentTab({ students, enrollments, onSelectEnrollmen
     if (!enrollments) return []
     return enrollments.filter(e => {
       const normalizedSearch = historySearch.toLowerCase()
+      const billing = summarizeEnrollmentBilling(e)
       const matchesSearch =
-        e.student_name.toLowerCase().includes(normalizedSearch) ||
-        e.courses.some(c => c.toLowerCase().includes(normalizedSearch))
+        String(e.student_name ?? '').toLowerCase().includes(normalizedSearch) ||
+        (e.courses ?? []).some(c => String(c).toLowerCase().includes(normalizedSearch)) ||
+        billing.invoiceNumbers.some(number => String(number).toLowerCase().includes(normalizedSearch))
       
       const matchesSeason = historySeasonFilter === '' || e.season === historySeasonFilter
       
@@ -57,14 +59,14 @@ export default function EnrollmentTab({ students, enrollments, onSelectEnrollmen
       {/* Filters panel */}
       <div className="filters-panel">
         <div className="filter-group">
-          <label className="filter-label" htmlFor="history-search">搜尋姓名或課程</label>
+          <label className="filter-label" htmlFor="history-search">搜尋姓名、課程或收據 No.</label>
           <div className="search-input-wrapper">
             <Search size={16} className="search-icon" />
             <input 
               type="text" 
               id="history-search" 
               className="search-input" 
-              placeholder="輸入姓名或課程名稱搜尋..."
+              placeholder="輸入姓名、課程或收據 No. 搜尋..."
               value={historySearch}
               onChange={(e) => {
                 setHistorySearch(e.target.value)
@@ -117,9 +119,9 @@ export default function EnrollmentTab({ students, enrollments, onSelectEnrollmen
                 <th>姓名</th>
                 <th>季別</th>
                 <th>課程</th>
-                <th>退費狀況</th>
+                <th>收費狀況</th>
                 <th>金額</th>
-                <th>發票編號</th>
+                <th>收據 No.</th>
               </tr>
             </thead>
             <tbody>

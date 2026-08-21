@@ -3,6 +3,11 @@ function firstReceipt(value) {
   return value || null
 }
 
+function asArray(value) {
+  if (Array.isArray(value)) return value
+  return value == null ? [] : [value]
+}
+
 /**
  * 將巢狀課程與收據列轉換為 UI 穩定使用的 `courseDetails` 形狀，
  * 並處理關聯結果可能以陣列或物件傳回的情況。
@@ -27,8 +32,10 @@ export function normalizeCourseDetails(courseRows = []) {
 export function normalizeEnrollmentBilling(courseRows = []) {
   const receiptMap = new Map()
   const courseDetails = courseRows.map(course => {
-    const link = firstReceipt(course.billing_receipt_courses)
-    const receipt = firstReceipt(link?.billing_receipts)
+    const receipts = asArray(course.billing_receipt_courses)
+      .map(link => firstReceipt(link?.billing_receipts))
+      .filter(Boolean)
+    const receipt = receipts[0] || null
     const courseDetail = {
       courseId: course.course_id,
       courseName: course.course_name,
@@ -42,18 +49,20 @@ export function normalizeEnrollmentBilling(courseRows = []) {
         : null,
     }
 
-    if (receipt) {
-      const normalizedReceipt = receiptMap.get(receipt.receipt_id) || {
-        receiptId: receipt.receipt_id,
-        amount: receipt.amount,
-        invoiceNumber: receipt.invoice_number,
+    for (const linkedReceipt of receipts) {
+      const normalizedReceipt = receiptMap.get(linkedReceipt.receipt_id) || {
+        receiptId: linkedReceipt.receipt_id,
+        amount: linkedReceipt.amount,
+        invoiceNumber: linkedReceipt.invoice_number,
         courses: [],
       }
-      normalizedReceipt.courses.push({
-        courseId: course.course_id,
-        courseName: course.course_name,
-      })
-      receiptMap.set(receipt.receipt_id, normalizedReceipt)
+      if (!normalizedReceipt.courses.some(linkedCourse => linkedCourse.courseId === course.course_id)) {
+        normalizedReceipt.courses.push({
+          courseId: course.course_id,
+          courseName: course.course_name,
+        })
+      }
+      receiptMap.set(linkedReceipt.receipt_id, normalizedReceipt)
     }
 
     return courseDetail
