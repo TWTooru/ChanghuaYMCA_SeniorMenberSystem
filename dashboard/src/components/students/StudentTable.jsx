@@ -12,17 +12,18 @@ import {
 export default function StudentTable({
   students,
   _enrollments,
+  sortField,
   sortOrder,
-  onToggleSort,
+  onSort,
   onSelectStudent,
   studentPage,
   totalStudentPages,
   onPageChange,
-  totalFilteredCount
+  totalFilteredCount,
+  itemsPerPage,
+  onPageSizeChange
 }) {
   /** 表格只呈現目前頁面的學員；列點擊與修課紀錄操作由父層處理選取狀態。 */
-  const itemsPerPage = 10
-
   const pageNumbers = useMemo(() => {
     const range = []
     let start = Math.max(1, studentPage - 1)
@@ -40,11 +41,13 @@ export default function StudentTable({
     return range
   }, [studentPage, totalStudentPages])
 
-  const renderSortIcon = () => {
+  const renderSortIcon = (field) => {
+    if (sortField !== field) return <ArrowUpDown size={14} />
     if (sortOrder === 'asc') return <ArrowUp size={14} />
-    if (sortOrder === 'desc') return <ArrowDown size={14} />
-    return <ArrowUpDown size={14} />
+    return <ArrowDown size={14} />
   }
+
+  const getAriaSort = (field) => sortField === field ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'
 
   return (
     <div className="table-wrapper">
@@ -52,17 +55,18 @@ export default function StudentTable({
         <table className="data-table">
           <thead>
             <tr>
-              <th 
-                className="clickable" 
-                onClick={onToggleSort}
-                style={{ cursor: 'pointer', userSelect: 'none' }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <th aria-sort={getAriaSort('student_id')}>
+                <button type="button" className="table-sort-button" onClick={() => onSort('student_id')}>
                   學員ID
-                  {renderSortIcon()}
-                </div>
+                  {renderSortIcon('student_id')}
+                </button>
               </th>
-              <th>姓名</th>
+              <th aria-sort={getAriaSort('name')}>
+                <button type="button" className="table-sort-button" onClick={() => onSort('name')}>
+                  姓名
+                  {renderSortIcon('name')}
+                </button>
+              </th>
               <th>性別</th>
               <th>目前年齡</th>
               <th>出生日期</th>
@@ -126,6 +130,12 @@ export default function StudentTable({
         <div className="footer-info">
           顯示第 {totalFilteredCount > 0 ? (studentPage - 1) * itemsPerPage + 1 : 0} 至 {Math.min(studentPage * itemsPerPage, totalFilteredCount)} 筆學員（共 {totalFilteredCount} 筆）
         </div>
+        <label className="page-size-selector">
+          每頁筆數
+          <select aria-label="每頁筆數" value={itemsPerPage} onChange={event => onPageSizeChange(Number(event.target.value))}>
+            {[10, 20, 50, 100].map(size => <option key={size} value={size}>{size}</option>)}
+          </select>
+        </label>
         <div className="pagination-buttons">
           <button
             type="button"

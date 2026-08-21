@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import StudentListTab from './StudentListTab'
 
@@ -9,9 +9,13 @@ vi.mock('../../contexts/AuthContext', () => ({
   useAuth: () => authState,
 }))
 
-describe('StudentListTab add-student access', () => {
-  afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  vi.useRealTimers()
+  authState.role = 'viewer'
+})
 
+describe('StudentListTab add-student access', () => {
   it('hides the add-student button from viewers', () => {
     const { container } = render(
       <StudentListTab
@@ -73,5 +77,83 @@ describe('StudentListTab add-student access', () => {
     expect(screen.queryByText('Student 21')).toBeNull()
     expect(firstPageButton.disabled).toBe(true)
     expect(lastPageButton.disabled).toBe(false)
+  })
+})
+
+describe('StudentListTab list navigation', () => {
+  const makeStudents = (count) => Array.from({ length: count }, (_, index) => ({
+    student_id: `S-${index + 1}`,
+    name: `Student ${index + 1}`,
+    gender: 'Female'
+  }))
+
+  it('waits 300 ms before applying search input', () => {
+    vi.useFakeTimers()
+    const { container } = render(<StudentListTab students={[student]} enrollments={[]} onSelectStudent={vi.fn()} />)
+
+    fireEvent.change(container.querySelector('#student-search'), { target: { value: 'No match' } })
+
+    expect(screen.getByText(student.name)).not.toBeNull()
+    act(() => vi.advanceTimersByTime(300))
+    expect(screen.queryByText(student.name)).toBeNull()
+  })
+
+  it('changes page size and returns to the first page', () => {
+    render(<StudentListTab students={makeStudents(25)} enrollments={[]} onSelectStudent={vi.fn()} />)
+
+    fireEvent.click(document.getElementById('btn-student-last'))
+    fireEvent.change(document.querySelector('.page-size-selector select'), { target: { value: '20' } })
+
+    expect(screen.getByText('Student 1')).not.toBeNull()
+    expect(screen.queryByText('Student 21')).toBeNull()
+  })
+
+  it('sorts names ascending then descending', () => {
+    render(<StudentListTab students={[
+      { student_id: 'S-2', name: 'Charlie', gender: 'Female' },
+      { student_id: 'S-1', name: 'Alice', gender: 'Female' },
+      { student_id: 'S-3', name: 'Bob', gender: 'Female' }
+    ]} enrollments={[]} onSelectStudent={vi.fn()} />)
+
+    const nameHeader = document.querySelector('thead th:nth-child(2) button')
+    fireEvent.click(nameHeader)
+    expect(document.querySelectorAll('tbody tr')).toHaveLength(3)
+    expect([...document.querySelectorAll('tbody tr')].map(row => row.cells[1].textContent)).toEqual(['Alice', 'Bob', 'Charlie'])
+
+    fireEvent.click(nameHeader)
+    expect([...document.querySelectorAll('tbody tr')].map(row => row.cells[1].textContent)).toEqual(['Charlie', 'Bob', 'Alice'])
+  })
+
+  it('sorts student IDs with numeric ordering', () => {
+    render(<StudentListTab students={[
+      { student_id: 'S-10', name: 'Ten', gender: 'Female' },
+      { student_id: 'S-2', name: 'Two', gender: 'Female' },
+      { student_id: 'S-1', name: 'One', gender: 'Female' }
+    ]} enrollments={[]} onSelectStudent={vi.fn()} />)
+
+    expect([...document.querySelectorAll('tbody tr')].map(row => row.cells[0].textContent)).toEqual(['S-1', 'S-2', 'S-10'])
+  })
+
+  it('clamps an out-of-range page after search filtering', () => {
+    vi.useFakeTimers()
+    const { container } = render(<StudentListTab students={makeStudents(21)} enrollments={[]} onSelectStudent={vi.fn()} />)
+
+    fireEvent.click(document.getElementById('btn-student-last'))
+    expect(screen.getByText('Student 21')).not.toBeNull()
+
+    fireEvent.change(container.querySelector('#student-search'), { target: { value: 'Student 1' } })
+    act(() => vi.advanceTimersByTime(300))
+
+    expect(screen.getByText('Student 1')).not.toBeNull()
+    expect(document.getElementById('btn-student-first').disabled).toBe(true)
+  })
+
+  it('keeps the admin merge dialog available', () => {
+    authState.role = 'admin'
+    const { container } = render(<StudentListTab students={[student]} enrollments={[]} onSelectStudent={vi.fn()} />)
+
+    fireEvent.click(container.querySelector('.btn-primary'))
+    expect(screen.getByRole('dialog')).not.toBeNull()
+
   })
 })

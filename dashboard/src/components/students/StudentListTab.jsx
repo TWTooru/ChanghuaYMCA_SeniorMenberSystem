@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import usePermissions from '../../hooks/usePermissions'
 import StudentFilters from './StudentFilters'
@@ -10,14 +10,24 @@ export default function StudentListTab({ students, enrollments, onSelectStudent,
   /** 此容器保留篩選、排序與分頁狀態，並將列的呈現與操作委派給 StudentTable。 */
   const { role } = useAuth()
   const permissions = usePermissions(role)
+  const [studentSearchInput, setStudentSearchInput] = useState('')
   const [studentSearch, setStudentSearch] = useState('')
   const [studentGenderFilter, setStudentGenderFilter] = useState('')
   const [studentAgeFilter, setStudentAgeFilter] = useState('')
   const [studentEduFilter, setStudentEduFilter] = useState('')
   const [studentPage, setStudentPage] = useState(1)
-  const [sortOrder, setSortOrder] = useState('asc') // 'asc' or 'desc'
+  const [sortField, setSortField] = useState('student_id')
+  const [sortOrder, setSortOrder] = useState('asc')
   const [showMergeDialog, setShowMergeDialog] = useState(false)
-  const itemsPerPage = 10
+  const [itemsPerPage, setItemsPerPage] = useState(10)
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setStudentSearch(studentSearchInput)
+      setStudentPage(1)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [studentSearchInput])
 
   const filteredStudents = useMemo(() => {
     if (!students) return []
@@ -54,31 +64,47 @@ export default function StudentListTab({ students, enrollments, onSelectStudent,
     
     // 以可安全比較的學員 ID 排序，讓數字與字串格式的 ID 都維持穩定順序。
     result.sort((a, b) => {
-      // Convert to string safely in case they are numbers, and compare numerically if possible
-      const idA = String(a.student_id);
-      const idB = String(b.student_id);
-      const cmp = idA.localeCompare(idB, undefined, { numeric: true });
+      const valueA = String(a[sortField] ?? '')
+      const valueB = String(b[sortField] ?? '')
+      const cmp = sortField === 'student_id'
+        ? valueA.localeCompare(valueB, undefined, { numeric: true })
+        : valueA.localeCompare(valueB, 'zh-Hant')
       return sortOrder === 'asc' ? cmp : -cmp;
     })
     
     return result
-  }, [students, studentSearch, studentGenderFilter, studentAgeFilter, studentEduFilter, sortOrder])
+  }, [students, studentSearch, studentGenderFilter, studentAgeFilter, studentEduFilter, sortField, sortOrder])
 
   const paginatedStudents = useMemo(() => {
     const startIndex = (studentPage - 1) * itemsPerPage
     return filteredStudents.slice(startIndex, startIndex + itemsPerPage)
-  }, [filteredStudents, studentPage])
+  }, [filteredStudents, studentPage, itemsPerPage])
 
   const totalStudentPages = Math.ceil(filteredStudents.length / itemsPerPage) || 1
+
+  useEffect(() => {
+    setStudentPage(page => Math.min(page, totalStudentPages))
+  }, [totalStudentPages])
+
+  const handleSort = (field) => {
+    if (field === sortField) {
+      setSortOrder(order => order === 'asc' ? 'desc' : 'asc')
+      return
+    }
+    setSortField(field)
+    setSortOrder('asc')
+  }
+
+  const handlePageSizeChange = (size) => {
+    setItemsPerPage(size)
+    setStudentPage(1)
+  }
 
   return (
     <div>
       <StudentFilters
-        studentSearch={studentSearch}
-        onSearchChange={(value) => {
-          setStudentSearch(value)
-          setStudentPage(1)
-        }}
+        studentSearch={studentSearchInput}
+        onSearchChange={setStudentSearchInput}
         studentGenderFilter={studentGenderFilter}
         onGenderChange={(value) => {
           setStudentGenderFilter(value)
@@ -101,13 +127,16 @@ export default function StudentListTab({ students, enrollments, onSelectStudent,
       <StudentTable
         students={paginatedStudents}
         enrollments={enrollments}
+        sortField={sortField}
         sortOrder={sortOrder}
-        onToggleSort={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+        onSort={handleSort}
         onSelectStudent={onSelectStudent}
         studentPage={studentPage}
         totalStudentPages={totalStudentPages}
         onPageChange={setStudentPage}
         totalFilteredCount={filteredStudents.length}
+        itemsPerPage={itemsPerPage}
+        onPageSizeChange={handlePageSizeChange}
       />
       {showMergeDialog && (
         <StudentMergeDialog
