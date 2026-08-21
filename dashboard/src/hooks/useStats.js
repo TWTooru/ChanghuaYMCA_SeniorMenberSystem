@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { normalizeEducation } from '../domain/studentFields'
 import { compareSeasons, latestSeason } from '../domain/season'
+import { summarizeEnrollmentBilling } from '../domain/enrollmentBilling'
 
 /**
  * 從目前學員與報名快照計算純顯示統計，不讀寫遠端資料。
@@ -10,7 +11,7 @@ export default function useStats(students, enrollments) {
   return useMemo(() => {
     if (!students || students.length === 0) {
       return {
-        totalStudents: 0, totalRegistrations: 0, totalRefunds: 0,
+        totalStudents: 0, totalRegistrations: 0, totalRefunds: 0, totalRevenue: 0,
         males: 0, females: 0, genderUnknown: 0, ageGroups: {}, eduCounts: {}, popularCourses: [],
         seasonStats: [], currentSeason: null, currentSeasonStats: null, previousSeasonStats: null
       }
@@ -18,6 +19,7 @@ export default function useStats(students, enrollments) {
     const totalStudents = students.length
     const totalRegistrations = enrollments.length
     const totalRefunds = enrollments.filter(e => e.refunded).length
+    let totalRevenue = 0
     const males = students.filter(s => s.gender === '男').length
     const females = students.filter(s => s.gender === '女').length
     const genderUnknown = students.filter(s => s.gender !== '男' && s.gender !== '女').length
@@ -66,7 +68,8 @@ export default function useStats(students, enrollments) {
           uniqueStudentsSet: new Set(),
           newStudents: 0,
           returningStudents: 0,
-          coursesCount: 0
+          coursesCount: 0,
+          revenue: 0
         }
       }
       const g = seasonGroups[s]
@@ -76,6 +79,11 @@ export default function useStats(students, enrollments) {
       } else {
         if (e.courses && Array.isArray(e.courses)) {
           g.coursesCount += e.courses.length
+        }
+        const amount = summarizeEnrollmentBilling(e).amount
+        if (amount != null) {
+          totalRevenue += amount
+          g.revenue += amount
         }
       }
       if (e.student_id) {
@@ -100,6 +108,7 @@ export default function useStats(students, enrollments) {
         newStudents: g.newStudents,
         returningStudents: g.returningStudents,
         courses: g.coursesCount,
+        revenue: g.revenue,
         avgCoursesPerStudent: uniqueStudents > 0 ? g.coursesCount / uniqueStudents : 0
       }
     }).sort((a, b) => compareSeasons(a.season, b.season))
@@ -115,7 +124,7 @@ export default function useStats(students, enrollments) {
     }
 
     return {
-      totalStudents, totalRegistrations, totalRefunds,
+      totalStudents, totalRegistrations, totalRefunds, totalRevenue,
       males, females, genderUnknown, ageGroups, eduCounts, popularCourses,
       seasonStats, currentSeason, currentSeasonStats, previousSeasonStats
     }
