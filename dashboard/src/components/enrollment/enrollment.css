@@ -63,7 +63,8 @@
   transition: all 0.2s ease;
 }
 
-.timeline-card:hover {
+.timeline-card:hover,
+.timeline-card:focus-within {
   background: var(--bg-card-hover);
   border-color: var(--color-accent);
   box-shadow: var(--shadow-md);
@@ -124,10 +125,6 @@
   padding: 2px 8px;
   border-radius: 4px;
 }
-
-.breakdown-tag { background: var(--input-bg); }
-:root[data-theme="light"] .breakdown-tag.prepaid { color: #1d4ed8; background: rgba(59, 130, 246, 0.1); }
-:root[data-theme="light"] .breakdown-tag.formal { color: #047857; background: rgba(16, 185, 129, 0.1); }
 
 /* Inline enrollment edit form */
 .enrollment-edit-form {
