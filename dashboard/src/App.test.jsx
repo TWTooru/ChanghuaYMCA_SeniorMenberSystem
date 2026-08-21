@@ -59,6 +59,9 @@ vi.mock('./components/enrollment/AddEnrollModal', () => ({ default: () => null }
 vi.mock('./components/sync/ExcelSync', () => ({ default: () => <div data-testid="excel-sync" /> }))
 vi.mock('./components/auth/Login', () => ({ default: () => null }))
 vi.mock('./components/auth/PasswordSetup', () => ({ default: () => <div data-testid="password-setup" /> }))
+vi.mock('./components/common/ErrorBoundary', () => ({
+  default: ({ children }) => <div data-testid="authenticated-error-boundary">{children}</div>,
+}))
 vi.mock('./components/admin/AdminAccountPage', () => ({ default: () => <div data-testid="admin-account-page" /> }))
 vi.mock('./components/courses/CourseManagementTab', () => ({ default: () => <div data-testid="course-management-tab" /> }))
 vi.mock('./lib/excelExport', () => ({ exportToExcel: vi.fn() }))
@@ -169,7 +172,14 @@ describe('App header access controls', () => {
     render(<App />)
 
     expect(screen.getByTestId('password-setup')).toBeTruthy()
+    expect(screen.queryByTestId('authenticated-error-boundary')).toBeNull()
     expect(apiDataSpy).not.toHaveBeenCalled()
+  })
+
+  it('wraps the authenticated dashboard in an error boundary', () => {
+    render(<App />)
+
+    expect(screen.getByTestId('authenticated-error-boundary')).toBeTruthy()
   })
 
   it('opens export options dialog when download Excel is clicked', () => {

@@ -17,6 +17,7 @@ import ExcelSync from './components/sync/ExcelSync'
 import ExportOptionsDialog from './components/sync/ExportOptionsDialog'
 import Login from './components/auth/Login'
 import PasswordSetup from './components/auth/PasswordSetup'
+import ErrorBoundary from './components/common/ErrorBoundary'
 import AdminAccountPage from './components/admin/AdminAccountPage'
 import CourseManagementTab from './components/courses/CourseManagementTab'
 import FaqTab from './components/faq/FaqTab'
@@ -214,7 +215,11 @@ function App() {
     return <Login />
   }
 
-  return <AuthenticatedDashboard />
+  return (
+    <ErrorBoundary>
+      <AuthenticatedDashboard />
+    </ErrorBoundary>
+  )
 }
 
 export default App
