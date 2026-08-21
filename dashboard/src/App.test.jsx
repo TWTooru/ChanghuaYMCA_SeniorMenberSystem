@@ -10,6 +10,7 @@ let apiData = {
 const apiDataSpy = vi.fn(() => apiData)
 const studentDetailModalSpy = vi.hoisted(() => vi.fn())
 const billingDetailModalSpy = vi.hoisted(() => vi.fn())
+const quickSearchSpy = vi.hoisted(() => vi.fn())
 
 const signOut = vi.fn()
 const authState = {
@@ -66,6 +67,12 @@ vi.mock('./components/admin/AdminAccountPage', () => ({ default: () => <div data
 vi.mock('./components/courses/CourseManagementTab', () => ({ default: () => <div data-testid="course-management-tab" /> }))
 vi.mock('./lib/excelExport', () => ({ exportToExcel: vi.fn() }))
 vi.mock('./components/sync/ExportOptionsDialog', () => ({ default: ({ onExport }) => <div data-testid="export-modal" onClick={() => onExport({ exportScope: 'all', selectedSeason: null, options: {} })} /> }))
+vi.mock('./components/common/QuickSearch', () => ({
+  default: ({ students, onSelect, onClose }) => {
+    quickSearchSpy({ students, onSelect, onClose })
+    return <div data-testid="quick-search"><button type="button" onClick={() => onSelect(students[0])}>select quick-search student</button></div>
+  },
+}))
 
 describe('App header access controls', () => {
   afterEach(cleanup)
@@ -77,6 +84,7 @@ describe('App header access controls', () => {
     apiDataSpy.mockClear()
     studentDetailModalSpy.mockClear()
     billingDetailModalSpy.mockClear()
+    quickSearchSpy.mockClear()
     apiData = {
       dbData: { students: [], enrollments: [] },
       dbStatus: 'connected',
@@ -180,6 +188,29 @@ describe('App header access controls', () => {
     render(<App />)
 
     expect(screen.getByTestId('authenticated-error-boundary')).toBeTruthy()
+  })
+
+  it('opens quick search with Ctrl+K, selects the exact student, toggles closed, and cleans up its shortcut', () => {
+    const student = { student_id: 'S-777', name: 'Quick Search Student', mobile_phone: '0912000111' }
+    apiData = { dbData: { students: [student], enrollments: [] }, dbStatus: 'connected', dbError: null }
+    const { unmount } = render(<App />)
+
+    fireEvent.keyDown(window, { key: 'k', ctrlKey: true })
+    expect(screen.getByTestId('quick-search')).toBeTruthy()
+    expect(quickSearchSpy).toHaveBeenLastCalledWith(expect.objectContaining({ students: [student] }))
+
+    fireEvent.click(screen.getByRole('button', { name: 'select quick-search student' }))
+    expect(studentDetailModalSpy).toHaveBeenLastCalledWith(student)
+    expect(screen.queryByTestId('quick-search')).toBeNull()
+
+    fireEvent.keyDown(window, { key: 'k', ctrlKey: true })
+    expect(screen.getByTestId('quick-search')).toBeTruthy()
+    fireEvent.keyDown(window, { key: 'k', ctrlKey: true })
+    expect(screen.queryByTestId('quick-search')).toBeNull()
+
+    unmount()
+    fireEvent.keyDown(window, { key: 'k', ctrlKey: true })
+    expect(quickSearchSpy).toHaveBeenCalledTimes(2)
   })
 
   it('opens export options dialog when download Excel is clicked', () => {

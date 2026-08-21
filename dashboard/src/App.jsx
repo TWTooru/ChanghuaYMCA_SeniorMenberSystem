@@ -25,6 +25,7 @@ import { useAuth } from './contexts/AuthContext'
 import usePermissions from './hooks/usePermissions'
 import useTheme from './hooks/useTheme'
 import AppHeader from './components/common/AppHeader'
+import QuickSearch from './components/common/QuickSearch'
 
 /**
  * 應用程式組合根節點：依認證流程切換登入／設密碼畫面，登入後再串接
@@ -39,6 +40,7 @@ function AuthenticatedDashboard() {
   const [showAddStudentModal, setShowAddStudentModal] = useState(false)
   const [showAddEnrollModal, setShowAddEnrollModal] = useState(false)
   const [showExportModal, setShowExportModal] = useState(false)
+  const [showQuickSearch, setShowQuickSearch] = useState(false)
   const [selectedBillingRecord, setSelectedBillingRecord] = useState(null)
   const [refreshCount, setRefreshCount] = useState(0)
 
@@ -62,6 +64,18 @@ function AuthenticatedDashboard() {
     selectedStudent, studentDetailInitialTab, studentDetailIsTabbed,
     openStudentDetail, closeStudentDetail, replaceSelectedStudent
   } = useStudentSelection(students)
+
+  useEffect(() => {
+    const handleKeyDown = event => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault()
+        setShowQuickSearch(open => !open)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   const handleRefresh = () => setRefreshCount(c => c + 1)
 
@@ -198,6 +212,17 @@ function AuthenticatedDashboard() {
             setShowExportModal(false)
             handleExport(params)
           }}
+        />
+      )}
+
+      {showQuickSearch && (
+        <QuickSearch
+          students={students}
+          onSelect={student => {
+            openStudentDetail(student, 'profile', true)
+            setShowQuickSearch(false)
+          }}
+          onClose={() => setShowQuickSearch(false)}
         />
       )}
     </div>
