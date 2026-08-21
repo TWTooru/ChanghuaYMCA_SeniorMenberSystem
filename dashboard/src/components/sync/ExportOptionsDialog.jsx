@@ -84,7 +84,7 @@ export default function ExportOptionsDialog({
   }
 
   return createPortal(
-    <div className="modal-overlay-center" onClick={onCancel}>
+    <div className="modal-overlay-center">
       <div 
         className="form-modal-content" 
         ref={dialogRef} 

@@ -83,7 +83,7 @@ export default function AddStudentModal({ students, onClose, onRefresh }) {
   };
 
   return (
-    <div className="modal-overlay-center" onClick={onClose} id="modal-add-student-overlay">
+    <div className="modal-overlay-center" id="modal-add-student-overlay">
       <div className="form-modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header-centered">
           <h2>手動新增學員</h2>

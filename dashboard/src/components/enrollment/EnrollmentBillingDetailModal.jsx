@@ -236,7 +236,7 @@ export default function EnrollmentBillingDetailModal({
     : []
 
   return (
-    <div className="modal-overlay enrollment-billing-overlay" onClick={handleClose}>
+    <div className="modal-overlay enrollment-billing-overlay">
       <div
         className="modal-content enrollment-billing-dialog"
         role="dialog"

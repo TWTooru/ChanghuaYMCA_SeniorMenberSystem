@@ -20,6 +20,19 @@ const summary = {
 describe('ImportPreviewDialog', () => {
   afterEach(cleanup)
 
+  it('does not dismiss when its outer overlay is clicked', () => {
+    const onCancel = vi.fn()
+    render(
+      <ImportPreviewDialog
+        preview={{ summary, warnings: [], errors: [], hasBlockingErrors: false }}
+        onConfirm={vi.fn()}
+        onCancel={onCancel}
+      />
+    )
+    fireEvent.click(document.querySelector('.modal-overlay-center'))
+    expect(onCancel).not.toHaveBeenCalled()
+  })
+
   it('shows a summary and confirms a valid import', () => {
     const onConfirm = vi.fn()
 

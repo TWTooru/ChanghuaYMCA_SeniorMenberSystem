@@ -91,6 +91,16 @@ describe('updateStudent', () => {
 })
 
 describe('deleteStudent', () => {
+  function deleteClient(error) {
+    return {
+      from: () => ({
+        delete: () => ({
+          eq: async () => ({ error }),
+        }),
+      }),
+    }
+  }
+
   it('deletes a student by student_id (DB cascade handles children)', async () => {
     const calls = []
     const client = {
@@ -115,19 +125,14 @@ describe('deleteStudent', () => {
     expect(calls).toContainEqual({ col: 'student_id', val: 'S-001' })
   })
 
-  it('throws when delete fails', async () => {
-    const client = {
-      from() {
-        return {
-          delete() {
-            return {
-              eq: async () => ({ error: new Error('delete denied') })
-            }
-          }
-        }
-      }
-    }
+  it('maps foreign-key deletion failures to a stable Chinese message', async () => {
+    const error = { code: '23503', message: 'violates foreign key constraint' }
+    await expect(deleteStudent(deleteClient(error), '1'))
+      .rejects.toThrow('無法刪除此學員：尚有關聯的報名紀錄或收據，請先清理後再試。')
+  })
 
-    await expect(deleteStudent(client, '1')).rejects.toThrow('delete denied')
+  it('preserves unrelated deletion errors', async () => {
+    const error = new Error('delete denied')
+    await expect(deleteStudent(deleteClient(error), '1')).rejects.toBe(error)
   })
 })

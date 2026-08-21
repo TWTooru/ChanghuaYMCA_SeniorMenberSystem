@@ -45,6 +45,13 @@ describe('ExportOptionsDialog', () => {
     })
   })
 
+  it('does not dismiss when its outer overlay is clicked', () => {
+    const onCancel = vi.fn()
+    render(<ExportOptionsDialog enrollments={enrollments} onExport={vi.fn()} onCancel={onCancel} />)
+    fireEvent.click(document.querySelector('.modal-overlay-center'))
+    expect(onCancel).not.toHaveBeenCalled()
+  })
+
   // 以首尾 focusable element 驗證 Tab／Shift+Tab 循環。
   it('traps keyboard focus when Tab key is pressed', () => {
     render(

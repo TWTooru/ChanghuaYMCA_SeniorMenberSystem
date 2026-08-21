@@ -133,17 +133,25 @@ describe('Student detail components', () => {
     expect(onClose).toHaveBeenCalledOnce()
   })
 
-  it('guards overlay and Escape dismissal when profile edits are unsaved', () => {
+  it('does not dismiss either detail layout when its outer overlay is clicked', () => {
+    for (const isTabbed of [true, false]) {
+      const onClose = vi.fn()
+      const { container, unmount } = render(
+        <StudentDetailModal student={student} enrollments={[]} isTabbed={isTabbed} onClose={onClose} />
+      )
+
+      fireEvent.click(container.querySelector('#modal-overlay'))
+      expect(onClose).not.toHaveBeenCalled()
+      unmount()
+    }
+  })
+
+  it('guards Escape dismissal when profile edits are unsaved', () => {
     const onClose = vi.fn()
     authState.role = 'admin'
-    const { container } = render(<StudentDetailModal student={student} enrollments={[]} initialTab="profile" onClose={onClose} />)
+    render(<StudentDetailModal student={student} enrollments={[]} initialTab="profile" onClose={onClose} />)
     fireEvent.click(screen.getByRole('button', { name: /編輯/ }))
     fireEvent.change(screen.getByDisplayValue('王小明'), { target: { value: '王大明' } })
-
-    fireEvent.click(container.querySelector('#modal-overlay'))
-    expect(screen.getByText('尚有未儲存變更')).not.toBeNull()
-    expect(onClose).not.toHaveBeenCalled()
-    fireEvent.click(screen.getByRole('button', { name: '繼續編輯' }))
 
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
     expect(screen.getByText('尚有未儲存變更')).not.toBeNull()

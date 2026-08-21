@@ -85,6 +85,12 @@ describe('EnrollmentBillingDetailModal', () => {
     vi.mocked(updateEnrollmentRefundStatus).mockReset()
   })
 
+  it('does not dismiss when its outer overlay is clicked', () => {
+    const { container, props } = renderModal()
+    fireEvent.click(container.querySelector('.enrollment-billing-overlay'))
+    expect(props.onClose).not.toHaveBeenCalled()
+  })
+
   it('renders one payment row for multiple courses without double-counting', () => {
     const { container } = renderModal()
 

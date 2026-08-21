@@ -166,7 +166,7 @@ export default function StudentDetailModal({ student, enrollments, initialTab = 
   if (!isTabbed) {
     return (
       <>
-        <div className="modal-overlay student-detail-overlay" onClick={requestClose} id="modal-overlay">
+        <div className="modal-overlay student-detail-overlay" id="modal-overlay">
           <div className="modal-content student-detail-dialog" ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="student-detail-title" tabIndex={-1} onClick={event => event.stopPropagation()} onKeyDown={handleKeyDown}>
             <div className="modal-header student-detail-header">
               <div className="modal-title-group"><span className="modal-id-badge">{student.student_id}</span><h2 id="student-detail-title" className="modal-name">{student.name} ({student.gender || '未知'})</h2></div>
@@ -203,7 +203,7 @@ export default function StudentDetailModal({ student, enrollments, initialTab = 
 
   return (
     <>
-      <div className="modal-overlay student-detail-overlay" onClick={requestClose} id="modal-overlay">
+      <div className="modal-overlay student-detail-overlay" id="modal-overlay">
         <div className="modal-content student-detail-dialog" ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="student-detail-title" tabIndex={-1} onClick={event => event.stopPropagation()} onKeyDown={handleKeyDown}>
           <div className="modal-header student-detail-header">
           <div className="modal-title-group"><span className="modal-id-badge">{student.student_id}</span><h2 id="student-detail-title" className="modal-name">{student.name} ({student.gender || '未知'})</h2></div>

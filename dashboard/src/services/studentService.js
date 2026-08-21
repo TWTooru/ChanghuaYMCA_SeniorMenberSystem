@@ -38,5 +38,8 @@ export async function updateStudent(client, studentId, payload) {
 /** 依 `student_id` 刪除學員；關聯資料由資料庫的級聯規則處理。 */
 export async function deleteStudent(client, studentId) {
   const { error } = await client.from('students').delete().eq('student_id', studentId)
+  if (error?.code === '23503') {
+    throw new Error('無法刪除此學員：尚有關聯的報名紀錄或收據，請先清理後再試。')
+  }
   if (error) throw error
 }

@@ -26,9 +26,18 @@ export default function useModalA11y(modalRef, onClose) {
       }
       if (e.key === 'Tab') {
         const focusableEls = modal.querySelectorAll(FOCUSABLE)
-        if (focusableEls.length === 0) return
+        if (focusableEls.length === 0) {
+          e.preventDefault()
+          modal.focus()
+          return
+        }
         const first = focusableEls[0]
         const last = focusableEls[focusableEls.length - 1]
+        if (!modal.contains(document.activeElement)) {
+          e.preventDefault()
+          ;(e.shiftKey ? last : first).focus()
+          return
+        }
         if (e.shiftKey) {
           if (document.activeElement === first) { e.preventDefault(); last.focus() }
         } else {
