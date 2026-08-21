@@ -5,7 +5,7 @@
 .admin-page-header p { margin: 6px 0 0; color: var(--text-secondary); }
 .admin-denied { padding: 32px; color: var(--text-secondary); text-align: center; }
 .admin-summary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 24px; }
-.admin-summary-card, .admin-audit-list { background: rgba(31, 41, 55, .35); border: 1px solid var(--border-color); border-radius: 12px; padding: 18px; }
+.admin-summary-card, .admin-audit-list { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 18px; box-shadow: var(--shadow-sm); }
 .admin-summary-card span { color: var(--text-secondary); font-size: 13px; }
 .admin-summary-value { display: block; font-size: 28px; margin-top: 6px; }
 .admin-user-table { overflow-x: auto; border: 1px solid var(--border-color); border-radius: 12px; margin-bottom: 24px; }
@@ -27,6 +27,10 @@
 .admin-status-badge.active, .admin-status-badge.success { background: var(--color-success-glow); color: #6ee7b7; }
 .admin-status-badge.invited, .admin-status-badge.pending { background: rgba(245, 158, 11, .15); color: #fbbf24; }
 .admin-status-badge.failure { background: var(--color-danger-glow); color: #fca5a5; }
+:root[data-theme="light"] .admin-role-select--admin { color: #b91c1c; background: rgba(239, 68, 68, 0.08); }
+:root[data-theme="light"] .admin-role-select--editor { color: #b45309; background: rgba(245, 158, 11, 0.08); }
+:root[data-theme="light"] .admin-role-select--viewer { color: #1d4ed8; background: rgba(59, 130, 246, 0.08); }
+:root[data-theme="light"] .admin-status-badge.invited { color: #b45309; background: rgba(245, 158, 11, 0.1); }
 .admin-actions { display: flex; gap: 8px; }
 .admin-audit-list { display: flex; flex-direction: column; gap: 12px; }
 .admin-audit-list h2 { margin: 0 0 4px; font-size: 18px; }
