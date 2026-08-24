@@ -1,5 +1,5 @@
 begin;
-select plan(34);
+select plan(36);
 
 select has_table('public', 'app_user_roles', 'authoritative role table exists');
 select has_column('public', 'app_user_roles', 'user_id', 'role row references an auth user');
@@ -421,36 +421,37 @@ select ok(
   'catalog rewrite leaves security-invoker routines unchanged'
 );
 
-create or replace function pg_temp.call_role_guard_hardener(p_source text)
-returns text
-language plpgsql
-as $$
-declare
-  hardened_source text;
-begin
-  execute 'select private.harden_security_definer_role_guards($1)'
-    into hardened_source
-    using p_source;
-  return hardened_source;
-exception
-  when undefined_function then
-    return '__MISSING_ROLE_GUARD_HARDENER__';
-end
-$$;
-
 select is(
-  pg_temp.call_role_guard_hardener($fixture$
+  private.harden_security_definer_role_guards($fixture$
 begin
+  -- if public.current_app_role() not in ('editor', 'admin') then
+  -- raise exception 'LINE_COMMENT_DECOY';
+  -- end if;
   /*
   if public.current_app_role() not in ('editor', 'admin') then
-    raise exception 'COMMENT_DECOY';
+    raise exception 'BLOCK_COMMENT_DECOY';
   end if;
   */
-  perform $decoy$
+  perform '
   if public.current_app_role() not in ('editor', 'admin') then
-    raise exception 'STRING_DECOY';
+    raise exception ''ORDINARY_STRING_DECOY'';
   end if;
-  $decoy$;
+  ';
+  perform E'
+  if public.current_app_role() not in ('editor', 'admin') then
+    raise exception \'E_STRING_DECOY\';
+  end if;
+  ';
+  perform $ascii$
+  if public.current_app_role() not in ('editor', 'admin') then
+    raise exception 'ASCII_DOLLAR_STRING_DECOY';
+  end if;
+  $ascii$;
+  perform $$
+  if public.current_app_role() not in ('editor', 'admin') then
+    raise exception 'EMPTY_DOLLAR_STRING_DECOY';
+  end if;
+  $$;
   if public.current_app_role() not in ('editor', 'admin') then
     raise exception 'EXECUTABLE_GUARD';
   end if;
@@ -458,22 +459,84 @@ end;
 $fixture$),
   $expected$
 begin
+  -- if public.current_app_role() not in ('editor', 'admin') then
+  -- raise exception 'LINE_COMMENT_DECOY';
+  -- end if;
   /*
   if public.current_app_role() not in ('editor', 'admin') then
-    raise exception 'COMMENT_DECOY';
+    raise exception 'BLOCK_COMMENT_DECOY';
   end if;
   */
-  perform $decoy$
+  perform '
   if public.current_app_role() not in ('editor', 'admin') then
-    raise exception 'STRING_DECOY';
+    raise exception ''ORDINARY_STRING_DECOY'';
   end if;
-  $decoy$;
+  ';
+  perform E'
+  if public.current_app_role() not in ('editor', 'admin') then
+    raise exception \'E_STRING_DECOY\';
+  end if;
+  ';
+  perform $ascii$
+  if public.current_app_role() not in ('editor', 'admin') then
+    raise exception 'ASCII_DOLLAR_STRING_DECOY';
+  end if;
+  $ascii$;
+  perform $$
+  if public.current_app_role() not in ('editor', 'admin') then
+    raise exception 'EMPTY_DOLLAR_STRING_DECOY';
+  end if;
+  $$;
   if coalesce(public.current_app_role() in ('editor', 'admin'), false) is not true then
     raise exception 'EXECUTABLE_GUARD';
   end if;
 end;
 $expected$,
-  'role-guard hardening preserves block comments and dollar-quoted strings'
+  'hardening preserves comments and ordinary, E-prefixed, tagged, and empty dollar strings'
+);
+
+select is(
+  private.harden_security_definer_role_guards($boundary_fixture$
+declare
+  foo$decoy$ text := 'identifier value';
+begin
+  if public.current_app_role() not in ('editor', 'admin') then
+    raise exception 'EXECUTABLE_AFTER_IDENTIFIER';
+  end if;
+end;
+$boundary_fixture$),
+  $boundary_expected$
+declare
+  foo$decoy$ text := 'identifier value';
+begin
+  if coalesce(public.current_app_role() in ('editor', 'admin'), false) is not true then
+    raise exception 'EXECUTABLE_AFTER_IDENTIFIER';
+  end if;
+end;
+$boundary_expected$,
+  'a dollar-shaped identifier suffix cannot hide a later executable guard'
+);
+
+select is(
+  private.harden_security_definer_role_guards($unicode_fixture$
+begin
+  perform $標籤$
+  if public.current_app_role() not in ('editor', 'admin') then
+    raise exception 'UNICODE_DOLLAR_STRING_DECOY';
+  end if;
+  $標籤$;
+end;
+$unicode_fixture$),
+  $unicode_expected$
+begin
+  perform $標籤$
+  if public.current_app_role() not in ('editor', 'admin') then
+    raise exception 'UNICODE_DOLLAR_STRING_DECOY';
+  end if;
+  $標籤$;
+end;
+$unicode_expected$,
+  'hardening preserves non-ASCII dollar-quoted strings'
 );
 
 select * from finish();

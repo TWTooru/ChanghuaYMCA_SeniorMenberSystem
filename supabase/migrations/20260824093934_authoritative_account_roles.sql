@@ -120,13 +120,21 @@ declare
   parser_state text := 'code';
   block_comment_depth integer := 0;
   dollar_delimiter text;
+  dollar_tag text;
+  dollar_tag_end_offset integer;
+  dollar_tag_position integer;
+  dollar_tag_character text;
+  dollar_tag_is_valid boolean;
+  dollar_quote_boundary boolean;
   current_character text;
+  previous_character text;
   next_character text;
   current_pair text;
   escape_single_quote boolean := false;
 begin
   while source_position <= source_length loop
     current_character := pg_catalog.substr(p_source, source_position, 1);
+    previous_character := pg_catalog.substr(p_source, source_position - 1, 1);
     next_character := pg_catalog.substr(p_source, source_position + 1, 1);
     current_pair := pg_catalog.substr(p_source, source_position, 2);
 
@@ -166,10 +174,56 @@ begin
         source_position := source_position + 1;
         parser_state := 'double_quote';
       elsif current_character = '$' then
-        dollar_delimiter := pg_catalog.substring(
-          pg_catalog.substr(p_source, source_position),
-          '^([$][A-Za-z_][A-Za-z_0-9]*[$]|[$][$])'
-        );
+        dollar_delimiter := null;
+        dollar_quote_boundary := source_position = 1;
+        if not dollar_quote_boundary then
+          dollar_quote_boundary := not (
+            previous_character ~ '^[A-Za-z0-9_$]$'
+            or pg_catalog.ascii(previous_character) >= 128
+          );
+        end if;
+
+        if dollar_quote_boundary then
+          dollar_tag_end_offset := pg_catalog.strpos(
+            pg_catalog.substr(p_source, source_position + 1),
+            '$'
+          );
+          if dollar_tag_end_offset > 0 then
+            dollar_tag := pg_catalog.substr(
+              p_source,
+              source_position + 1,
+              dollar_tag_end_offset - 1
+            );
+            dollar_tag_is_valid := dollar_tag = '';
+            if dollar_tag <> '' then
+              dollar_tag_character := pg_catalog.substr(dollar_tag, 1, 1);
+              dollar_tag_is_valid := (
+                dollar_tag_character ~ '^[A-Za-z_]$'
+                or pg_catalog.ascii(dollar_tag_character) >= 128
+              );
+              dollar_tag_position := 2;
+              while dollar_tag_is_valid
+                    and dollar_tag_position <= pg_catalog.char_length(dollar_tag)
+              loop
+                dollar_tag_character := pg_catalog.substr(
+                  dollar_tag,
+                  dollar_tag_position,
+                  1
+                );
+                dollar_tag_is_valid := (
+                  dollar_tag_character ~ '^[A-Za-z0-9_]$'
+                  or pg_catalog.ascii(dollar_tag_character) >= 128
+                );
+                dollar_tag_position := dollar_tag_position + 1;
+              end loop;
+            end if;
+
+            if dollar_tag_is_valid then
+              dollar_delimiter := '$' || dollar_tag || '$';
+            end if;
+          end if;
+        end if;
+
         if dollar_delimiter is not null then
           masked_source := masked_source || pg_catalog.repeat(
             ' ',
