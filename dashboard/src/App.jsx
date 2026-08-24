@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import './App.css'
-import { Activity, Users, Calendar, AlertCircle, ShieldCheck, BookOpen } from 'lucide-react'
+import { Activity, Users, Calendar, AlertCircle, ShieldCheck, BookOpen, BookMarked, CircleHelp } from 'lucide-react'
 
 import useApiData from './hooks/useApiData'
 import useStats from './hooks/useStats'
@@ -17,10 +17,12 @@ import ExcelSync from './components/sync/ExcelSync'
 import ExportOptionsDialog from './components/sync/ExportOptionsDialog'
 import Login from './components/auth/Login'
 import PasswordSetup from './components/auth/PasswordSetup'
+import RoleAccessState from './components/auth/RoleAccessState'
 import ErrorBoundary from './components/common/ErrorBoundary'
 import AdminAccountPage from './components/admin/AdminAccountPage'
 import CourseManagementTab from './components/courses/CourseManagementTab'
 import FaqTab from './components/faq/FaqTab'
+import UserManualTab from './components/manual/UserManualTab'
 import { useAuth } from './contexts/AuthContext'
 import usePermissions from './hooks/usePermissions'
 import useTheme from './hooks/useTheme'
@@ -44,10 +46,22 @@ function AuthenticatedDashboard() {
   const [selectedBillingRecord, setSelectedBillingRecord] = useState(null)
   const [refreshCount, setRefreshCount] = useState(0)
 
-  // 角色可能在 session 更新後降級；立即退出管理頁，避免保留已失效的管理介面。
+  // 角色可能在 session 更新後降級；立即退出已失效的管理或手冊介面。
   useEffect(() => {
-    if (role !== 'admin' && (activeTab === 'admin' || activeTab === 'courses')) setActiveTab('overview')
-  }, [role, activeTab])
+    const capabilityByTab = {
+      admin: permissions.canManageUsers,
+      courses: permissions.canManageCourses,
+      question: permissions.canViewFaq,
+      manual: permissions.canViewManual,
+    }
+    if (activeTab in capabilityByTab && !capabilityByTab[activeTab]) setActiveTab('overview')
+  }, [
+    activeTab,
+    permissions.canManageUsers,
+    permissions.canManageCourses,
+    permissions.canViewFaq,
+    permissions.canViewManual,
+  ])
 
   const { dbData, dbStatus, dbError } = useApiData(session, refreshCount)
   const { students, enrollments } = dbData
@@ -107,28 +121,33 @@ function AuthenticatedDashboard() {
 
       <nav className="tabs-nav">
         <div className="tabs-container">
-          <button className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')} id="tab-overview">
+          <button className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')} id="tab-overview" aria-current={activeTab === 'overview' ? 'page' : undefined}>
             <Activity size={18} /><span>數據概覽</span>
           </button>
-          <button className={`tab-btn ${activeTab === 'students' ? 'active' : ''}`} onClick={() => setActiveTab('students')} id="tab-students">
+          <button className={`tab-btn ${activeTab === 'students' ? 'active' : ''}`} onClick={() => setActiveTab('students')} id="tab-students" aria-current={activeTab === 'students' ? 'page' : undefined}>
             <Users size={18} /><span>學員清單與查詢</span>
           </button>
-          <button className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')} id="tab-history">
+          <button className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')} id="tab-history" aria-current={activeTab === 'history' ? 'page' : undefined}>
             <Calendar size={18} /><span>歷年選課歷程</span>
           </button>
-          {role === 'admin' && (
-            <button className={`tab-btn ${activeTab === 'courses' ? 'active' : ''}`} onClick={() => setActiveTab('courses')} id="tab-courses">
+          {permissions.canManageCourses && (
+            <button className={`tab-btn ${activeTab === 'courses' ? 'active' : ''}`} onClick={() => setActiveTab('courses')} id="tab-courses" aria-current={activeTab === 'courses' ? 'page' : undefined}>
               <BookOpen size={18} /><span>課程管理</span>
             </button>
           )}
-          {role === 'admin' && (
-            <button className={`tab-btn ${activeTab === 'admin' ? 'active' : ''}`} onClick={() => setActiveTab('admin')} id="tab-admin">
+          {permissions.canManageUsers && (
+            <button className={`tab-btn ${activeTab === 'admin' ? 'active' : ''}`} onClick={() => setActiveTab('admin')} id="tab-admin" aria-current={activeTab === 'admin' ? 'page' : undefined}>
               <ShieldCheck size={18} /><span>帳號管理</span>
             </button>
           )}
-          {role === 'admin' && (
-            <button className={`tab-btn ${activeTab === 'question' ? 'active' : ''}`} onClick={() => setActiveTab('question')} id="tab-question">
-              <ShieldCheck size={18} /><span>疑難雜症</span>
+          {permissions.canViewManual && (
+            <button className={`tab-btn ${activeTab === 'manual' ? 'active' : ''}`} onClick={() => setActiveTab('manual')} id="tab-manual" aria-current={activeTab === 'manual' ? 'page' : undefined}>
+              <BookMarked size={18} /><span>使用者手冊</span>
+            </button>
+          )}
+          {permissions.canViewFaq && (
+            <button className={`tab-btn ${activeTab === 'question' ? 'active' : ''}`} onClick={() => setActiveTab('question')} id="tab-question" aria-current={activeTab === 'question' ? 'page' : undefined}>
+              <CircleHelp size={18} /><span>疑難雜症</span>
             </button>
           )}
         </div>
@@ -157,9 +176,10 @@ function AuthenticatedDashboard() {
             }}
           />
         )}
-        {activeTab === 'courses' && role === 'admin' && <CourseManagementTab />}
-        {activeTab === 'admin' && role === 'admin' && <AdminAccountPage />}
-        {activeTab === 'question' && role === 'admin' && <FaqTab />}
+        {activeTab === 'manual' && permissions.canViewManual && <UserManualTab role={role} />}
+        {activeTab === 'courses' && permissions.canManageCourses && <CourseManagementTab />}
+        {activeTab === 'admin' && permissions.canManageUsers && <AdminAccountPage />}
+        {activeTab === 'question' && permissions.canViewFaq && <FaqTab />}
       </main>
 
       <footer className="app-footer">
@@ -230,7 +250,15 @@ function AuthenticatedDashboard() {
 }
 
 function App() {
-  const { session, passwordFlow, completePasswordFlow } = useAuth()
+  const {
+    session,
+    roleStatus,
+    roleErrorCode,
+    refreshRole,
+    signOut,
+    passwordFlow,
+    completePasswordFlow,
+  } = useAuth()
 
   if (passwordFlow) {
     return <PasswordSetup session={session} flow={passwordFlow} onComplete={completePasswordFlow} />
@@ -238,6 +266,17 @@ function App() {
 
   if (!session) {
     return <Login />
+  }
+
+  if (roleStatus !== 'ready') {
+    return (
+      <RoleAccessState
+        status={roleStatus}
+        errorCode={roleErrorCode}
+        onRetry={refreshRole}
+        onSignOut={signOut}
+      />
+    )
   }
 
   return (

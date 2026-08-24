@@ -1,4 +1,24 @@
 begin;
+
+insert into auth.users (id, email, raw_app_meta_data, raw_user_meta_data)
+values
+  (
+    '11111111-1111-4111-8111-111111111111',
+    'editor.billing-fixture@example.com',
+    '{"app_role":"viewer"}',
+    '{}'
+  ),
+  (
+    '22222222-2222-4222-8222-222222222222',
+    'viewer.billing-fixture@example.com',
+    '{"app_role":"admin"}',
+    '{}'
+  );
+
+update public.app_user_roles
+set role = 'editor', updated_at = pg_catalog.now()
+where user_id = '11111111-1111-4111-8111-111111111111';
+
 select no_plan();
 
 select has_table('public', 'billing_receipts', 'billing receipt headers exist');
@@ -248,7 +268,7 @@ select set_config(
 
 select set_config(
   'request.jwt.claims',
-  '{"app_metadata":{"app_role":"editor"}}',
+  '{"sub":"11111111-1111-4111-8111-111111111111","email":"editor.billing-fixture@example.com","role":"authenticated","app_metadata":{"app_role":"viewer"}}',
   true
 );
 
@@ -402,7 +422,7 @@ select throws_ok(
 
 select set_config(
   'request.jwt.claims',
-  '{"app_metadata":{"app_role":"viewer"}}',
+  '{"sub":"22222222-2222-4222-8222-222222222222","email":"viewer.billing-fixture@example.com","role":"authenticated","app_metadata":{"app_role":"admin"}}',
   true
 );
 
@@ -475,7 +495,7 @@ select throws_ok(
 
 select set_config(
   'request.jwt.claims',
-  '{"app_metadata":{"app_role":"editor"}}',
+  '{"sub":"11111111-1111-4111-8111-111111111111","email":"editor.billing-fixture@example.com","role":"authenticated","app_metadata":{"app_role":"viewer"}}',
   true
 );
 

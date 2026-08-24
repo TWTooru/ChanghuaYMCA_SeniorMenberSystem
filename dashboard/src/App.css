@@ -226,17 +226,23 @@
   background: var(--nav-bg, rgba(17, 24, 39, 0.5));
   border-bottom: 1px solid var(--border-color);
   padding: 0 24px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
 }
 
 .tabs-container {
   max-width: 1400px;
   margin: 0 auto;
   width: 100%;
+  min-width: max-content;
   display: flex;
   gap: 8px;
 }
 
 .tab-btn {
+  flex: 0 0 auto;
   background: transparent;
   border: none;
   color: var(--text-secondary);
@@ -249,6 +255,12 @@
   gap: 8px;
   border-bottom: 2px solid transparent;
   transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.tab-btn:focus-visible {
+  outline: 2px solid var(--text-primary);
+  outline-offset: -4px;
 }
 
 .tab-btn:hover {
@@ -257,7 +269,7 @@
 }
 
 .tab-btn.active {
-  color: var(--color-accent);
+  color: var(--text-primary);
   border-bottom-color: var(--color-accent);
   background: var(--color-accent-glow);
 }

@@ -15,6 +15,7 @@ describe('getPermissions', () => {
     expect(p.canDeleteEnrollment).toBe(false)
     expect(p.canSyncExcel).toBe(false)
     expect(p.canRefreshSync).toBe(false)
+    expect(p.canViewManual).toBe(false)
   })
 
   it('editor can add and edit but not delete', () => {
@@ -29,6 +30,7 @@ describe('getPermissions', () => {
     expect(p.canDeleteEnrollment).toBe(false)
     expect(p.canSyncExcel).toBe(true)
     expect(p.canRefreshSync).toBe(true)
+    expect(p.canViewManual).toBe(true)
   })
 
   it('admin has all permissions', () => {
@@ -43,6 +45,19 @@ describe('getPermissions', () => {
     expect(p.canDeleteEnrollment).toBe(true)
     expect(p.canSyncExcel).toBe(true)
     expect(p.canRefreshSync).toBe(true)
+    expect(p.canViewManual).toBe(true)
+  })
+
+  it('owner shares every business capability with admin', () => {
+    const adminPermissions = getPermissions('admin')
+    const ownerPermissions = getPermissions('owner')
+
+    expect(ownerPermissions).toBe(adminPermissions)
+    expect(ownerPermissions.canManageUsers).toBe(true)
+    expect(ownerPermissions.canManageCourses).toBe(true)
+    expect(ownerPermissions.canViewFaq).toBe(true)
+    expect(ownerPermissions.canViewManual).toBe(true)
+    expect(ownerPermissions.canDeleteEnrollment).toBe(true)
   })
 
   it('unknown role defaults to viewer permissions', () => {

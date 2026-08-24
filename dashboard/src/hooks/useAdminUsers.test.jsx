@@ -89,6 +89,26 @@ describe('useAdminUsers', () => {
     expect(result.current.mutation).toBeNull()
   })
 
+  it('replaces a changed role with the server user summary immediately without reloading the list', async () => {
+    const existingUser = { id: 'u1', email: 'member@example.com', role: 'viewer', status: 'active' }
+    const serverSummary = { id: 'u1', email: 'member@example.com', role: 'editor', status: 'active' }
+    listUsers.mockResolvedValueOnce({ users: [existingUser] })
+    listAuditLogs.mockResolvedValueOnce({ auditLogs: [{ id: 'a1' }] })
+    updateRole.mockResolvedValueOnce({ user: serverSummary })
+
+    const { result } = renderHook(() => useAdminUsers())
+    await waitFor(() => expect(result.current.users).toEqual([existingUser]))
+
+    await act(async () => {
+      await expect(result.current.changeRole('u1', 'editor')).resolves.toBe(true)
+    })
+
+    expect(result.current.users).toEqual([serverSummary])
+    expect(result.current.auditLogs).toEqual([{ id: 'a1' }])
+    expect(listUsers).toHaveBeenCalledOnce()
+    expect(listAuditLogs).toHaveBeenCalledOnce()
+  })
+
   it('returns false when a mutation fails after recording its stable error code', async () => {
     listUsers.mockResolvedValue({ users: [] })
     listAuditLogs.mockResolvedValue({ auditLogs: [] })
@@ -116,6 +136,139 @@ describe('useAdminUsers', () => {
     expect(result.current.users).toEqual([])
     expect(result.current.auditLogs).toEqual([])
     expect(result.current.errorCode).toBe('FORBIDDEN')
+  })
+
+  it.each(['ROLE_NOT_ASSIGNED', 'ROLE_STORE_ERROR', 'FORBIDDEN', 'UNAUTHENTICATED'])(
+    'clears the cached list immediately when a mutation fails with sensitive code %s',
+    async errorCode => {
+      listUsers.mockResolvedValueOnce({ users: [{ id: 'u1' }] })
+      listAuditLogs.mockResolvedValueOnce({ auditLogs: [{ id: 'a1' }] })
+      inviteUser.mockRejectedValueOnce(new AdminUserError(errorCode))
+      const { result } = renderHook(() => useAdminUsers())
+      await waitFor(() => expect(result.current.users).toEqual([{ id: 'u1' }]))
+
+      await act(async () => {
+        await expect(result.current.invite('member@example.com')).resolves.toBe(false)
+      })
+
+      expect(result.current.users).toEqual([])
+      expect(result.current.auditLogs).toEqual([])
+      expect(result.current.errorCode).toBe(errorCode)
+    },
+  )
+
+  it.each(['OWNER_PROTECTED', 'ADMIN_TARGET_FORBIDDEN', 'OWNER_REQUIRED'])(
+    'keeps the authorized list when a target-specific mutation fails with %s',
+    async errorCode => {
+      const users = [{ id: 'u1', role: 'admin' }]
+      const auditLogs = [{ id: 'a1' }]
+      listUsers.mockResolvedValueOnce({ users })
+      listAuditLogs.mockResolvedValueOnce({ auditLogs })
+      deleteUser.mockRejectedValueOnce(new AdminUserError(errorCode))
+      const { result } = renderHook(() => useAdminUsers())
+      await waitFor(() => expect(result.current.users).toEqual(users))
+
+      await act(async () => {
+        await expect(result.current.remove('u1', 'member@example.com')).resolves.toBe(false)
+      })
+
+      expect(result.current.users).toEqual(users)
+      expect(result.current.auditLogs).toEqual(auditLogs)
+      expect(result.current.errorCode).toBe(errorCode)
+    },
+  )
+
+  it('keeps the cache cleared when an older list response resolves after a role-store failure', async () => {
+    listUsers.mockResolvedValueOnce({ users: [{ id: 'initial' }] })
+    listAuditLogs.mockResolvedValueOnce({ auditLogs: [{ id: 'initial-log' }] })
+    const { result } = renderHook(() => useAdminUsers())
+    await waitFor(() => expect(result.current.users).toEqual([{ id: 'initial' }]))
+
+    let resolveOlderUsers
+    let resolveOlderAuditLogs
+    listUsers.mockReturnValueOnce(new Promise(resolve => { resolveOlderUsers = resolve }))
+    listAuditLogs.mockReturnValueOnce(new Promise(resolve => { resolveOlderAuditLogs = resolve }))
+    inviteUser.mockRejectedValueOnce(new AdminUserError('ROLE_STORE_ERROR'))
+
+    let olderRefresh
+    await act(async () => { olderRefresh = result.current.refresh() })
+    await act(async () => { await result.current.invite('member@example.com') })
+    expect(result.current.users).toEqual([])
+    expect(result.current.loading).toBe(false)
+
+    await act(async () => {
+      resolveOlderUsers({ users: [{ id: 'stale' }] })
+      resolveOlderAuditLogs({ auditLogs: [{ id: 'stale-log' }] })
+      await olderRefresh
+    })
+
+    expect(result.current.users).toEqual([])
+    expect(result.current.auditLogs).toEqual([])
+    expect(result.current.errorCode).toBe('ROLE_STORE_ERROR')
+    expect(result.current.loading).toBe(false)
+  })
+
+  it('does not let an older mutation repopulate the cache after a sensitive failure', async () => {
+    listUsers.mockResolvedValueOnce({ users: [{ id: 'initial', role: 'viewer' }] })
+    listAuditLogs.mockResolvedValueOnce({ auditLogs: [{ id: 'initial-log' }] })
+    const { result } = renderHook(() => useAdminUsers())
+    await waitFor(() => expect(result.current.users).toEqual([{ id: 'initial', role: 'viewer' }]))
+
+    let resolveOlderRoleChange
+    updateRole.mockReturnValueOnce(new Promise(resolve => { resolveOlderRoleChange = resolve }))
+    resendInvite.mockRejectedValueOnce(new AdminUserError('ROLE_NOT_ASSIGNED'))
+
+    let olderMutation
+    await act(async () => { olderMutation = result.current.changeRole('initial', 'editor') })
+    await act(async () => { await result.current.resend('other') })
+    expect(result.current.users).toEqual([])
+
+    await act(async () => {
+      resolveOlderRoleChange({ user: { id: 'initial', role: 'editor' } })
+      await expect(olderMutation).resolves.toBe(false)
+    })
+
+    expect(result.current.users).toEqual([])
+    expect(result.current.auditLogs).toEqual([])
+    expect(listUsers).toHaveBeenCalledOnce()
+  })
+
+  it('invalidates a pending mutation on unmount so its response cannot trigger a reload', async () => {
+    listUsers.mockResolvedValueOnce({ users: [{ id: 'u1', role: 'viewer' }] })
+    listAuditLogs.mockResolvedValueOnce({ auditLogs: [] })
+    let resolveRoleChange
+    updateRole.mockReturnValueOnce(new Promise(resolve => { resolveRoleChange = resolve }))
+
+    const { result, unmount } = renderHook(() => useAdminUsers())
+    await waitFor(() => expect(result.current.users).toEqual([{ id: 'u1', role: 'viewer' }]))
+
+    let pendingMutation
+    await act(async () => { pendingMutation = result.current.changeRole('u1', 'editor') })
+    unmount()
+    resolveRoleChange({ user: { id: 'u1', role: 'editor' } })
+
+    await expect(pendingMutation).resolves.toBe(false)
+    expect(listUsers).toHaveBeenCalledOnce()
+  })
+
+  it('invalidates a pending refresh on unmount with an explicit false result', async () => {
+    listUsers.mockResolvedValueOnce({ users: [{ id: 'initial' }] })
+    listAuditLogs.mockResolvedValueOnce({ auditLogs: [] })
+    const { result, unmount } = renderHook(() => useAdminUsers())
+    await waitFor(() => expect(result.current.users).toEqual([{ id: 'initial' }]))
+
+    let resolveUsers
+    let resolveAuditLogs
+    listUsers.mockReturnValueOnce(new Promise(resolve => { resolveUsers = resolve }))
+    listAuditLogs.mockReturnValueOnce(new Promise(resolve => { resolveAuditLogs = resolve }))
+    let pendingRefresh
+    await act(async () => { pendingRefresh = result.current.refresh() })
+
+    unmount()
+    resolveUsers({ users: [{ id: 'stale' }] })
+    resolveAuditLogs({ auditLogs: [{ id: 'stale-log' }] })
+
+    await expect(pendingRefresh).resolves.toBe(false)
   })
 
   // 這組案例鎖定授權失效後的競態，避免舊 request 把已清除的帳號資料寫回畫面。

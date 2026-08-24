@@ -1,7 +1,7 @@
 import { FileSpreadsheet, RefreshCw, Download, LogOut, Sun, Moon } from 'lucide-react'
 
-const ROLE_LABELS = { admin: '管理員', editor: '編輯者', viewer: '檢視者' }
-const ROLE_COLORS = { admin: '#ef4444', editor: '#3b82f6', viewer: '#6b7280' }
+const ROLE_LABELS = { owner: '最高管理員', admin: '管理員', editor: '編輯者', viewer: '檢視者' }
+const ROLE_COLORS = { owner: '#7c3aed', admin: '#ef4444', editor: '#3b82f6', viewer: '#6b7280' }
 
 /** 集中呈現連線狀態、依權限顯示的全域操作、使用者資訊與主題／登出控制。 */
 export default function AppHeader({
@@ -22,14 +22,14 @@ export default function AppHeader({
         <div className="header-title-area">
           <FileSpreadsheet size={32} className="header-icon" />
           <div>
-            <h1 className="header-title">YMCA樂齡學員資料聯絡簿</h1>
+            <h1 className="header-title">YMCA社教學員聯絡簿</h1>
             <p className="header-subtitle">資訊整理與智慧查詢系統</p>
           </div>
           <div style={{ marginLeft: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <div style={{ display: 'flex', alignItems: 'center' }}>
               <span className={`status-dot ${dbStatus === 'connected' ? 'dot-glowing-green' : (dbStatus === 'connecting' ? 'dot-orange' : 'dot-grey')}`}></span>
               <span style={{ fontSize: '12px', marginLeft: '6px', fontWeight: '500', color: dbStatus === 'connected' ? '#10b981' : '#9ca3af' }}>
-                {dbStatus === 'connected' ? 'Supabase 資料庫已連線' : (dbStatus === 'connecting' ? '資料庫連線中...' : '離線模式 (載入靜態備份)')}
+                {dbStatus === 'connected' ? 'Supabase 資料庫已連線' : (dbStatus === 'connecting' ? '資料庫連線中...' : '目前離線，無法載入資料')}
               </span>
             </div>
             {permissions?.canRefreshSync && dbStatus === 'connected' && (
