@@ -422,7 +422,8 @@ select ok(
 );
 
 select is(
-  private.harden_security_definer_role_guards($fixture$
+  pg_catalog.replace(
+    private.harden_security_definer_role_guards($fixture$
 begin
   -- if public.current_app_role() not in ('editor', 'admin') then
   -- raise exception 'LINE_COMMENT_DECOY';
@@ -457,7 +458,11 @@ begin
   end if;
 end;
 $fixture$),
-  $expected$
+    E'\r\n',
+    E'\n'
+  ),
+  pg_catalog.replace(
+    $expected$
 begin
   -- if public.current_app_role() not in ('editor', 'admin') then
   -- raise exception 'LINE_COMMENT_DECOY';
@@ -492,11 +497,15 @@ begin
   end if;
 end;
 $expected$,
+    E'\r\n',
+    E'\n'
+  ),
   'hardening preserves comments and ordinary, E-prefixed, tagged, and empty dollar strings'
 );
 
 select is(
-  private.harden_security_definer_role_guards($boundary_fixture$
+  pg_catalog.replace(
+    private.harden_security_definer_role_guards($boundary_fixture$
 declare
   foo$decoy$ text := 'identifier value';
 begin
@@ -505,7 +514,11 @@ begin
   end if;
 end;
 $boundary_fixture$),
-  $boundary_expected$
+    E'\r\n',
+    E'\n'
+  ),
+  pg_catalog.replace(
+    $boundary_expected$
 declare
   foo$decoy$ text := 'identifier value';
 begin
@@ -514,11 +527,15 @@ begin
   end if;
 end;
 $boundary_expected$,
+    E'\r\n',
+    E'\n'
+  ),
   'a dollar-shaped identifier suffix cannot hide a later executable guard'
 );
 
 select is(
-  private.harden_security_definer_role_guards($unicode_fixture$
+  pg_catalog.replace(
+    private.harden_security_definer_role_guards($unicode_fixture$
 begin
   perform $標籤$
   if public.current_app_role() not in ('editor', 'admin') then
@@ -527,7 +544,11 @@ begin
   $標籤$;
 end;
 $unicode_fixture$),
-  $unicode_expected$
+    E'\r\n',
+    E'\n'
+  ),
+  pg_catalog.replace(
+    $unicode_expected$
 begin
   perform $標籤$
   if public.current_app_role() not in ('editor', 'admin') then
@@ -536,6 +557,9 @@ begin
   $標籤$;
 end;
 $unicode_expected$,
+    E'\r\n',
+    E'\n'
+  ),
   'hardening preserves non-ASCII dollar-quoted strings'
 );
 
