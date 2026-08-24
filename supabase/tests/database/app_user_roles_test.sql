@@ -1,5 +1,5 @@
 begin;
-select plan(36);
+select plan(41);
 
 select has_table('public', 'app_user_roles', 'authoritative role table exists');
 select has_column('public', 'app_user_roles', 'user_id', 'role row references an auth user');
@@ -537,6 +537,64 @@ begin
 end;
 $unicode_expected$,
   'hardening preserves non-ASCII dollar-quoted strings'
+);
+
+select has_column(
+  'public',
+  'admin_audit_logs',
+  'actor_role',
+  'account-management audits store the actor role snapshot'
+);
+select lives_ok(
+  $$insert into public.admin_audit_logs (
+      actor_email,
+      actor_role,
+      action,
+      target_email,
+      old_role,
+      new_role,
+      status
+    ) values (
+      'owner@example.com',
+      'owner',
+      'update_role',
+      'target@example.com',
+      'owner',
+      'owner',
+      'pending'
+    )$$,
+  'audit actor, old-role, and new-role snapshots accept owner'
+);
+select throws_like(
+  $$insert into public.admin_audit_logs (
+      actor_email,
+      actor_role,
+      action,
+      target_email,
+      status
+    ) values (
+      'invalid@example.com',
+      'superadmin',
+      'invite_user',
+      'target@example.com',
+      'pending'
+    )$$,
+  '%violates check constraint "admin_audit_logs_actor_role_check"%',
+  'audit actor role rejects unsupported values'
+);
+select ok(
+  not exists (
+    select 1
+    from pg_catalog.pg_trigger trigger_record
+    where trigger_record.tgrelid = 'auth.users'::pg_catalog.regclass
+      and trigger_record.tgname = 'protect_last_auth_admin_before_change'
+      and not trigger_record.tgisinternal
+  ),
+  'the metadata-based last-admin trigger is removed'
+);
+select ok(
+  pg_catalog.to_regprocedure('public.protect_last_auth_admin()') is null,
+  'the metadata-based last-admin function is removed'
 );
 
 select * from finish();

@@ -24,6 +24,31 @@ for select
 to authenticated
 using (user_id = (select auth.uid()));
 
+do $migration$
+begin
+  if pg_catalog.to_regclass('public.admin_audit_logs') is not null then
+    alter table public.admin_audit_logs
+      add column if not exists actor_role text;
+
+    alter table public.admin_audit_logs
+      drop constraint if exists admin_audit_logs_actor_role_check,
+      drop constraint if exists admin_audit_logs_old_role_check,
+      drop constraint if exists admin_audit_logs_new_role_check;
+
+    alter table public.admin_audit_logs
+      add constraint admin_audit_logs_actor_role_check
+        check (actor_role is null or actor_role in ('viewer', 'editor', 'admin', 'owner')),
+      add constraint admin_audit_logs_old_role_check
+        check (old_role is null or old_role in ('viewer', 'editor', 'admin', 'owner')),
+      add constraint admin_audit_logs_new_role_check
+        check (new_role is null or new_role in ('viewer', 'editor', 'admin', 'owner'));
+  end if;
+end
+$migration$;
+
+drop trigger if exists protect_last_auth_admin_before_change on auth.users;
+drop function if exists public.protect_last_auth_admin();
+
 create or replace function private.resolve_initial_app_role(
   p_email text,
   p_legacy_role text,
