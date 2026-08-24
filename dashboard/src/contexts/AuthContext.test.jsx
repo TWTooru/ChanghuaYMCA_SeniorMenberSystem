@@ -289,6 +289,41 @@ describe('AuthProvider stored role lifecycle', () => {
     })
   })
 
+  it('does not let an older rejected lookup replace a newer ready session with an error', async () => {
+    const olderRole = createDeferred()
+    supabaseMocks.getSession.mockResolvedValue({
+      data: { session: createSession('older-error-user') },
+      error: null,
+    })
+    enqueueRoleRequest(olderRole.promise)
+
+    const view = renderProvider()
+    await waitFor(() => expect(supabaseMocks.from).toHaveBeenCalledOnce())
+
+    enqueueRoleRequest(storedRole('admin'))
+    emitAuthEvent('SIGNED_IN', createSession('newer-ready-user'))
+    await screen.findByTestId('auth-probe')
+    expect(view.current()).toMatchObject({
+      user: expect.objectContaining({ id: 'newer-ready-user' }),
+      role: 'admin',
+      roleStatus: 'ready',
+      roleErrorCode: null,
+      loading: false,
+    })
+
+    await act(async () => {
+      olderRole.reject(new Error('stale store failure'))
+      await Promise.resolve()
+    })
+    expect(view.current()).toMatchObject({
+      user: expect.objectContaining({ id: 'newer-ready-user' }),
+      role: 'admin',
+      roleStatus: 'ready',
+      roleErrorCode: null,
+      loading: false,
+    })
+  })
+
   it('does not let an older lookup restore a role after an auth sign-out event', async () => {
     const olderRole = createDeferred()
     supabaseMocks.getSession.mockResolvedValue({
