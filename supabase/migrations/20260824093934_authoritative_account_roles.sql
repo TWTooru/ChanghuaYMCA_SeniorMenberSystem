@@ -105,6 +105,265 @@ $$;
 revoke all on function public.current_app_role() from public, anon;
 grant execute on function public.current_app_role() to authenticated, service_role;
 
+create or replace function private.mask_plpgsql_non_code(p_source text)
+returns text
+language plpgsql
+immutable
+strict
+security invoker
+set search_path = ''
+as $function$
+declare
+  masked_source text := '';
+  source_position integer := 1;
+  source_length integer := pg_catalog.char_length(p_source);
+  parser_state text := 'code';
+  block_comment_depth integer := 0;
+  dollar_delimiter text;
+  current_character text;
+  next_character text;
+  current_pair text;
+  escape_single_quote boolean := false;
+begin
+  while source_position <= source_length loop
+    current_character := pg_catalog.substr(p_source, source_position, 1);
+    next_character := pg_catalog.substr(p_source, source_position + 1, 1);
+    current_pair := pg_catalog.substr(p_source, source_position, 2);
+
+    if parser_state = 'code' then
+      if current_pair = '--' then
+        masked_source := masked_source || '  ';
+        source_position := source_position + 2;
+        parser_state := 'line_comment';
+      elsif current_pair = '/*' then
+        masked_source := masked_source || '  ';
+        source_position := source_position + 2;
+        parser_state := 'block_comment';
+        block_comment_depth := 1;
+      elsif current_character = '''' then
+        escape_single_quote := (
+          source_position > 1
+          and pg_catalog.substr(p_source, source_position - 1, 1) ~* 'e'
+          and (
+            source_position = 2
+            or pg_catalog.substr(p_source, source_position - 2, 1)
+              !~ '[[:alnum:]_$]'
+          )
+        ) or (
+          source_position > 2
+          and pg_catalog.substr(p_source, source_position - 2, 2) ~* 'u&'
+          and (
+            source_position = 3
+            or pg_catalog.substr(p_source, source_position - 3, 1)
+              !~ '[[:alnum:]_$]'
+          )
+        );
+        masked_source := masked_source || ' ';
+        source_position := source_position + 1;
+        parser_state := 'single_quote';
+      elsif current_character = '"' then
+        masked_source := masked_source || ' ';
+        source_position := source_position + 1;
+        parser_state := 'double_quote';
+      elsif current_character = '$' then
+        dollar_delimiter := pg_catalog.substring(
+          pg_catalog.substr(p_source, source_position),
+          '^([$][A-Za-z_][A-Za-z_0-9]*[$]|[$][$])'
+        );
+        if dollar_delimiter is not null then
+          masked_source := masked_source || pg_catalog.repeat(
+            ' ',
+            pg_catalog.char_length(dollar_delimiter)
+          );
+          source_position := source_position
+            + pg_catalog.char_length(dollar_delimiter);
+          parser_state := 'dollar_quote';
+        else
+          masked_source := masked_source || current_character;
+          source_position := source_position + 1;
+        end if;
+      else
+        masked_source := masked_source || current_character;
+        source_position := source_position + 1;
+      end if;
+    elsif parser_state = 'line_comment' then
+      if current_character in (E'\r', E'\n') then
+        masked_source := masked_source || current_character;
+        parser_state := 'code';
+      else
+        masked_source := masked_source || ' ';
+      end if;
+      source_position := source_position + 1;
+    elsif parser_state = 'block_comment' then
+      if current_pair = '/*' then
+        masked_source := masked_source || '  ';
+        source_position := source_position + 2;
+        block_comment_depth := block_comment_depth + 1;
+      elsif current_pair = '*/' then
+        masked_source := masked_source || '  ';
+        source_position := source_position + 2;
+        block_comment_depth := block_comment_depth - 1;
+        if block_comment_depth = 0 then
+          parser_state := 'code';
+        end if;
+      else
+        masked_source := masked_source || case
+          when current_character in (E'\r', E'\n') then current_character
+          else ' '
+        end;
+        source_position := source_position + 1;
+      end if;
+    elsif parser_state = 'single_quote' then
+      if current_pair = '''''' then
+        masked_source := masked_source || '  ';
+        source_position := source_position + 2;
+      elsif escape_single_quote and current_character = E'\\'
+            and source_position < source_length then
+        masked_source := masked_source || case
+          when current_character in (E'\r', E'\n') then current_character
+          else ' '
+        end || case
+          when next_character in (E'\r', E'\n') then next_character
+          else ' '
+        end;
+        source_position := source_position + 2;
+      elsif current_character = '''' then
+        masked_source := masked_source || ' ';
+        source_position := source_position + 1;
+        parser_state := 'code';
+      else
+        masked_source := masked_source || case
+          when current_character in (E'\r', E'\n') then current_character
+          else ' '
+        end;
+        source_position := source_position + 1;
+      end if;
+    elsif parser_state = 'double_quote' then
+      if current_pair = '""' then
+        masked_source := masked_source || '  ';
+        source_position := source_position + 2;
+      elsif current_character = '"' then
+        masked_source := masked_source || ' ';
+        source_position := source_position + 1;
+        parser_state := 'code';
+      else
+        masked_source := masked_source || case
+          when current_character in (E'\r', E'\n') then current_character
+          else ' '
+        end;
+        source_position := source_position + 1;
+      end if;
+    elsif parser_state = 'dollar_quote' then
+      if pg_catalog.substr(
+           p_source,
+           source_position,
+           pg_catalog.char_length(dollar_delimiter)
+         ) = dollar_delimiter then
+        masked_source := masked_source || pg_catalog.repeat(
+          ' ',
+          pg_catalog.char_length(dollar_delimiter)
+        );
+        source_position := source_position
+          + pg_catalog.char_length(dollar_delimiter);
+        parser_state := 'code';
+        dollar_delimiter := null;
+      else
+        masked_source := masked_source || case
+          when current_character in (E'\r', E'\n') then current_character
+          else ' '
+        end;
+        source_position := source_position + 1;
+      end if;
+    end if;
+  end loop;
+
+  return masked_source;
+end
+$function$;
+
+revoke all on function private.mask_plpgsql_non_code(text)
+from public, anon, authenticated;
+
+create or replace function private.harden_security_definer_role_guards(
+  p_source text
+)
+returns text
+language sql
+immutable
+strict
+security invoker
+set search_path = ''
+as $function$
+  with original_lines as (
+    select source_line.line, source_line.line_number
+    from pg_catalog.regexp_split_to_table(
+      p_source,
+      E'\\r?\\n'
+    ) with ordinality as source_line(line, line_number)
+  ), masked_lines as (
+    select source_line.line, source_line.line_number
+    from pg_catalog.regexp_split_to_table(
+      private.mask_plpgsql_non_code(p_source),
+      E'\\r?\\n'
+    ) with ordinality as source_line(line, line_number)
+  ), source_lines as (
+    select
+      original_line.line,
+      original_line.line_number,
+      masked_line.line as masked_line,
+      pg_catalog.lead(masked_line.line, 1) over (
+        order by original_line.line_number
+      ) as next_masked_line,
+      pg_catalog.lead(masked_line.line, 2) over (
+        order by original_line.line_number
+      ) as second_next_masked_line
+    from original_lines original_line
+    join masked_lines masked_line
+      using (line_number)
+  ), classified_lines as (
+    select *,
+      (
+        (
+          line ~* $safe_guard$^[[:blank:]]*if[[:blank:]]+public[.]current_app_role[(][)][[:blank:]]+not[[:blank:]]+in[[:blank:]]*[(][[:blank:]]*'[a-z_]+'([[:blank:]]*,[[:blank:]]*'[a-z_]+')*[[:blank:]]*[)][[:blank:]]+then[[:blank:]]*$$safe_guard$
+          or line ~* $safe_guard$^[[:blank:]]*if[[:blank:]]+public[.]current_app_role[(][)][[:blank:]]*(<>|!=)[[:blank:]]*'[a-z_]+'[[:blank:]]+then[[:blank:]]*$$safe_guard$
+        )
+        and (
+          masked_line ~* $code_guard$^[[:blank:]]*if[[:blank:]]+public[.]current_app_role[(][)][[:blank:]]+(not[[:blank:]]+in|<>|!=)$code_guard$
+        )
+        and next_masked_line ~* '^[[:blank:]]*raise[[:blank:]]+exception'
+        and second_next_masked_line ~*
+          '^[[:blank:]]*end[[:blank:]]+if[[:blank:]]*;[[:blank:]]*$'
+      ) as is_supported_guard
+    from source_lines
+  )
+  select pg_catalog.string_agg(
+    case
+      when is_supported_guard
+           and line ~* $safe_guard$^[[:blank:]]*if[[:blank:]]+public[.]current_app_role[(][)][[:blank:]]+not[[:blank:]]+in$safe_guard$ then
+        pg_catalog.regexp_replace(
+          line,
+          $rewrite$^([[:blank:]]*)if[[:blank:]]+public[.]current_app_role[(][)][[:blank:]]+not[[:blank:]]+in[[:blank:]]*([(][[:blank:]]*'[a-z_]+'([[:blank:]]*,[[:blank:]]*'[a-z_]+')*[[:blank:]]*[)])[[:blank:]]+then[[:blank:]]*$rewrite$,
+          $replacement$\1if coalesce(public.current_app_role() in \2, false) is not true then$replacement$,
+          'i'
+        )
+      when is_supported_guard then
+        pg_catalog.regexp_replace(
+          line,
+          $rewrite$^([[:blank:]]*)if[[:blank:]]+public[.]current_app_role[(][)][[:blank:]]*(<>|!=)[[:blank:]]*('[a-z_]+')[[:blank:]]+then[[:blank:]]*$rewrite$,
+          $replacement$\1if coalesce(public.current_app_role() = \3, false) is not true then$replacement$,
+          'i'
+        )
+      else line
+    end,
+    E'\n'
+    order by line_number
+  )
+  from classified_lines
+$function$;
+
+revoke all on function private.harden_security_definer_role_guards(text)
+from public, anon, authenticated;
+
 do $migration$
 declare
   routine_record record;
@@ -112,76 +371,12 @@ declare
   original_definition text;
   safe_definition text;
   safe_source text;
-  transformed_guard_count integer;
-  untransformable_routines text;
   remaining_routines text;
 begin
-  with routine_lines as (
-    select
-      procedure_record.oid,
-      namespace_record.nspname,
-      procedure_record.proname,
-      pg_catalog.pg_get_function_identity_arguments(procedure_record.oid)
-        as identity_arguments,
-      source_line.line,
-      source_line.line_number,
-      pg_catalog.lead(source_line.line, 1) over (
-        partition by procedure_record.oid order by source_line.line_number
-      ) as next_line,
-      pg_catalog.lead(source_line.line, 2) over (
-        partition by procedure_record.oid order by source_line.line_number
-      ) as second_next_line
-    from pg_catalog.pg_proc procedure_record
-    join pg_catalog.pg_namespace namespace_record
-      on namespace_record.oid = procedure_record.pronamespace
-    join pg_catalog.pg_language language_record
-      on language_record.oid = procedure_record.prolang
-    cross join lateral pg_catalog.regexp_split_to_table(
-      procedure_record.prosrc,
-      E'\\r?\\n'
-    ) with ordinality as source_line(line, line_number)
-    where namespace_record.nspname in ('public', 'private')
-      and language_record.lanname = 'plpgsql'
-      and procedure_record.prokind in ('f', 'p')
-      and procedure_record.prosecdef
-  ), discovered_guards as (
-    select *,
-      (
-        line ~* $safe_guard$^[[:blank:]]*if[[:blank:]]+public[.]current_app_role[(][)][[:blank:]]+not[[:blank:]]+in[[:blank:]]*[(][[:blank:]',a-z_]+[)][[:blank:]]+then[[:blank:]]*$$safe_guard$
-        or line ~* $safe_guard$^[[:blank:]]*if[[:blank:]]+public[.]current_app_role[(][)][[:blank:]]*(<>|!=)[[:blank:]]*'[a-z_]+'[[:blank:]]+then[[:blank:]]*$$safe_guard$
-      ) as safely_transformable
-    from routine_lines
-    where (
-        line ~* $unsafe_guard$^[[:blank:]]*if[[:blank:]]+public[.]current_app_role[(][)][[:blank:]]+not[[:blank:]]+in$unsafe_guard$
-        or line ~* $unsafe_guard$^[[:blank:]]*if[[:blank:]]+public[.]current_app_role[(][)][[:blank:]]*(<>|!=)$unsafe_guard$
-      )
-      and next_line ~* '^[[:blank:]]*raise[[:blank:]]+exception'
-      and second_next_line ~*
-        '^[[:blank:]]*end[[:blank:]]+if[[:blank:]]*;[[:blank:]]*$'
-  )
-  select pg_catalog.string_agg(
-    pg_catalog.format(
-      '%I.%I(%s) line %s',
-      nspname,
-      proname,
-      identity_arguments,
-      line_number
-    ),
-    ', '
-    order by nspname, proname, identity_arguments, line_number
-  )
-  into untransformable_routines
-  from discovered_guards
-  where not safely_transformable;
-
-  if untransformable_routines is not null then
-    raise exception 'UNTRANSFORMABLE_UNSAFE_ROLE_GUARDS: %',
-      untransformable_routines;
-  end if;
-
   for routine_record in
     select
       procedure_record.oid,
+      namespace_record.nspname,
       procedure_record.pronamespace,
       procedure_record.proname,
       pg_catalog.pg_get_function_identity_arguments(procedure_record.oid)
@@ -215,89 +410,23 @@ begin
       and language_record.lanname = 'plpgsql'
       and procedure_record.prokind in ('f', 'p')
       and procedure_record.prosecdef
-      and exists (
-        select 1
-        from (
-          select
-            source_line.line,
-            pg_catalog.lead(source_line.line, 1) over (
-              order by source_line.line_number
-            ) as next_line,
-            pg_catalog.lead(source_line.line, 2) over (
-              order by source_line.line_number
-            ) as second_next_line
-          from pg_catalog.regexp_split_to_table(
-            procedure_record.prosrc,
-            E'\\r?\\n'
-          ) with ordinality as source_line(line, line_number)
-        ) parsed_source
-        where (
-            parsed_source.line ~* $safe_guard$^[[:blank:]]*if[[:blank:]]+public[.]current_app_role[(][)][[:blank:]]+not[[:blank:]]+in[[:blank:]]*[(][[:blank:]',a-z_]+[)][[:blank:]]+then[[:blank:]]*$$safe_guard$
-            or parsed_source.line ~* $safe_guard$^[[:blank:]]*if[[:blank:]]+public[.]current_app_role[(][)][[:blank:]]*(<>|!=)[[:blank:]]*'[a-z_]+'[[:blank:]]+then[[:blank:]]*$$safe_guard$
-          )
-          and parsed_source.next_line ~*
-            '^[[:blank:]]*raise[[:blank:]]+exception'
-          and parsed_source.second_next_line ~*
-            '^[[:blank:]]*end[[:blank:]]+if[[:blank:]]*;[[:blank:]]*$'
+      and (
+        private.mask_plpgsql_non_code(procedure_record.prosrc) ~*
+          'public[.]current_app_role[(][)][[:space:]]+not[[:space:]]+in'
+        or private.mask_plpgsql_non_code(procedure_record.prosrc) ~*
+          'public[.]current_app_role[(][)][[:space:]]*(<>|!=)'
       )
   loop
     original_definition := pg_catalog.pg_get_functiondef(routine_record.oid);
-    with source_lines as (
-      select
-        source_line.line,
-        source_line.line_number,
-        pg_catalog.lead(source_line.line, 1) over (
-          order by source_line.line_number
-        ) as next_line,
-        pg_catalog.lead(source_line.line, 2) over (
-          order by source_line.line_number
-        ) as second_next_line
-      from pg_catalog.regexp_split_to_table(
-        routine_record.prosrc,
-        E'\\r?\\n'
-      ) with ordinality as source_line(line, line_number)
-    ), classified_lines as (
-      select *,
-        (
-          (
-            line ~* $safe_guard$^[[:blank:]]*if[[:blank:]]+public[.]current_app_role[(][)][[:blank:]]+not[[:blank:]]+in[[:blank:]]*[(][[:blank:]',a-z_]+[)][[:blank:]]+then[[:blank:]]*$$safe_guard$
-            or line ~* $safe_guard$^[[:blank:]]*if[[:blank:]]+public[.]current_app_role[(][)][[:blank:]]*(<>|!=)[[:blank:]]*'[a-z_]+'[[:blank:]]+then[[:blank:]]*$$safe_guard$
-          )
-          and next_line ~* '^[[:blank:]]*raise[[:blank:]]+exception'
-          and second_next_line ~*
-            '^[[:blank:]]*end[[:blank:]]+if[[:blank:]]*;[[:blank:]]*$'
-        ) as is_safe_guard
-      from source_lines
-    )
-    select
-      pg_catalog.string_agg(
-        case
-          when is_safe_guard and line ~* $safe_guard$^[[:blank:]]*if[[:blank:]]+public[.]current_app_role[(][)][[:blank:]]+not[[:blank:]]+in$safe_guard$ then
-            pg_catalog.regexp_replace(
-              line,
-              $rewrite$^([[:blank:]]*)if[[:blank:]]+public[.]current_app_role[(][)][[:blank:]]+not[[:blank:]]+in[[:blank:]]*([(][[:blank:]',a-z_]+[)])[[:blank:]]+then[[:blank:]]*$rewrite$,
-              $replacement$\1if coalesce(public.current_app_role() in \2, false) is not true then$replacement$,
-              'i'
-            )
-          when is_safe_guard then
-            pg_catalog.regexp_replace(
-              line,
-              $rewrite$^([[:blank:]]*)if[[:blank:]]+public[.]current_app_role[(][)][[:blank:]]*(<>|!=)[[:blank:]]*('[a-z_]+')[[:blank:]]+then[[:blank:]]*$rewrite$,
-              $replacement$\1if coalesce(public.current_app_role() = \3, false) is not true then$replacement$,
-              'i'
-            )
-          else line
-        end,
-        E'\n'
-        order by line_number
-      ),
-      count(*) filter (where is_safe_guard)::integer
-    into safe_source, transformed_guard_count
-    from classified_lines;
+    safe_source := private.harden_security_definer_role_guards(
+      routine_record.prosrc
+    );
 
-    if transformed_guard_count = 0 then
-      raise exception 'FAILED_TO_FIND_EXECUTABLE_ROLE_GUARD_FOR_%',
-        routine_record.oid;
+    if safe_source = routine_record.prosrc then
+      raise exception 'UNTRANSFORMABLE_UNSAFE_ROLE_GUARDS: %.%(%)',
+        pg_catalog.quote_ident(routine_record.nspname),
+        pg_catalog.quote_ident(routine_record.proname),
+        routine_record.identity_arguments;
     end if;
 
     safe_definition := pg_catalog.replace(
@@ -371,47 +500,33 @@ begin
     end if;
   end loop;
 
-  with routine_lines as (
-    select
-      procedure_record.oid,
+  select pg_catalog.string_agg(
+    pg_catalog.format(
+      '%I.%I(%s)',
       namespace_record.nspname,
       procedure_record.proname,
       pg_catalog.pg_get_function_identity_arguments(procedure_record.oid)
-        as identity_arguments,
-      source_line.line,
-      source_line.line_number,
-      pg_catalog.lead(source_line.line, 1) over (
-        partition by procedure_record.oid order by source_line.line_number
-      ) as next_line,
-      pg_catalog.lead(source_line.line, 2) over (
-        partition by procedure_record.oid order by source_line.line_number
-      ) as second_next_line
-    from pg_catalog.pg_proc procedure_record
-    join pg_catalog.pg_namespace namespace_record
-      on namespace_record.oid = procedure_record.pronamespace
-    join pg_catalog.pg_language language_record
-      on language_record.oid = procedure_record.prolang
-    cross join lateral pg_catalog.regexp_split_to_table(
-      procedure_record.prosrc,
-      E'\\r?\\n'
-    ) with ordinality as source_line(line, line_number)
-    where namespace_record.nspname in ('public', 'private')
-      and language_record.lanname = 'plpgsql'
-      and procedure_record.prokind in ('f', 'p')
-      and procedure_record.prosecdef
-  )
-  select pg_catalog.string_agg(
-    pg_catalog.format('%I.%I(%s)', nspname, proname, identity_arguments),
-    ', ' order by nspname, proname, identity_arguments
+    ),
+    ', '
+    order by namespace_record.nspname,
+             procedure_record.proname,
+             pg_catalog.pg_get_function_identity_arguments(procedure_record.oid)
   )
   into remaining_routines
-  from routine_lines
-  where next_line ~* '^[[:blank:]]*raise[[:blank:]]+exception'
-    and second_next_line ~*
-      '^[[:blank:]]*end[[:blank:]]+if[[:blank:]]*;[[:blank:]]*$'
+  from pg_catalog.pg_proc procedure_record
+  join pg_catalog.pg_namespace namespace_record
+    on namespace_record.oid = procedure_record.pronamespace
+  join pg_catalog.pg_language language_record
+    on language_record.oid = procedure_record.prolang
+  where namespace_record.nspname in ('public', 'private')
+    and language_record.lanname = 'plpgsql'
+    and procedure_record.prokind in ('f', 'p')
+    and procedure_record.prosecdef
     and (
-      line ~* $unsafe_guard$^[[:blank:]]*if[[:blank:]]+public[.]current_app_role[(][)][[:blank:]]+not[[:blank:]]+in$unsafe_guard$
-      or line ~* $unsafe_guard$^[[:blank:]]*if[[:blank:]]+public[.]current_app_role[(][)][[:blank:]]*(<>|!=)$unsafe_guard$
+      private.mask_plpgsql_non_code(procedure_record.prosrc) ~*
+        'public[.]current_app_role[(][)][[:space:]]+not[[:space:]]+in'
+      or private.mask_plpgsql_non_code(procedure_record.prosrc) ~*
+        'public[.]current_app_role[(][)][[:space:]]*(<>|!=)'
     );
 
   if remaining_routines is not null then

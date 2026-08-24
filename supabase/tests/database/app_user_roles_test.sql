@@ -1,5 +1,5 @@
 begin;
-select plan(33);
+select plan(34);
 
 select has_table('public', 'app_user_roles', 'authoritative role table exists');
 select has_column('public', 'app_user_roles', 'user_id', 'role row references an auth user');
@@ -368,11 +368,11 @@ select is(
       and procedure_record.prosecdef
       and procedure_record.prosrc ilike '%current_app_role%'
       and (
-        procedure_record.prosrc ~*
+        private.mask_plpgsql_non_code(procedure_record.prosrc) ~*
           'public[.]current_app_role[(][)][[:space:]]+not[[:space:]]+in'
-        or procedure_record.prosrc ~*
+        or private.mask_plpgsql_non_code(procedure_record.prosrc) ~*
           'app_role[[:space:]]+not[[:space:]]+in'
-        or procedure_record.prosrc ~*
+        or private.mask_plpgsql_non_code(procedure_record.prosrc) ~*
           'public[.]current_app_role[(][)][[:space:]]*(<>|!=)'
       )
   ),
@@ -419,6 +419,61 @@ select ok(
       )
   ),
   'catalog rewrite leaves security-invoker routines unchanged'
+);
+
+create or replace function pg_temp.call_role_guard_hardener(p_source text)
+returns text
+language plpgsql
+as $$
+declare
+  hardened_source text;
+begin
+  execute 'select private.harden_security_definer_role_guards($1)'
+    into hardened_source
+    using p_source;
+  return hardened_source;
+exception
+  when undefined_function then
+    return '__MISSING_ROLE_GUARD_HARDENER__';
+end
+$$;
+
+select is(
+  pg_temp.call_role_guard_hardener($fixture$
+begin
+  /*
+  if public.current_app_role() not in ('editor', 'admin') then
+    raise exception 'COMMENT_DECOY';
+  end if;
+  */
+  perform $decoy$
+  if public.current_app_role() not in ('editor', 'admin') then
+    raise exception 'STRING_DECOY';
+  end if;
+  $decoy$;
+  if public.current_app_role() not in ('editor', 'admin') then
+    raise exception 'EXECUTABLE_GUARD';
+  end if;
+end;
+$fixture$),
+  $expected$
+begin
+  /*
+  if public.current_app_role() not in ('editor', 'admin') then
+    raise exception 'COMMENT_DECOY';
+  end if;
+  */
+  perform $decoy$
+  if public.current_app_role() not in ('editor', 'admin') then
+    raise exception 'STRING_DECOY';
+  end if;
+  $decoy$;
+  if coalesce(public.current_app_role() in ('editor', 'admin'), false) is not true then
+    raise exception 'EXECUTABLE_GUARD';
+  end if;
+end;
+$expected$,
+  'role-guard hardening preserves block comments and dollar-quoted strings'
 );
 
 select * from finish();
