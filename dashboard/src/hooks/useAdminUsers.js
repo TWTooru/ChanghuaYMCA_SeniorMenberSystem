@@ -9,16 +9,20 @@ import {
   updateRole,
 } from '../services/adminUserService'
 
-const SENSITIVE_ERROR_CODES = new Set(['UNAUTHENTICATED', 'FORBIDDEN'])
+const SENSITIVE_ERROR_CODES = new Set([
+  'ROLE_NOT_ASSIGNED',
+  'ROLE_STORE_ERROR',
+  'FORBIDDEN',
+  'UNAUTHENTICATED',
+])
 
 function getErrorCode(error) {
   return error?.code || 'UNKNOWN_ERROR'
 }
 
 /**
- * 協調管理員清單、audit log 與所有帳號 mutation。
- * request／generation ID 會阻擋過期回應覆寫較新的授權狀態；
- * `UNAUTHENTICATED` 或 `FORBIDDEN` 也會立即清除敏感資料。
+ * 協調帳號清單、audit log 與帳號 mutation。request/generation ID 會阻擋過期回應；
+ * 操作者角色或角色儲存失效時，既有敏感資料會立即清除且不允許舊回應寫回。
  */
 export default function useAdminUsers() {
   const [users, setUsers] = useState([])
@@ -26,73 +30,126 @@ export default function useAdminUsers() {
   const [loading, setLoading] = useState(true)
   const [mutation, setMutation] = useState(null)
   const [errorCode, setErrorCode] = useState(null)
-  // `refreshId` 判斷資料新舊；每次 refresh 都在請求開始時遞增並擷取 `authorizationGeneration`，以隔離權限失效前後的非同步工作。
+  const mounted = useRef(false)
   const refreshId = useRef(0)
   const authorizationGeneration = useRef(0)
   const mutationId = useRef(0)
   const activeMutations = useRef(new Map())
 
   const handleError = useCallback(error => {
+    if (!mounted.current) return false
+
     const code = getErrorCode(error)
     if (SENSITIVE_ERROR_CODES.has(code)) {
+      authorizationGeneration.current += 1
+      refreshId.current += 1
+      activeMutations.current.clear()
       setUsers([])
       setAuditLogs([])
+      setLoading(false)
+      setMutation(null)
     }
     setErrorCode(code)
+    return true
   }, [])
 
   const refresh = useCallback(async () => {
+    if (!mounted.current) return false
+
     const requestId = ++refreshId.current
     const requestGeneration = ++authorizationGeneration.current
     setLoading(true)
     setErrorCode(null)
     let handledError = false
+
     try {
       const [usersResult, auditLogsResult] = await Promise.all([listUsers(), listAuditLogs()])
-      if (requestId !== refreshId.current) return
+      if (
+        !mounted.current
+        || requestId !== refreshId.current
+        || requestGeneration !== authorizationGeneration.current
+      ) return false
+
       setUsers(usersResult.users || [])
       setAuditLogs(auditLogsResult.auditLogs || [])
+      return true
     } catch (error) {
-      if (requestId !== refreshId.current || requestGeneration !== authorizationGeneration.current) return
-      const code = getErrorCode(error)
-      // 敏感授權錯誤會推進 `refreshId`，讓較早啟動但較晚完成的成功回應全部失效。
-      if (SENSITIVE_ERROR_CODES.has(code)) refreshId.current += 1
-      handleError(error)
-      handledError = true
+      if (
+        !mounted.current
+        || requestId !== refreshId.current
+        || requestGeneration !== authorizationGeneration.current
+      ) return false
+
+      handledError = handleError(error)
+      return false
     } finally {
-      if (handledError || requestId === refreshId.current) setLoading(false)
+      if (
+        mounted.current
+        && (
+          handledError
+          || (requestId === refreshId.current && requestGeneration === authorizationGeneration.current)
+        )
+      ) setLoading(false)
     }
   }, [handleError])
 
   useEffect(() => {
-    refresh()
+    const activeMutationMap = activeMutations.current
+    mounted.current = true
+    void refresh()
+
+    return () => {
+      mounted.current = false
+      refreshId.current += 1
+      authorizationGeneration.current += 1
+      activeMutationMap.clear()
+    }
   }, [refresh])
 
-  const runMutation = useCallback(async (key, action) => {
-    // 以 operation ID 保存並行 mutation，較早完成的操作不能清除仍在執行中的 busy 狀態。
+  const runMutation = useCallback(async (key, action, options = {}) => {
+    if (!mounted.current) return false
+
     const operationId = ++mutationId.current
     const operationGeneration = authorizationGeneration.current
     activeMutations.current.set(operationId, key)
     setMutation(key)
     setErrorCode(null)
+
     try {
-      await action()
-      await refresh()
+      const result = await action()
+      if (!mounted.current || operationGeneration !== authorizationGeneration.current) return false
+
+      options.applyResult?.(result)
+      if (options.refreshAfter !== false) await refresh()
       return true
     } catch (error) {
-      if (operationGeneration !== authorizationGeneration.current) return false
-      if (SENSITIVE_ERROR_CODES.has(getErrorCode(error))) refreshId.current += 1
+      if (!mounted.current || operationGeneration !== authorizationGeneration.current) return false
       handleError(error)
       return false
     } finally {
       activeMutations.current.delete(operationId)
-      const activeKeys = Array.from(activeMutations.current.values())
-      setMutation(activeKeys.at(-1) || null)
+      if (mounted.current) {
+        const activeKeys = Array.from(activeMutations.current.values())
+        setMutation(activeKeys.at(-1) || null)
+      }
     }
   }, [handleError, refresh])
 
   const invite = useCallback(email => runMutation('invite', () => inviteUser(email)), [runMutation])
-  const changeRole = useCallback((userId, role) => runMutation(`role:${userId}`, () => updateRole(userId, role)), [runMutation])
+  const changeRole = useCallback((userId, role) => runMutation(
+    `role:${userId}`,
+    () => updateRole(userId, role),
+    {
+      refreshAfter: false,
+      applyResult: result => {
+        const serverUser = result?.user
+        if (!serverUser?.id) return
+        setUsers(currentUsers => currentUsers.map(user => (
+          user.id === serverUser.id ? serverUser : user
+        )))
+      },
+    },
+  ), [runMutation])
   const resend = useCallback(userId => runMutation(`resend:${userId}`, () => resendInvite(userId)), [runMutation])
   const resetPassword = useCallback(userId => runMutation(`reset:${userId}`, () => sendPasswordReset(userId)), [runMutation])
   const remove = useCallback((userId, confirmEmail) => runMutation(`delete:${userId}`, () => deleteUser(userId, confirmEmail)), [runMutation])

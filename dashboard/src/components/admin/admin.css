@@ -4,7 +4,7 @@
 .admin-page-header h1 { margin: 0; font-size: 24px; }
 .admin-page-header p { margin: 6px 0 0; color: var(--text-secondary); }
 .admin-denied { padding: 32px; color: var(--text-secondary); text-align: center; }
-.admin-summary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 24px; }
+.admin-summary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 24px; }
 .admin-summary-card, .admin-audit-list {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
@@ -34,6 +34,12 @@
 .admin-role-select--admin { background: rgba(239, 68, 68, .15); border-color: rgba(248, 113, 113, .5); color: #fca5a5; }
 .admin-role-select--editor { background: rgba(245, 158, 11, .15); border-color: rgba(251, 191, 36, .5); color: #fcd34d; }
 .admin-role-select--viewer { background: rgba(59, 130, 246, .15); border-color: rgba(96, 165, 250, .5); color: #93c5fd; }
+.admin-role-badge--owner { background: rgba(168, 85, 247, .18); color: #d8b4fe; }
+.admin-role-badge--admin { background: rgba(239, 68, 68, .15); color: #fca5a5; }
+.admin-role-badge--editor { background: rgba(245, 158, 11, .15); color: #fcd34d; }
+.admin-role-badge--viewer { background: rgba(59, 130, 246, .15); color: #93c5fd; }
+.admin-role-badge--missing { background: var(--color-danger-glow); color: var(--badge-danger-text, #fca5a5); }
+.admin-lock-message { color: var(--text-muted); font-size: 12px; }
 .admin-status-badge.active, .admin-status-badge.success { background: var(--color-success-glow); color: var(--badge-success-text, #6ee7b7); }
 .admin-status-badge.invited, .admin-status-badge.pending { background: rgba(245, 158, 11, .15); color: #fbbf24; }
 .admin-status-badge.failure { background: var(--color-danger-glow); color: var(--badge-danger-text, #fca5a5); }
@@ -56,6 +62,14 @@
   border-color: rgba(59, 130, 246, 0.3);
   color: #1d4ed8;
 }
+:root[data-theme="light"] .admin-role-badge--owner,
+.light .admin-role-badge--owner { background: rgba(126, 34, 206, .1); color: #7e22ce; }
+:root[data-theme="light"] .admin-role-badge--admin,
+.light .admin-role-badge--admin { background: rgba(239, 68, 68, .08); color: #b91c1c; }
+:root[data-theme="light"] .admin-role-badge--editor,
+.light .admin-role-badge--editor { background: rgba(245, 158, 11, .08); color: #b45309; }
+:root[data-theme="light"] .admin-role-badge--viewer,
+.light .admin-role-badge--viewer { background: rgba(59, 130, 246, .08); color: #1d4ed8; }
 :root[data-theme="light"] .admin-status-badge.invited,
 .light .admin-status-badge.invited {
   background: rgba(245, 158, 11, 0.1);
