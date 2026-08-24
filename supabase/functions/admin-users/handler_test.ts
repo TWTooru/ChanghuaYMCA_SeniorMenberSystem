@@ -185,6 +185,25 @@ const mutationActions: readonly AccountMutationAction[] = [
   'send_password_reset',
 ]
 
+function assertDeniedMutationHasNoSideEffects(
+  deps: FakeDeps,
+  action: AccountMutationAction,
+  targetId: string,
+  storedRole: AppRole | null,
+) {
+  const mutationName: keyof HandlerDeps = action === 'update_role'
+    ? 'updateRole'
+    : action === 'delete_user'
+    ? 'deleteUser'
+    : action === 'resend_invite'
+    ? 'resendInvite'
+    : 'sendPasswordReset'
+  assertEquals(callsNamed(deps, mutationName).length, 0)
+  assertEquals(deps.users.some(user => user.id === targetId), true)
+  if (storedRole) assertEquals(deps.roles.get(targetId), storedRole)
+  else assertEquals(deps.roles.has(targetId), false)
+}
+
 Deno.test('loads every actor role from the store and ignores conflicting Auth metadata', async () => {
   for (const actorRole of ['owner', 'admin'] as const) {
     const deps = fakeDeps({ actorRole })
@@ -366,6 +385,7 @@ Deno.test('owner targets are protected from every actor and mutation with stored
       assertEquals((await response.json() as any).error.code, 'OWNER_PROTECTED')
       assertEquals(deps.insertedAudits[0]?.old_role, 'owner')
       assertEquals(deps.completedAudits[0]?.errorCode, 'OWNER_PROTECTED')
+      assertDeniedMutationHasNoSideEffects(deps, action, 'owner-target', 'owner')
     }
   }
 })
@@ -385,6 +405,7 @@ Deno.test('ordinary admins receive stable errors for every peer-admin mutation',
     assertEquals(response.status, 403)
     assertEquals(body.error.code, expectedCode)
     assertEquals(deps.completedAudits[0]?.errorCode, expectedCode)
+    assertDeniedMutationHasNoSideEffects(deps, action, 'peer-admin', 'admin')
   }
 })
 
@@ -435,6 +456,7 @@ Deno.test('every target mutation fails closed and audits a missing stored target
       assertEquals((await response.json() as any).error.code, 'ROLE_NOT_ASSIGNED')
       assertEquals(deps.insertedAudits[0]?.old_role, null)
       assertEquals(deps.completedAudits[0]?.errorCode, 'ROLE_NOT_ASSIGNED')
+      assertDeniedMutationHasNoSideEffects(deps, action, 'orphan-target', null)
     }
   }
 })
