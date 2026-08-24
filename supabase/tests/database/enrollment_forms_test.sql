@@ -1,4 +1,34 @@
 begin;
+
+insert into auth.users (id, email, raw_app_meta_data, raw_user_meta_data)
+values
+  (
+    '11111111-1111-4111-8111-111111111111',
+    'editor.enrollment-forms-fixture@example.com',
+    '{"app_role":"viewer"}',
+    '{}'
+  ),
+  (
+    '22222222-2222-4222-8222-222222222222',
+    'viewer.enrollment-forms-fixture@example.com',
+    '{"app_role":"admin"}',
+    '{}'
+  ),
+  (
+    '33333333-3333-4333-8333-333333333333',
+    'admin.enrollment-forms-fixture@example.com',
+    '{"app_role":"viewer"}',
+    '{}'
+  );
+
+update public.app_user_roles
+set role = 'editor', updated_at = pg_catalog.now()
+where user_id = '11111111-1111-4111-8111-111111111111';
+
+update public.app_user_roles
+set role = 'admin', updated_at = pg_catalog.now()
+where user_id = '33333333-3333-4333-8333-333333333333';
+
 select plan(30);
 
 truncate table public.students restart identity cascade;
@@ -22,7 +52,7 @@ values (9001, '多表學員', '女', '專科/大學');
 
 select pg_catalog.set_config(
   'request.jwt.claims',
-  '{"sub":"11111111-1111-4111-8111-111111111111","email":"editor@example.com","app_metadata":{"app_role":"editor"}}',
+  '{"sub":"11111111-1111-4111-8111-111111111111","email":"editor.enrollment-forms-fixture@example.com","role":"authenticated","app_metadata":{"app_role":"viewer"}}',
   true
 );
 
@@ -150,7 +180,7 @@ select throws_ok(
 -- Test viewer permission denied
 select pg_catalog.set_config(
   'request.jwt.claims',
-  '{"sub":"22222222-2222-4222-8222-222222222222","email":"viewer@example.com","app_metadata":{"app_role":"viewer"}}',
+  '{"sub":"22222222-2222-4222-8222-222222222222","email":"viewer.enrollment-forms-fixture@example.com","role":"authenticated","app_metadata":{"app_role":"admin"}}',
   true
 );
 select throws_ok(
@@ -165,7 +195,7 @@ select throws_ok(
 -- Reset back to editor
 select pg_catalog.set_config(
   'request.jwt.claims',
-  '{"sub":"11111111-1111-4111-8111-111111111111","email":"editor@example.com","app_metadata":{"app_role":"editor"}}',
+  '{"sub":"11111111-1111-4111-8111-111111111111","email":"editor.enrollment-forms-fixture@example.com","role":"authenticated","app_metadata":{"app_role":"viewer"}}',
   true
 );
 
@@ -213,7 +243,7 @@ select is(
 -- Test admin delete form
 select pg_catalog.set_config(
   'request.jwt.claims',
-  '{"sub":"33333333-3333-4333-8333-333333333333","email":"admin@example.com","app_metadata":{"app_role":"admin"}}',
+  '{"sub":"33333333-3333-4333-8333-333333333333","email":"admin.enrollment-forms-fixture@example.com","role":"authenticated","app_metadata":{"app_role":"viewer"}}',
   true
 );
 

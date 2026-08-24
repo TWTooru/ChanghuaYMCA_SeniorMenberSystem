@@ -1,4 +1,17 @@
 begin;
+
+insert into auth.users (id, email, raw_app_meta_data, raw_user_meta_data)
+values (
+  '11111111-1111-4111-8111-111111111111',
+  'editor.enrollment-period-fixture@example.com',
+  '{"app_role":"viewer"}',
+  '{}'
+);
+
+update public.app_user_roles
+set role = 'editor', updated_at = pg_catalog.now()
+where user_id = '11111111-1111-4111-8111-111111111111';
+
 select plan(14);
 
 select has_column('public', 'enrollments', 'period', 'enrollments exposes period');
@@ -38,7 +51,7 @@ select ok(
 
 select pg_catalog.set_config(
   'request.jwt.claims',
-  '{"sub":"11111111-1111-4111-8111-111111111111","email":"editor@example.com","app_metadata":{"app_role":"editor"}}',
+  '{"sub":"11111111-1111-4111-8111-111111111111","email":"editor.enrollment-period-fixture@example.com","role":"authenticated","app_metadata":{"app_role":"viewer"}}',
   true
 );
 insert into public.course_catalog (course_name, active) values ('期別課程A', true)

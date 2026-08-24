@@ -1,4 +1,24 @@
 begin;
+
+insert into auth.users (id, email, raw_app_meta_data, raw_user_meta_data)
+values
+  (
+    '11111111-1111-4111-8111-111111111111',
+    'editor.billing-fixture@example.com',
+    '{"app_role":"viewer"}',
+    '{}'
+  ),
+  (
+    '22222222-2222-4222-8222-222222222222',
+    'viewer.billing-fixture@example.com',
+    '{"app_role":"admin"}',
+    '{}'
+  );
+
+update public.app_user_roles
+set role = 'editor', updated_at = pg_catalog.now()
+where user_id = '11111111-1111-4111-8111-111111111111';
+
 select plan(20);
 
 select has_table('public', 'billing_receipts', 'billing receipt headers exist');
@@ -10,7 +30,11 @@ select has_function('public', 'delete_billing_receipt', array['bigint'], 'delete
 select has_function('public', 'create_enrollment_with_courses', array['bigint', 'text', 'text', 'integer', 'text', 'text[]', 'jsonb'], 'period enrollment RPC exists');
 select has_function('public', 'update_enrollment_with_courses', array['bigint', 'text', 'text', 'integer', 'text', 'text[]', 'jsonb'], 'period enrollment update RPC exists');
 
-select set_config('request.jwt.claims', '{"app_metadata":{"app_role":"editor"}}', true);
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"11111111-1111-4111-8111-111111111111","email":"editor.billing-fixture@example.com","role":"authenticated","app_metadata":{"app_role":"viewer"}}',
+  true
+);
 insert into public.students (student_id, name, gender, education)
 values (9001, 'Billing test student', '男', '高中');
 insert into public.course_catalog (course_name, active)
@@ -51,7 +75,11 @@ select results_eq(
   $$values (3200::integer, 'R-UPDATED'::text)$$,
   'receipt billing fields are updated once on the header'
 );
-select set_config('request.jwt.claims', '{"app_metadata":{"app_role":"viewer"}}', true);
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"22222222-2222-4222-8222-222222222222","email":"viewer.billing-fixture@example.com","role":"authenticated","app_metadata":{"app_role":"admin"}}',
+  true
+);
 select throws_ok(
   $$select public.create_enrollment_with_courses(9001::bigint, '第17期', '續', 0, null, array['Viewer'], '[]'::jsonb)$$,
   '42501', 'ENROLLMENT_CREATE_FORBIDDEN',

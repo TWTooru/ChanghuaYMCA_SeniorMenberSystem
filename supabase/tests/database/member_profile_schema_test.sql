@@ -1,5 +1,44 @@
 begin;
-select plan(40);
+
+insert into auth.users (id, email, raw_app_meta_data, raw_user_meta_data)
+values
+  (
+    '11111111-1111-4111-8111-111111111111',
+    'viewer.profile-schema-fixture@example.com',
+    '{"app_role":"admin"}',
+    '{}'
+  ),
+  (
+    '22222222-2222-4222-8222-222222222222',
+    'editor.profile-schema-fixture@example.com',
+    '{"app_role":"viewer"}',
+    '{}'
+  ),
+  (
+    '33333333-3333-4333-8333-333333333333',
+    'owner.profile-schema-fixture@example.com',
+    '{"app_role":"viewer"}',
+    '{}'
+  ),
+  (
+    '44444444-4444-4444-8444-444444444444',
+    'missing-role.profile-schema-fixture@example.com',
+    '{"app_role":"owner"}',
+    '{}'
+  );
+
+update public.app_user_roles
+set role = 'editor', updated_at = pg_catalog.now()
+where user_id = '22222222-2222-4222-8222-222222222222';
+
+update public.app_user_roles
+set role = 'owner', updated_at = pg_catalog.now()
+where user_id = '33333333-3333-4333-8333-333333333333';
+
+delete from public.app_user_roles
+where user_id = '44444444-4444-4444-8444-444444444444';
+
+select plan(45);
 
 truncate table public.students restart identity cascade;
 
@@ -306,6 +345,68 @@ select ok(
   ),
   'application role helper has an empty search path'
 );
+
+select pg_catalog.set_config('request.jwt.claims', '{}', true);
+set local role authenticated;
+select is(
+  public.current_app_role(),
+  null,
+  'anonymous request has no app role'
+);
+reset role;
+
+select pg_catalog.set_config(
+  'request.jwt.claims',
+  '{"sub":"11111111-1111-4111-8111-111111111111","role":"authenticated","app_metadata":{"app_role":"admin"}}',
+  true
+);
+set local role authenticated;
+select is(
+  public.current_app_role(),
+  'viewer',
+  'viewer role comes from the stored role row rather than JWT metadata'
+);
+reset role;
+
+select pg_catalog.set_config(
+  'request.jwt.claims',
+  '{"sub":"22222222-2222-4222-8222-222222222222","role":"authenticated","app_metadata":{"app_role":"viewer"}}',
+  true
+);
+set local role authenticated;
+select is(
+  public.current_app_role(),
+  'editor',
+  'editor role comes from the stored role row rather than JWT metadata'
+);
+reset role;
+
+select pg_catalog.set_config(
+  'request.jwt.claims',
+  '{"sub":"33333333-3333-4333-8333-333333333333","role":"authenticated","app_metadata":{"app_role":"viewer"}}',
+  true
+);
+set local role authenticated;
+select is(
+  public.current_app_role(),
+  'admin',
+  'stored owner role maps to admin for business-data authorization'
+);
+reset role;
+
+select pg_catalog.set_config(
+  'request.jwt.claims',
+  '{"sub":"44444444-4444-4444-8444-444444444444","role":"authenticated","app_metadata":{"app_role":"owner"}}',
+  true
+);
+set local role authenticated;
+select is(
+  public.current_app_role(),
+  null,
+  'missing role row returns null even when JWT metadata names a role'
+);
+reset role;
+
 select ok(
   exists (
     select 1

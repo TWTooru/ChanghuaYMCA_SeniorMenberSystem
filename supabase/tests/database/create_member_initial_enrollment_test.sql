@@ -1,4 +1,24 @@
 begin;
+
+insert into auth.users (id, email, raw_app_meta_data, raw_user_meta_data)
+values
+  (
+    '11111111-1111-4111-8111-111111111111',
+    'editor.initial-enrollment-fixture@example.com',
+    '{"app_role":"viewer"}',
+    '{}'
+  ),
+  (
+    '22222222-2222-4222-8222-222222222222',
+    'viewer.initial-enrollment-fixture@example.com',
+    '{"app_role":"admin"}',
+    '{}'
+  );
+
+update public.app_user_roles
+set role = 'editor', updated_at = pg_catalog.now()
+where user_id = '11111111-1111-4111-8111-111111111111';
+
 select plan(33);
 
 truncate table public.students restart identity cascade;
@@ -9,7 +29,7 @@ on conflict (course_name) do update set active = excluded.active;
 
 select pg_catalog.set_config(
   'request.jwt.claims',
-  '{"sub":"11111111-1111-4111-8111-111111111111","email":"editor@example.com","app_metadata":{"app_role":"editor"}}',
+  '{"sub":"11111111-1111-4111-8111-111111111111","email":"editor.initial-enrollment-fixture@example.com","role":"authenticated","app_metadata":{"app_role":"viewer"}}',
   true
 );
 
@@ -84,7 +104,7 @@ select is(
 select is(
   (select handled_by_account from public.enrollment_forms
    where form_id = (pg_catalog.current_setting('test.created')::jsonb ->> 'form_id')::bigint),
-  'editor@example.com',
+  'editor.initial-enrollment-fixture@example.com',
   'handler account comes from the JWT rather than payload'
 );
 select is(
@@ -140,7 +160,7 @@ select is(
 
 select pg_catalog.set_config(
   'request.jwt.claims',
-  '{"sub":"22222222-2222-4222-8222-222222222222","email":"viewer@example.com","app_metadata":{"app_role":"viewer"}}',
+  '{"sub":"22222222-2222-4222-8222-222222222222","email":"viewer.initial-enrollment-fixture@example.com","role":"authenticated","app_metadata":{"app_role":"admin"}}',
   true
 );
 select throws_ok(
@@ -154,7 +174,7 @@ select throws_ok(
 
 select pg_catalog.set_config(
   'request.jwt.claims',
-  '{"sub":"11111111-1111-4111-8111-111111111111","email":"editor@example.com","app_metadata":{"app_role":"editor"}}',
+  '{"sub":"11111111-1111-4111-8111-111111111111","email":"editor.initial-enrollment-fixture@example.com","role":"authenticated","app_metadata":{"app_role":"viewer"}}',
   true
 );
 select throws_ok($$select public.create_student_with_initial_enrollment('{"name":"測試一","gender":"女","education":"高中"}'::jsonb, '{"period":"第0期","period_start_date":"2026-09-01","period_end_date":"2026-12-31","courses":["瑜伽入門"]}'::jsonb)$$, 'P0001', 'PERIOD_INVALID', 'invalid period is rejected');
@@ -204,7 +224,7 @@ insert into public.enrollments (
 select is(
   (select pg_catalog.jsonb_build_array(handled_by_user_id, handled_by_account)
    from public.enrollments where student_id = 8300 and period = '第11期'),
-  '["11111111-1111-4111-8111-111111111111", "editor@example.com"]'::jsonb,
+  '["11111111-1111-4111-8111-111111111111", "editor.initial-enrollment-fixture@example.com"]'::jsonb,
   'direct enrollment inserts derive handler audit fields from the JWT'
 );
 update public.enrollments
@@ -214,7 +234,7 @@ where student_id = 8300 and period = '第11期';
 select is(
   (select pg_catalog.jsonb_build_array(handled_by_user_id, handled_by_account)
    from public.enrollments where student_id = 8300 and period = '第11期'),
-  '["11111111-1111-4111-8111-111111111111", "editor@example.com"]'::jsonb,
+  '["11111111-1111-4111-8111-111111111111", "editor.initial-enrollment-fixture@example.com"]'::jsonb,
   'direct enrollment updates cannot alter handler audit fields'
 );
 
@@ -237,7 +257,7 @@ insert into public.students (student_id, name, gender, education)
 values (8500, '部分 JWT 會員', '女', '高中');
 select pg_catalog.set_config(
   'request.jwt.claims',
-  '{"sub":"11111111-1111-4111-8111-111111111111","app_metadata":{"app_role":"editor"}}',
+  '{"sub":"11111111-1111-4111-8111-111111111111","role":"authenticated","app_metadata":{"app_role":"viewer"}}',
   true
 );
 select throws_ok(
