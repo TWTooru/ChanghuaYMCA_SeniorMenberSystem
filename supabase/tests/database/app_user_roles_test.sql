@@ -1,5 +1,5 @@
 begin;
-select plan(30);
+select plan(33);
 
 select has_table('public', 'app_user_roles', 'authoritative role table exists');
 select has_column('public', 'app_user_roles', 'user_id', 'role row references an auth user');
@@ -345,6 +345,15 @@ select ok(
   ),
   'all active role policies use an init-plan role lookup and preserve unbilled-course protection'
 );
+select ok(
+  pg_catalog.to_regclass('public.course_receipts') is null
+  or pg_catalog.has_table_privilege(
+    'authenticated',
+    'public.course_receipts',
+    'delete'
+  ),
+  'authenticated retains the active course-receipt delete grant'
+);
 
 select is(
   (
@@ -356,6 +365,7 @@ select is(
       on language_record.oid = procedure_record.prolang
     where namespace_record.nspname in ('public', 'private')
       and language_record.lanname = 'plpgsql'
+      and procedure_record.prosecdef
       and procedure_record.prosrc ilike '%current_app_role%'
       and (
         procedure_record.prosrc ~*
@@ -367,7 +377,48 @@ select is(
       )
   ),
   0,
-  'no active public or private routine retains a fail-open application-role guard'
+  'no active security-definer routine retains a fail-open application-role guard'
+);
+
+select ok(
+  exists (
+    select 1
+    from pg_catalog.pg_proc procedure_record
+    where procedure_record.oid =
+          'public.create_billing_receipt(bigint[],integer,text)'::pg_catalog.regprocedure
+      and procedure_record.proowner = 'postgres'::pg_catalog.regrole
+      and procedure_record.prokind = 'f'
+      and procedure_record.provolatile = 'v'
+      and procedure_record.prosecdef
+      and procedure_record.proconfig = array['search_path=""']::text[]
+      and pg_catalog.has_function_privilege(
+        'authenticated', procedure_record.oid, 'execute'
+      )
+      and not pg_catalog.has_function_privilege(
+        'anon', procedure_record.oid, 'execute'
+      )
+  ),
+  'rewritten billing RPC preserves its signature, owner, attributes, config, and grants'
+);
+
+select ok(
+  exists (
+    select 1
+    from pg_catalog.pg_proc procedure_record
+    where procedure_record.oid =
+          'public.upsert_course_catalog(text)'::pg_catalog.regprocedure
+      and not procedure_record.prosecdef
+      and exists (
+        select 1
+        from pg_catalog.regexp_split_to_table(
+          procedure_record.prosrc,
+          E'\\r?\\n'
+        ) as source_line(line)
+        where source_line.line ~*
+          '^[[:blank:]]*if[[:blank:]]+public[.]current_app_role[(][)][[:blank:]]+not[[:blank:]]+in'
+      )
+  ),
+  'catalog rewrite leaves security-invoker routines unchanged'
 );
 
 select * from finish();
