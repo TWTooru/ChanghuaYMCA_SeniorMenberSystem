@@ -122,7 +122,7 @@ export default function StudentListTab({ students, enrollments, onSelectStudent,
         }}
         permissions={permissions}
         onShowAddStudent={onShowAddStudent}
-        onShowMerge={role === 'admin' ? () => setShowMergeDialog(true) : undefined}
+        onShowMerge={permissions.canDeleteStudent ? () => setShowMergeDialog(true) : undefined}
       />
       <StudentTable
         students={paginatedStudents}

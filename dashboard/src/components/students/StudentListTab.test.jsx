@@ -148,8 +148,8 @@ describe('StudentListTab list navigation', () => {
     expect(document.getElementById('btn-student-first').disabled).toBe(true)
   })
 
-  it('keeps the admin merge dialog available', () => {
-    authState.role = 'admin'
+  it.each(['admin', 'owner'])('keeps the %s merge dialog available', (role) => {
+    authState.role = role
     const { container } = render(<StudentListTab students={[student]} enrollments={[]} onSelectStudent={vi.fn()} />)
 
     fireEvent.click(container.querySelector('.btn-primary'))
