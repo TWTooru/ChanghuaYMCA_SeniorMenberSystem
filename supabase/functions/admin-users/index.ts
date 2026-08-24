@@ -1,7 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.110.0'
 import { createCorsHeaders } from '../_shared/cors.ts'
 import { ApiError, requireStoredRole } from './domain.ts'
-import { createAdminUsersHandler, type HandlerDeps } from './handler.ts'
+import { createAdminUsersHandler, type HandlerDeps, type RoleRecord } from './handler.ts'
 
 type Environment = Record<string, string | undefined>
 type SupabaseClientLike = any
@@ -57,6 +57,24 @@ async function roleStoreOperation<T>(operation: () => Promise<T>): Promise<T> {
     return await operation()
   } catch {
     throw new ApiError('ROLE_STORE_ERROR')
+  }
+}
+
+function mapRoleRecord(row: unknown, expectedUserId?: string): RoleRecord {
+  if (!row || typeof row !== 'object' || Array.isArray(row)) {
+    throw new Error('Invalid role row')
+  }
+  const stored = row as Record<string, unknown>
+  if (
+    typeof stored.user_id !== 'string' ||
+    stored.user_id.trim().length === 0 ||
+    (expectedUserId !== undefined && stored.user_id !== expectedUserId)
+  ) {
+    throw new Error('Invalid role user id')
+  }
+  return {
+    userId: stored.user_id,
+    role: requireStoredRole(stored.role),
   }
 }
 
@@ -117,10 +135,7 @@ export function createSupabaseDeps(client: SupabaseClientLike, env: Environment)
           .select('user_id,role')
           .in('user_id', userIds)
         if (error) throw error
-        return (data ?? []).map((row: Record<string, unknown>) => ({
-          userId: row.user_id as string,
-          role: requireStoredRole(row.role),
-        }))
+        return (data ?? []).map((row: unknown) => mapRoleRecord(row))
       })
     },
     async inviteUser(email) {
@@ -136,10 +151,7 @@ export function createSupabaseDeps(client: SupabaseClientLike, env: Environment)
           .single()
         if (error) throw error
         if (!data) throw new Error('Role update returned no row')
-        return {
-          userId: data.user_id,
-          role: requireStoredRole(data.role),
-        }
+        return mapRoleRecord(data, userId)
       })
     },
     async deleteUser(id) {

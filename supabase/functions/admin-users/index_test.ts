@@ -53,6 +53,7 @@ function roleTableFake(results: {
 async function assertRoleStoreError(operation: () => Promise<unknown>) {
   const error = await assertRejects(operation, ApiError, 'ROLE_STORE_ERROR')
   assertEquals((error as ApiError).code, 'ROLE_STORE_ERROR')
+  assertEquals(error.message, 'ROLE_STORE_ERROR')
 }
 
 Deno.test('requiredEnv rejects a missing secret', () => {
@@ -176,6 +177,18 @@ Deno.test('listRoles emits one IN query and maps every database row', async () =
   ])
 })
 
+Deno.test('listRoles rejects rows without a non-empty string user_id', async () => {
+  for (const row of [
+    { role: 'admin' },
+    { user_id: '', role: 'admin' },
+    { user_id: 42, role: 'admin' },
+  ]) {
+    const fake = roleTableFake({ list: { data: [row], error: null } })
+    const deps = createSupabaseDeps(fake.client as any, {})
+    await assertRoleStoreError(() => deps.listRoles(['requested-id']))
+  }
+})
+
 Deno.test('updateRole emits one update query and validates the returned row', async () => {
   const fake = roleTableFake({
     update: { data: { user_id: 'admin-id', role: 'editor' }, error: null },
@@ -231,6 +244,19 @@ Deno.test('invalid roles returned by every role-table adapter fail closed', asyn
 Deno.test('updateRole treats a missing returned row as ROLE_STORE_ERROR', async () => {
   const fake = roleTableFake({ update: { data: null, error: null } })
   await assertRoleStoreError(() => createSupabaseDeps(fake.client as any, {}).updateRole('user-id', 'viewer'))
+})
+
+Deno.test('updateRole rejects a missing, malformed, or mismatched returned user_id', async () => {
+  for (const row of [
+    { role: 'viewer' },
+    { user_id: '', role: 'viewer' },
+    { user_id: 42, role: 'viewer' },
+    { user_id: 'different-id', role: 'viewer' },
+  ]) {
+    const fake = roleTableFake({ update: { data: row, error: null } })
+    const deps = createSupabaseDeps(fake.client as any, {})
+    await assertRoleStoreError(() => deps.updateRole('requested-id', 'viewer'))
+  }
 })
 
 Deno.test('role-table client failures map to stable ROLE_STORE_ERROR', async () => {
