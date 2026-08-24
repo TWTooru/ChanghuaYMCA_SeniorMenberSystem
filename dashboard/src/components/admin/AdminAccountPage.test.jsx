@@ -100,6 +100,7 @@ describe('AdminAccountPage', () => {
 
     const row = getTargetRow(target)
     expect(within(row).getByText('最高管理員')).toBeTruthy()
+    expect(within(row).getByText('目前登入帳號')).toBeTruthy()
     expectNoAccountActions(row, target)
   })
 
@@ -126,7 +127,9 @@ describe('AdminAccountPage', () => {
     const target = makeUser('admin-self', 'admin')
     renderFor('admin', target, 'admin-self')
 
-    expectNoAccountActions(getTargetRow(target), target)
+    const row = getTargetRow(target)
+    expect(within(row).getByText('目前登入帳號')).toBeTruthy()
+    expectNoAccountActions(row, target)
   })
 
   it.each([
@@ -169,6 +172,26 @@ describe('AdminAccountPage', () => {
     expect(expectRoleOptions(row, ['editor', 'viewer']).disabled).toBe(true)
     expect(within(row).getByLabelText(`重新寄送邀請 ${target.email}`).disabled).toBe(false)
     expect(within(row).getByLabelText(`刪除 ${target.email}`).disabled).toBe(false)
+  })
+
+  it('sends a password-reset request for the exact manageable active account', () => {
+    const target = makeUser('reset-target', 'editor')
+    renderFor('admin', target)
+
+    fireEvent.click(screen.getByLabelText(`寄送密碼重設 ${target.email}`))
+
+    expect(adminState.resetPassword).toHaveBeenCalledOnce()
+    expect(adminState.resetPassword).toHaveBeenCalledWith('reset-target')
+  })
+
+  it('resends an invitation for the exact manageable invited account', () => {
+    const target = makeUser('resend-target', 'viewer', { status: 'invited', lastSignInAt: null })
+    renderFor('admin', target)
+
+    fireEvent.click(screen.getByLabelText(`重新寄送邀請 ${target.email}`))
+
+    expect(adminState.resend).toHaveBeenCalledOnce()
+    expect(adminState.resend).toHaveBeenCalledWith('resend-target')
   })
 
   it('requires exact target email before permanent delete', () => {

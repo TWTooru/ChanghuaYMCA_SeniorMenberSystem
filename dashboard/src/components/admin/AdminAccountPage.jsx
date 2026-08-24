@@ -51,10 +51,10 @@ function getAccountRowPolicy(actor, target) {
   const locked = !actorAllowed || !targetRoleValid || self || targetIsOwner || adminTargetingAdmin
 
   let lockMessage = null
-  if (!targetRoleValid) lockMessage = '角色資料異常'
+  if (self) lockMessage = '目前登入帳號'
+  else if (!targetRoleValid) lockMessage = '角色資料異常'
   else if (actor?.role === 'admin' && (targetIsOwner || target?.role === 'admin')) lockMessage = '僅最高管理員可管理'
   else if (targetIsOwner) lockMessage = '最高管理員帳號受保護'
-  else if (self) lockMessage = '目前登入帳號'
 
   return {
     locked,
