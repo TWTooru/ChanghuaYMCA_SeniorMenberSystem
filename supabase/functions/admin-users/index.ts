@@ -1,6 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.110.0'
 import { createCorsHeaders } from '../_shared/cors.ts'
-import { ApiError } from './domain.ts'
+import { ApiError, requireStoredRole } from './domain.ts'
 import { createAdminUsersHandler, type HandlerDeps } from './handler.ts'
 
 type Environment = Record<string, string | undefined>
@@ -41,7 +41,6 @@ function throwForError(error: unknown): never {
       (error as any)?.hint,
     ].filter(Boolean).join(' ')
   // 僅保留 handler/domain 可依賴的穩定代碼，勿將 Supabase 的 message/details/hint 洩漏給呼叫端。
-  if (message.includes('LAST_ADMIN_PROTECTED')) throw new ApiError('LAST_ADMIN_PROTECTED')
   if (status === 429 && message.toLowerCase().includes('email rate limit exceeded')) {
     throw new ApiError('EMAIL_RATE_LIMITED')
   }
@@ -51,6 +50,14 @@ function throwForError(error: unknown): never {
 function unwrap<T>(result: { data: T; error: unknown }): T {
   if (result.error) throwForError(result.error)
   return result.data
+}
+
+async function roleStoreOperation<T>(operation: () => Promise<T>): Promise<T> {
+  try {
+    return await operation()
+  } catch {
+    throw new ApiError('ROLE_STORE_ERROR')
+  }
 }
 
 // 將資料庫的 snake_case 稽核欄位轉為 domain/handler 對外使用的 camelCase。
@@ -88,14 +95,52 @@ export function createSupabaseDeps(client: SupabaseClientLike, env: Environment)
       if (error) throwForError(error)
       return data.user
     },
+    async getRole(userId) {
+      return await roleStoreOperation(async () => {
+        const { data, error } = await client
+          .from('app_user_roles')
+          .select('role')
+          .eq('user_id', userId)
+          .maybeSingle()
+        if (error) throw error
+        return data == null ? null : requireStoredRole(data.role)
+      })
+    },
     async listUsers() {
       return unwrap<any>(await client.auth.admin.listUsers({ page: 1, perPage: 100 })).users
+    },
+    async listRoles(userIds) {
+      if (userIds.length === 0) return []
+      return await roleStoreOperation(async () => {
+        const { data, error } = await client
+          .from('app_user_roles')
+          .select('user_id,role')
+          .in('user_id', userIds)
+        if (error) throw error
+        return (data ?? []).map((row: Record<string, unknown>) => ({
+          userId: row.user_id as string,
+          role: requireStoredRole(row.role),
+        }))
+      })
     },
     async inviteUser(email) {
       return unwrap<any>(await client.auth.admin.inviteUserByEmail(email, inviteOptions())).user
     },
-    async updateUser(id, attributes) {
-      return unwrap<any>(await client.auth.admin.updateUserById(id, attributes)).user
+    async updateRole(userId, role) {
+      return await roleStoreOperation(async () => {
+        const { data, error } = await client
+          .from('app_user_roles')
+          .update({ role, updated_at: new Date().toISOString() })
+          .eq('user_id', userId)
+          .select('user_id,role')
+          .single()
+        if (error) throw error
+        if (!data) throw new Error('Role update returned no row')
+        return {
+          userId: data.user_id,
+          role: requireStoredRole(data.role),
+        }
+      })
     },
     async deleteUser(id) {
       const result = await client.auth.admin.deleteUser(id)
