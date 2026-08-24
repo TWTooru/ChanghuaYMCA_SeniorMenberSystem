@@ -1,5 +1,5 @@
 begin;
-select plan(28);
+select plan(30);
 
 select has_table('public', 'app_user_roles', 'authoritative role table exists');
 select has_column('public', 'app_user_roles', 'user_id', 'role row references an auth user');
@@ -242,6 +242,12 @@ select is(
   null,
   'missing role row fails closed'
 );
+select throws_ok(
+  $$select public.create_billing_receipt(array[]::bigint[], 1000, null)$$,
+  '42501',
+  'PAYMENT_FORBIDDEN',
+  'a valid JWT without a stored role is denied by an active security-definer RPC'
+);
 reset role;
 
 select pg_catalog.set_config(
@@ -338,6 +344,30 @@ select ok(
       )
   ),
   'all active role policies use an init-plan role lookup and preserve unbilled-course protection'
+);
+
+select is(
+  (
+    select count(*)::integer
+    from pg_catalog.pg_proc procedure_record
+    join pg_catalog.pg_namespace namespace_record
+      on namespace_record.oid = procedure_record.pronamespace
+    join pg_catalog.pg_language language_record
+      on language_record.oid = procedure_record.prolang
+    where namespace_record.nspname in ('public', 'private')
+      and language_record.lanname = 'plpgsql'
+      and procedure_record.prosrc ilike '%current_app_role%'
+      and (
+        procedure_record.prosrc ~*
+          'public[.]current_app_role[(][)][[:space:]]+not[[:space:]]+in'
+        or procedure_record.prosrc ~*
+          'app_role[[:space:]]+not[[:space:]]+in'
+        or procedure_record.prosrc ~*
+          'public[.]current_app_role[(][)][[:space:]]*(<>|!=)'
+      )
+  ),
+  0,
+  'no active public or private routine retains a fail-open application-role guard'
 );
 
 select * from finish();

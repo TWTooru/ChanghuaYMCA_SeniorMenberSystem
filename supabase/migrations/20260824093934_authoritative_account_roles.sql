@@ -106,6 +106,97 @@ revoke all on function public.current_app_role() from public, anon;
 grant execute on function public.current_app_role() to authenticated, service_role;
 
 do $migration$
+declare
+  routine_record record;
+  original_definition text;
+  safe_definition text;
+  remaining_routines text;
+begin
+  for routine_record in
+    select procedure_record.oid
+    from pg_catalog.pg_proc procedure_record
+    join pg_catalog.pg_namespace namespace_record
+      on namespace_record.oid = procedure_record.pronamespace
+    join pg_catalog.pg_language language_record
+      on language_record.oid = procedure_record.prolang
+    where namespace_record.nspname in ('public', 'private')
+      and language_record.lanname = 'plpgsql'
+      and procedure_record.prokind in ('f', 'p')
+      and procedure_record.prosrc ilike '%current_app_role%'
+      and (
+        procedure_record.prosrc ~*
+          'public[.]current_app_role[(][)][[:space:]]+not[[:space:]]+in'
+        or procedure_record.prosrc ~*
+          'app_role[[:space:]]+not[[:space:]]+in'
+        or procedure_record.prosrc ~*
+          'public[.]current_app_role[(][)][[:space:]]*(<>|!=)'
+      )
+  loop
+    original_definition := pg_catalog.pg_get_functiondef(routine_record.oid);
+    safe_definition := pg_catalog.regexp_replace(
+      original_definition,
+      $unsafe$public[.]current_app_role[(][)][[:space:]]+not[[:space:]]+in[[:space:]]*([(][^)]*[)])$unsafe$,
+      $safe$coalesce(public.current_app_role() in \1, false) is not true$safe$,
+      'gi'
+    );
+    safe_definition := pg_catalog.regexp_replace(
+      safe_definition,
+      $unsafe$([^[:alnum:]_])app_role[[:space:]]+not[[:space:]]+in[[:space:]]*([(][^)]*[)])$unsafe$,
+      $safe$\1coalesce(app_role in \2, false) is not true$safe$,
+      'gi'
+    );
+    safe_definition := pg_catalog.regexp_replace(
+      safe_definition,
+      $unsafe$public[.]current_app_role[(][)][[:space:]]*(<>|!=)[[:space:]]*('[^']+')$unsafe$,
+      $safe$coalesce(public.current_app_role() = \2, false) is not true$safe$,
+      'gi'
+    );
+
+    if safe_definition = original_definition then
+      raise exception 'FAILED_TO_REWRITE_UNSAFE_ROLE_GUARD_FOR_%', routine_record.oid;
+    end if;
+
+    execute safe_definition;
+  end loop;
+
+  select pg_catalog.string_agg(
+    pg_catalog.format(
+      '%I.%I(%s)',
+      namespace_record.nspname,
+      procedure_record.proname,
+      pg_catalog.pg_get_function_identity_arguments(procedure_record.oid)
+    ),
+    ', '
+    order by namespace_record.nspname,
+             procedure_record.proname,
+             pg_catalog.pg_get_function_identity_arguments(procedure_record.oid)
+  )
+  into remaining_routines
+  from pg_catalog.pg_proc procedure_record
+  join pg_catalog.pg_namespace namespace_record
+    on namespace_record.oid = procedure_record.pronamespace
+  join pg_catalog.pg_language language_record
+    on language_record.oid = procedure_record.prolang
+  where namespace_record.nspname in ('public', 'private')
+    and language_record.lanname = 'plpgsql'
+    and procedure_record.prokind in ('f', 'p')
+    and procedure_record.prosrc ilike '%current_app_role%'
+    and (
+      procedure_record.prosrc ~*
+        'public[.]current_app_role[(][)][[:space:]]+not[[:space:]]+in'
+      or procedure_record.prosrc ~*
+        'app_role[[:space:]]+not[[:space:]]+in'
+      or procedure_record.prosrc ~*
+        'public[.]current_app_role[(][)][[:space:]]*(<>|!=)'
+    );
+
+  if remaining_routines is not null then
+    raise exception 'UNSAFE_CURRENT_APP_ROLE_GUARDS_REMAIN: %', remaining_routines;
+  end if;
+end
+$migration$;
+
+do $migration$
 begin
   if pg_catalog.to_regclass('public.students') is not null then
     execute 'drop policy if exists "role users can select students" on public.students';
