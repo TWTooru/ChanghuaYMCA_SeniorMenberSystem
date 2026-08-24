@@ -230,7 +230,7 @@ export default function EnrollmentBillingDetailModal({
                   key={form.form_id}
                   form={form}
                   canEdit={permissions.canEditEnrollment}
-                  canDelete={role === 'admin'}
+                  canDelete={permissions.canDeleteEnrollment}
                   onEdit={() => handleStartEdit(form.form_id)}
                   onToggleRefund={() => setRefundTargetForm(form)}
                   onDelete={() => setDeleteTargetForm(form)}

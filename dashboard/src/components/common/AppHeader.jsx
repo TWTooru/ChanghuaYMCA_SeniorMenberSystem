@@ -1,7 +1,7 @@
 import { FileSpreadsheet, RefreshCw, Download, LogOut, Sun, Moon } from 'lucide-react'
 
-const ROLE_LABELS = { admin: '管理員', editor: '編輯者', viewer: '檢視者' }
-const ROLE_COLORS = { admin: '#ef4444', editor: '#3b82f6', viewer: '#6b7280' }
+const ROLE_LABELS = { owner: '最高管理員', admin: '管理員', editor: '編輯者', viewer: '檢視者' }
+const ROLE_COLORS = { owner: '#7c3aed', admin: '#ef4444', editor: '#3b82f6', viewer: '#6b7280' }
 
 /** 集中呈現連線狀態、依權限顯示的全域操作、使用者資訊與主題／登出控制。 */
 export default function AppHeader({

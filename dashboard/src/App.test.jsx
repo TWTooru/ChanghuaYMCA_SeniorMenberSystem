@@ -12,12 +12,16 @@ const studentDetailModalSpy = vi.hoisted(() => vi.fn())
 const billingDetailModalSpy = vi.hoisted(() => vi.fn())
 
 const signOut = vi.fn()
+const refreshRole = vi.fn()
 const authState = {
   session: { access_token: 'test-token' },
   user: { email: 'viewer@example.com' },
   role: 'viewer',
+  roleStatus: 'ready',
+  roleErrorCode: null,
   passwordFlow: null,
   completePasswordFlow: vi.fn(),
+  refreshRole,
   signOut,
 }
 
@@ -61,6 +65,7 @@ vi.mock('./components/auth/Login', () => ({ default: () => null }))
 vi.mock('./components/auth/PasswordSetup', () => ({ default: () => <div data-testid="password-setup" /> }))
 vi.mock('./components/admin/AdminAccountPage', () => ({ default: () => <div data-testid="admin-account-page" /> }))
 vi.mock('./components/courses/CourseManagementTab', () => ({ default: () => <div data-testid="course-management-tab" /> }))
+vi.mock('./components/faq/FaqTab', () => ({ default: () => <div data-testid="faq-tab" /> }))
 vi.mock('./lib/excelExport', () => ({ exportToExcel: vi.fn() }))
 vi.mock('./components/sync/ExportOptionsDialog', () => ({ default: ({ onExport }) => <div data-testid="export-modal" onClick={() => onExport({ exportScope: 'all', selectedSeason: null, options: {} })} /> }))
 
@@ -68,9 +73,14 @@ describe('App header access controls', () => {
   afterEach(cleanup)
 
   beforeEach(() => {
+    authState.session = { access_token: 'test-token' }
+    authState.user = { email: 'viewer@example.com' }
     authState.role = 'viewer'
+    authState.roleStatus = 'ready'
+    authState.roleErrorCode = null
     authState.passwordFlow = null
     signOut.mockClear()
+    refreshRole.mockClear()
     apiDataSpy.mockClear()
     studentDetailModalSpy.mockClear()
     billingDetailModalSpy.mockClear()
@@ -102,7 +112,7 @@ describe('App header access controls', () => {
     expect(document.querySelector('.btn-refresh-inline')).toBeNull()
   })
 
-  it.each(['editor', 'admin'])('%s can see Excel sync and refresh controls', (role) => {
+  it.each(['editor', 'admin', 'owner'])('%s can see Excel sync and refresh controls', (role) => {
     authState.role = role
     render(<App />)
 
@@ -110,17 +120,74 @@ describe('App header access controls', () => {
     expect(document.querySelector('.btn-refresh-inline')).toBeTruthy()
   })
 
-  it('shows account and course management navigation only to admins', () => {
+  it.each([
+    ['viewer', false, false, false, false],
+    ['editor', true, false, false, false],
+    ['admin', true, true, true, true],
+    ['owner', true, true, true, true],
+  ])('applies ready %s navigation capabilities', (role, manual, users, courses, faq) => {
+    authState.role = role
+    render(<App />)
+
+    expect(Boolean(document.querySelector('#tab-manual'))).toBe(manual)
+    expect(Boolean(document.querySelector('#tab-admin'))).toBe(users)
+    expect(Boolean(document.querySelector('#tab-courses'))).toBe(courses)
+    expect(Boolean(document.querySelector('#tab-question'))).toBe(faq)
+  })
+
+  it('shows the user manual navigation only to editors, admins and owners', () => {
     const { rerender } = render(<App />)
 
-    expect(document.querySelector('#tab-admin')).toBeNull()
-    expect(document.querySelector('#tab-courses')).toBeNull()
+    expect(document.querySelector('#tab-manual')).toBeNull()
+
+    authState.role = 'editor'
+    rerender(<App />)
+    expect(document.querySelector('#tab-manual')).toBeTruthy()
 
     authState.role = 'admin'
     rerender(<App />)
+    expect(document.querySelector('#tab-manual')).toBeTruthy()
 
-    expect(document.querySelector('#tab-admin')).toBeTruthy()
-    expect(document.querySelector('#tab-courses')).toBeTruthy()
+    authState.role = 'owner'
+    rerender(<App />)
+    expect(document.querySelector('#tab-manual')).toBeTruthy()
+  })
+
+  it.each(['admin', 'owner'])('places the user manual immediately before troubleshooting for %s', (role) => {
+    authState.role = role
+    render(<App />)
+
+    const manualTab = document.querySelector('#tab-manual')
+    const troubleshootingTab = document.querySelector('#tab-question')
+    expect(manualTab?.nextElementSibling).toBe(troubleshootingTab)
+  })
+
+  it.each([
+    ['tab-courses', 'course-management-tab'],
+    ['tab-admin', 'admin-account-page'],
+    ['tab-question', 'faq-tab'],
+  ])('lets owner enter the capability-backed %s body', (tabId, bodyTestId) => {
+    authState.role = 'owner'
+    render(<App />)
+
+    fireEvent.click(document.querySelector(`#${tabId}`))
+
+    expect(screen.getByTestId(bodyTestId)).toBeTruthy()
+  })
+
+  it('leaves the user manual immediately after role downgrade', () => {
+    authState.role = 'editor'
+    const { rerender } = render(<App />)
+
+    fireEvent.click(document.querySelector('#tab-manual'))
+    expect(document.querySelector('#tab-manual')?.classList.contains('active')).toBe(true)
+    expect(document.querySelector('#tab-manual')?.getAttribute('aria-current')).toBe('page')
+
+    authState.role = 'viewer'
+    rerender(<App />)
+
+    expect(document.querySelector('#tab-manual')).toBeNull()
+    expect(document.querySelector('#tab-overview')?.classList.contains('active')).toBe(true)
   })
 
   it('leaves course management immediately after role downgrade', () => {
@@ -138,13 +205,13 @@ describe('App header access controls', () => {
   })
 
   it('leaves account management immediately after role downgrade', () => {
-    authState.role = 'admin'
+    authState.role = 'owner'
     const { rerender } = render(<App />)
 
     fireEvent.click(document.querySelector('#tab-admin'))
     expect(screen.getByTestId('admin-account-page')).toBeTruthy()
 
-    authState.role = 'viewer'
+    authState.role = 'editor'
     rerender(<App />)
 
     expect(screen.queryByTestId('admin-account-page')).toBeNull()
@@ -163,8 +230,35 @@ describe('App header access controls', () => {
     expect(document.querySelector('.btn-secondary')).toBeNull()
   })
 
+  it('shows the owner label and color in the header', () => {
+    authState.role = 'owner'
+    render(<App />)
+
+    const badge = document.querySelector('.header-role-badge')
+    expect(badge?.textContent).toBe('最高管理員')
+    expect(badge?.style.backgroundColor).toBe('rgb(124, 58, 237)')
+  })
+
+  it.each([
+    ['loading', null],
+    ['unassigned', 'ROLE_NOT_ASSIGNED'],
+    ['error', 'ROLE_STORE_ERROR'],
+  ])('blocks dashboard data while the stored role is %s', (roleStatus, roleErrorCode) => {
+    authState.role = null
+    authState.roleStatus = roleStatus
+    authState.roleErrorCode = roleErrorCode
+
+    render(<App />)
+
+    expect(screen.getByTestId('role-access-state')).toBeTruthy()
+    expect(apiDataSpy).not.toHaveBeenCalled()
+    expect(document.querySelector('.app-container')).toBeNull()
+  })
+
   it('renders password setup before mounting authenticated dashboard data', () => {
     authState.passwordFlow = 'invite'
+    authState.roleStatus = 'unassigned'
+    authState.roleErrorCode = 'ROLE_NOT_ASSIGNED'
 
     render(<App />)
 

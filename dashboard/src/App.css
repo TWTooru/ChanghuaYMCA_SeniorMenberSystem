@@ -207,9 +207,12 @@
   width: 100%;
   display: flex;
   gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: thin;
 }
 
 .tab-btn {
+  flex: 0 0 auto;
   background: transparent;
   border: none;
   color: var(--text-secondary);

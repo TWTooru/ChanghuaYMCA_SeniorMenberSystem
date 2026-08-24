@@ -160,6 +160,21 @@ describe('EnrollmentBillingDetailModal', () => {
     expect(props.onClose).not.toHaveBeenCalled()
   })
 
+  it('allows owner to delete a form card', () => {
+    authState.role = 'owner'
+    renderModal()
+
+    expect(screen.getByRole('button', { name: '刪除報名表 1' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: '刪除報名表 2' })).toBeTruthy()
+  })
+
+  it('does not allow editor to delete a form card', () => {
+    authState.role = 'editor'
+    renderModal()
+
+    expect(screen.queryByRole('button', { name: /刪除報名表/ })).toBeNull()
+  })
+
   it('closes modal if admin deletes the last remaining form', async () => {
     authState.role = 'admin'
     vi.mocked(deleteEnrollmentForm).mockResolvedValue({ form_id: 11, enrollment_deleted: true })
