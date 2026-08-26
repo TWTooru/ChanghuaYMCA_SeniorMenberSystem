@@ -7,6 +7,8 @@ import { supabase } from '../../lib/supabaseClient'
 import { createStudentWithInitialEnrollment } from '../../services/studentService'
 import InitialEnrollmentStep from './InitialEnrollmentStep'
 import MemberProfileStep from './MemberProfileStep'
+import { Button } from '../ui/button'
+import { Dialog, DialogClose, DialogContent, DialogTitle } from '../ui/dialog'
 import '../common/common.css'
 
 const initialProfile = {
@@ -92,12 +94,17 @@ export default function AddStudentModal({ onClose, onRefresh }) {
   }
 
   const closeModal = isSubmitting ? undefined : onClose
+  const handleOpenChange = open => {
+    if (!open && !isSubmitting) onClose()
+  }
 
-  return <div className="modal-overlay-center" id="modal-add-student-overlay">
-    <div className="form-modal-content" role="dialog" aria-modal="true" aria-labelledby="add-member-title" onClick={event => event.stopPropagation()}>
+  return <Dialog open onOpenChange={handleOpenChange}>
+    <DialogContent showCloseButton={false} className="form-modal-content" id="modal-add-student-overlay" aria-labelledby="add-member-title">
       <div className="modal-header-centered">
-        <h2 id="add-member-title">新增會員與第一筆報名</h2>
-        <button type="button" className="btn-close" onClick={closeModal} disabled={isSubmitting} aria-label="關閉新增會員"><X size={20} /></button>
+        <DialogTitle id="add-member-title">新增會員與第一筆報名</DialogTitle>
+        {isSubmitting
+          ? <Button type="button" className="btn-close" disabled aria-label="關閉新增會員"><X size={20} /></Button>
+          : <DialogClose className="btn-close" aria-label="關閉新增會員"><X size={20} /></DialogClose>}
       </div>
       <form noValidate onSubmit={handleSubmit} className="form-grid">
         <p className="member-wizard-progress">步驟 {step} / 2</p>
@@ -112,11 +119,11 @@ export default function AddStudentModal({ onClose, onRefresh }) {
             />}
         {error && <p className="student-edit-error" role="alert">{error}</p>}
         <div className="form-footer full-width">
-          {step === 2 && <button type="button" className="btn-secondary" onClick={() => { setError(''); setStep(1) }} disabled={isSubmitting}>上一步</button>}
-          <button type="button" className="btn-secondary" onClick={closeModal} disabled={isSubmitting}>取消</button>
-          <button type="submit" className="btn-primary" disabled={isSubmitting}>{step === 1 ? '下一步' : '新增會員並報名'}</button>
+          {step === 2 && <Button type="button" variant="secondary" onClick={() => { setError(''); setStep(1) }} disabled={isSubmitting}>上一步</Button>}
+          <Button type="button" variant="secondary" onClick={closeModal} disabled={isSubmitting}>取消</Button>
+          <Button type="submit" disabled={isSubmitting}>{step === 1 ? '下一步' : '新增會員並報名'}</Button>
         </div>
       </form>
-    </div>
-  </div>
+    </DialogContent>
+  </Dialog>
 }

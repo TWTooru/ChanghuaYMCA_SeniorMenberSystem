@@ -57,6 +57,14 @@ describe('AddStudentModal', () => {
     expect(screen.queryByLabelText('期別')).toBeNull()
   })
 
+  it('closes when Escape is pressed while the dialog is open', () => {
+    const { onClose } = renderModal()
+
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
+
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
   it('moves to step 2 and displays enrollment fields with the login account', () => {
     renderModal()
     goToEnrollment()
