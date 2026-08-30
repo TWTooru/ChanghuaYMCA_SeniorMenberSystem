@@ -9,9 +9,11 @@ const previousSeasonStats = { uniqueStudents: 80, enrollments: 100, refundRate: 
 afterEach(cleanup)
 
 describe('KpiCards', () => {
-  it('renders five KPI cards', () => {
+  it('renders five KPI cards as an accessible shared-card list', () => {
     const { container } = render(<KpiCards stats={stats} />)
-    expect(container.querySelectorAll('.kpi-card')).toHaveLength(5)
+    expect(screen.getByRole('list', { name: '核心指標' })).toBeTruthy()
+    expect(screen.getAllByRole('listitem')).toHaveLength(5)
+    expect(container.querySelectorAll('[data-slot="card"]')).toHaveLength(5)
   })
 
   it('renders readable Chinese KPI labels', () => {
@@ -28,6 +30,7 @@ describe('KpiCards', () => {
     const { container } = render(<KpiCards stats={stats} currentSeasonStats={currentSeasonStats} previousSeasonStats={previousSeasonStats} />)
     expect(container.querySelectorAll('.kpi-subtitle')).toHaveLength(5)
     expect(container.querySelectorAll('.kpi-delta').length).toBeGreaterThan(0)
+    expect(screen.getByLabelText('較上期增加 15').getAttribute('data-slot')).toBe('badge')
   })
 
   it('omits seasonal subtitles without current-season data', () => {

@@ -1,10 +1,13 @@
 import { Users, BookOpen, DollarSign, BarChart3 } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent } from '@/components/ui/card'
 
 export default function KpiCards({ stats = {}, currentSeasonStats, previousSeasonStats }) {
   const delta = (current, previous, reverse = false) => {
     if (current == null || previous == null || current === previous) return null
     const difference = current - previous
-    return <span className={`kpi-delta ${(reverse ? difference < 0 : difference > 0) ? 'kpi-delta-green' : 'kpi-delta-red'}`}>({difference > 0 ? '↑' : '↓'}{Math.abs(difference)})</span>
+    const direction = difference > 0 ? '增加' : '減少'
+    return <Badge variant="outline" aria-label={`較上期${direction} ${Math.abs(difference)}`} className={`kpi-delta ${(reverse ? difference < 0 : difference > 0) ? 'kpi-delta-green' : 'kpi-delta-red'}`}>({difference > 0 ? '↑' : '↓'}{Math.abs(difference)})</Badge>
   }
   const average = stats.totalStudents > 0 ? (stats.totalRegistrations / stats.totalStudents).toFixed(1) : '0'
   const cards = [
@@ -14,5 +17,5 @@ export default function KpiCards({ stats = {}, currentSeasonStats, previousSeaso
     [BarChart3, 'cyan', '平均每人報課數', average, '堂／人', currentSeasonStats?.avgCoursesPerStudent != null && <>當季：{currentSeasonStats.avgCoursesPerStudent.toFixed(1)} 堂／人</>],
     [DollarSign, 'green', '總營收', stats.totalRevenue != null ? stats.totalRevenue.toLocaleString() : 0, '元', currentSeasonStats && <>當季營收：{currentSeasonStats.revenue != null ? currentSeasonStats.revenue.toLocaleString() : 0} 元 {delta(currentSeasonStats.revenue, previousSeasonStats?.revenue)}</>]
   ]
-  return <div className="kpi-grid">{cards.map(([Icon, color, label, value, unit, subtitle]) => <div className="kpi-card" key={label}><div className={`kpi-icon-wrapper ${color}`}><Icon size={24} /></div><div><div className="kpi-label">{label}</div><div className="kpi-value-area"><span className="kpi-value">{value}</span><span className="kpi-unit">{unit}</span></div>{subtitle && <div className="kpi-subtitle">{subtitle}</div>}</div></div>)}</div>
+  return <div className="kpi-grid" role="list" aria-label="核心指標">{cards.map(([Icon, color, label, value, unit, subtitle]) => <Card className="kpi-card" role="listitem" key={label}><CardContent className="kpi-card-content"><div className={`kpi-icon-wrapper ${color}`}><Icon size={24} /></div><div><div className="kpi-label">{label}</div><div className="kpi-value-area"><span className="kpi-value">{value}</span><span className="kpi-unit">{unit}</span></div>{subtitle && <div className="kpi-subtitle">{subtitle}</div>}</div></CardContent></Card>)}</div>
 }

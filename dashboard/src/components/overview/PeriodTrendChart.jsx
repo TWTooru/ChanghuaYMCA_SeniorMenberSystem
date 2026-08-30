@@ -1,4 +1,4 @@
-import React from 'react';
+import { Progress } from '@/components/ui/progress'
 
 export default function PeriodTrendChart({ periodStats = [] }) {
   if (!periodStats || periodStats.length === 0) {
@@ -14,12 +14,11 @@ export default function PeriodTrendChart({ periodStats = [] }) {
         return (
           <div key={p.period} className="trend-bar-row">
             <div className="trend-label">{p.period}</div>
-            <div className="trend-bar-track">
-              <div 
-                className="trend-bar-fill" 
-                style={{ width: `${percentage}%` }}
-              ></div>
-            </div>
+            <Progress
+              value={percentage}
+              aria-label={`${p.period}報名趨勢`}
+              className="trend-bar-track"
+            />
             <div className="trend-value">{p.enrollments} 人次</div>
           </div>
         );
