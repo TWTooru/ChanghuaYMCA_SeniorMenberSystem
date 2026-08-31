@@ -5,6 +5,10 @@ import {
   fetchCourseCatalog,
   saveCourseCatalogEntry,
 } from '../../services/courseCatalogService'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import './courseManagement.css'
 
 export default function CourseManagementTab() {
@@ -82,17 +86,17 @@ export default function CourseManagementTab() {
       </div>
 
       <div className="course-management-add-form">
-        <input
-          className="form-input"
+        <Input
+          className="h-10 form-input"
           placeholder="輸入課程名稱以新增或重新啟用"
           value={courseName}
           onChange={e => setCourseName(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleSave() } }}
           disabled={pending}
         />
-        <button className="btn-primary" onClick={handleSave} disabled={pending || !courseName.trim()}>
+        <Button onClick={handleSave} disabled={pending || !courseName.trim()}>
           {pending ? '處理中…' : '新增 / 重新啟用'}
-        </button>
+        </Button>
       </div>
 
       {error && <p role="alert" style={{ color: 'var(--color-danger, #dc2626)' }}>{error}</p>}
@@ -101,23 +105,24 @@ export default function CourseManagementTab() {
         <div className="course-catalog-confirmation" role="status">
           <p>確定要停用「{confirmingCourse.courseName}」嗎？停用後不會刪除既有歷史資料。</p>
           <div className="course-catalog-confirmation-actions">
-            <button className="btn-secondary" onClick={() => setConfirmingCourse(null)} disabled={pending}>取消</button>
-            <button className="btn-danger" onClick={handleDeactivate} disabled={pending}>
+            <Button variant="outline" onClick={() => setConfirmingCourse(null)} disabled={pending}>取消</Button>
+            <Button variant="destructive" onClick={handleDeactivate} disabled={pending}>
               {pending ? '處理中…' : '確認停用'}
-            </button>
+            </Button>
           </div>
         </div>
       )}
 
       <div className="course-management-filter-group">
         {['all', 'active', 'inactive'].map(f => (
-          <button
+          <Button
             key={f}
-            className={`btn-secondary${filter === f ? ' active' : ''}`}
+            variant={filter === f ? 'default' : 'outline'}
+            aria-pressed={filter === f}
             onClick={() => setFilter(f)}
           >
             {{ all: '全部', active: '啟用中', inactive: '已停用' }[f]}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -127,35 +132,35 @@ export default function CourseManagementTab() {
       )}
       {!loading && filteredCatalog.length > 0 && (
         <div className="course-management-table-wrapper">
-          <table className="course-management-table">
-            <thead>
-              <tr>
-                <th>課程名稱</th>
-                <th>狀態</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="course-management-table" aria-label="課程目錄">
+            <TableHeader>
+              <TableRow>
+                <TableHead>課程名稱</TableHead>
+                <TableHead>狀態</TableHead>
+                <TableHead>操作</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {filteredCatalog.map(course => (
-                <tr key={course.courseCatalogId}>
-                  <td>{course.courseName}</td>
-                  <td>
-                    <span className={`course-management-status ${course.active ? 'active' : 'inactive'}`}>
+                <TableRow key={course.courseCatalogId}>
+                  <TableCell>{course.courseName}</TableCell>
+                  <TableCell>
+                    <Badge variant={course.active ? 'default' : 'secondary'} className={`course-management-status ${course.active ? 'active' : 'inactive'}`}>
                       {course.active ? '啟用中' : '已停用'}
-                    </span>
-                  </td>
-                  <td>
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
                     {course.active ? (
-                      <button
-                        className="btn-secondary"
+                      <Button
+                        variant="outline"
                         onClick={() => setConfirmingCourse(course)}
                         disabled={pending}
                       >
                         停用
-                      </button>
+                      </Button>
                     ) : (
-                      <button
-                        className="btn-secondary"
+                      <Button
+                        variant="outline"
                         onClick={async () => {
                           setPending(true)
                           setError('')
@@ -171,13 +176,13 @@ export default function CourseManagementTab() {
                         disabled={pending}
                       >
                         重新啟用
-                      </button>
+                      </Button>
                     )}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
     </div>

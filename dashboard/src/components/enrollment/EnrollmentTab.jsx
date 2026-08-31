@@ -9,6 +9,12 @@ import {
 import { getStudentById } from '../../domain/studentRelations'
 import { summarizeEnrollmentBilling } from '../../domain/enrollmentBilling'
 import { compareSeasons } from '../../domain/season'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import './enrollment.css'
 
 export default function EnrollmentTab({ students, enrollments, onSelectEnrollment }) {
@@ -21,7 +27,7 @@ export default function EnrollmentTab({ students, enrollments, onSelectEnrollmen
   // 篩選、排序與分頁皆由同一份 `enrollments` 推導，避免各區塊使用不同條件而顯示不一致的報名歷程。
   const seasonsList = useMemo(() => {
     if (!enrollments) return []
-    const set = new Set(enrollments.map(e => e.season))
+    const set = new Set(enrollments.map(e => e.season).filter(Boolean))
     return Array.from(set).sort(compareSeasons)
   }, [enrollments])
 
@@ -39,8 +45,8 @@ export default function EnrollmentTab({ students, enrollments, onSelectEnrollmen
       
       let matchesRefund = true
       if (historyRefundFilter !== '') {
-        if (historyRefundFilter === 'refunded') matchesRefund = e.refunded
-        else if (historyRefundFilter === 'normal') matchesRefund = !e.refunded
+        if (historyRefundFilter === 'refunded') matchesRefund = e.refunded === true || e.refundStatus === 'refunded'
+        else if (historyRefundFilter === 'normal') matchesRefund = !e.refunded || e.refundStatus === 'normal'
       }
       
       return matchesSearch && matchesSeason && matchesRefund
@@ -59,13 +65,13 @@ export default function EnrollmentTab({ students, enrollments, onSelectEnrollmen
       {/* Filters panel */}
       <div className="filters-panel">
         <div className="filter-group">
-          <label className="filter-label" htmlFor="history-search">搜尋姓名、課程或收據 No.</label>
+          <Label className="filter-label" htmlFor="history-search">搜尋姓名、課程或收據 No.</Label>
           <div className="search-input-wrapper">
             <Search size={16} className="search-icon" />
-            <input 
-              type="text" 
+            <Input
+              type="text"
               id="history-search" 
-              className="search-input" 
+              className="h-10 search-input" 
               placeholder="輸入姓名、課程或收據 No. 搜尋..."
               value={historySearch}
               onChange={(e) => {
@@ -76,102 +82,134 @@ export default function EnrollmentTab({ students, enrollments, onSelectEnrollmen
           </div>
         </div>
         <div className="filter-group">
-          <label className="filter-label" htmlFor="history-season">篩選季別</label>
-          <select 
-            id="history-season" 
-            className="select-input"
-            value={historySeasonFilter}
-            onChange={(e) => {
-              setHistorySeasonFilter(e.target.value)
+          <Label className="filter-label" htmlFor="history-season">篩選季別</Label>
+          <Select
+            items={[{ value: 'all', label: '全部期別' }, ...seasonsList.map(s => ({ value: s, label: s }))]}
+            value={historySeasonFilter || 'all'}
+            onValueChange={(value) => {
+              setHistorySeasonFilter(value === 'all' ? '' : value)
               setHistoryPage(1)
             }}
           >
-            <option value="">全部期別</option>
-            {seasonsList.map(s => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
+            <SelectTrigger id="history-season" className="h-10 select-input" aria-label="篩選季別">
+              <SelectValue placeholder="全部期別" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">全部期別</SelectItem>
+              {seasonsList.map((s, index) => (
+                <SelectItem key={`season-${s}-${index}`} value={s}>{s}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div className="filter-group">
-          <label className="filter-label" htmlFor="history-refund">退費狀況</label>
-          <select 
-            id="history-refund" 
-            className="select-input"
-            value={historyRefundFilter}
-            onChange={(e) => {
-              setHistoryRefundFilter(e.target.value)
+          <Label className="filter-label" htmlFor="history-refund">退費狀況</Label>
+          <Select
+            items={[
+              { value: 'all', label: '全部狀態' },
+              { value: 'normal', label: '正常 (無退費)' },
+              { value: 'refunded', label: '已退費' },
+            ]}
+            value={historyRefundFilter || 'all'}
+            onValueChange={(value) => {
+              setHistoryRefundFilter(value === 'all' ? '' : value)
               setHistoryPage(1)
             }}
           >
-            <option value="">全部狀態</option>
-            <option value="normal">正常 (無退費)</option>
-            <option value="refunded">已退費</option>
-          </select>
+            <SelectTrigger id="history-refund" className="h-10 select-input" aria-label="退費狀況">
+              <SelectValue placeholder="全部狀態" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">全部狀態</SelectItem>
+              <SelectItem value="normal">正常 (無退費)</SelectItem>
+              <SelectItem value="refunded">已退費</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
       {/* History Table */}
       <div className="table-wrapper">
         <div className="table-scroll">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>姓名</th>
-                <th>季別</th>
-                <th>課程</th>
-                <th>收費狀況</th>
-                <th>金額</th>
-                <th>收據 No.</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="data-table" aria-label="歷年選課歷程">
+            <TableHeader>
+              <TableRow>
+                <TableHead>姓名</TableHead>
+                <TableHead>季別</TableHead>
+                <TableHead>課程</TableHead>
+                <TableHead>收費狀況</TableHead>
+                <TableHead>金額</TableHead>
+                <TableHead>收據 No.</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {paginatedHistory.length > 0 ? (
                 paginatedHistory.map((e, idx) => {
                   const billing = summarizeEnrollmentBilling(e)
 
                   return (
-                  <tr 
-                    key={`${e.student_id}-${e.season}-${idx}`}
-                    className="clickable"
-                    onClick={() => {
-                      const student = getStudentById(students, e.student_id)
-                      if (student && onSelectEnrollment) onSelectEnrollment(student, e)
-                    }}
-                  >
-                    <td className="table-cell-bold">{e.student_name}</td>
-                    <td>{e.season}</td>
-                    <td>
-                      <div className="timeline-courses">
-                        {e.courses.map(c => (
-                          <span className="course-tag" key={c}>{c}</span>
-                        ))}
-                      </div>
-                    </td>
-                    <td>
-                      <span className={`badge ${e.refunded ? 'danger' : 'success'}`}>
-                        {e.refunded ? '已退費' : '正常'}
-                      </span>
-                    </td>
-                    <td>{billing.amount == null ? '--' : `NT$ ${billing.amount}`}</td>
-                    <td>
-                      {billing.invoiceNumbers.length > 0 ? (
-                        <div className="invoice-number-list">
-                          {billing.invoiceNumbers.map(invoice => <span key={invoice}>{invoice}</span>)}
+                    <TableRow 
+                      key={`${e.student_id}-${e.season}-${idx}`}
+                      className="clickable"
+                      onClick={() => {
+                        const student = getStudentById(students, e.student_id)
+                        if (student && onSelectEnrollment) onSelectEnrollment(student, e)
+                      }}
+                    >
+                      <TableCell className="table-cell-bold">
+                        <Button
+                          type="button"
+                          variant="link"
+                          size="sm"
+                          className="h-auto p-0 text-inherit font-bold hover:no-underline"
+                          aria-label={`查看${e.student_name}的選課明細`}
+                          onClick={event => {
+                            event.stopPropagation()
+                            const student = getStudentById(students, e.student_id)
+                            if (student && onSelectEnrollment) onSelectEnrollment(student, e)
+                          }}
+                        >
+                          {e.student_name}
+                        </Button>
+                      </TableCell>
+                      <TableCell>{e.season}</TableCell>
+                      <TableCell>
+                        <div className="timeline-courses">
+                          {(e.courses || []).map(c => (
+                            <span className="course-tag" key={c}>{c}</span>
+                          ))}
                         </div>
-                      ) : '--'}
-                    </td>
-                  </tr>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={e.refunded ? 'destructive' : 'default'}
+                          className={`badge ${e.refunded ? 'danger' : 'success'}`}
+                        >
+                          {e.refunded ? '已退費' : '正常'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{billing.amount == null ? '--' : `NT$ ${billing.amount}`}</TableCell>
+                      <TableCell>
+                        {billing.invoiceNumbers.length > 0 ? (
+                          <div className="invoice-number-list">
+                            {billing.invoiceNumbers.map((invoice, i) => (
+                              <span key={`${invoice}-${i}`} className="invoice-number-tag">{invoice}</span>
+                            ))}
+                          </div>
+                        ) : '--'}
+                      </TableCell>
+                    </TableRow>
                   )
                 })
               ) : (
-                <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
+                <TableRow>
+                  <TableCell colSpan={6} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
                     未找到選課歷程。
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
 
         {/* Table Footer / Pagination */}
@@ -179,9 +217,11 @@ export default function EnrollmentTab({ students, enrollments, onSelectEnrollmen
           <div className="footer-info">
             顯示第 {filteredHistory.length > 0 ? (historyPage - 1) * itemsPerPage + 1 : 0} 至 {Math.min(historyPage * itemsPerPage, filteredHistory.length)} 筆紀錄（共 {filteredHistory.length} 筆）
           </div>
-          <div className="pagination-buttons">
-            <button
+          <nav className="pagination-buttons" aria-label="歷年選課歷程分頁">
+            <Button
               type="button"
+              variant="outline"
+              size="icon"
               className="btn-secondary"
               onClick={() => setHistoryPage(1)}
               disabled={historyPage === 1}
@@ -190,25 +230,35 @@ export default function EnrollmentTab({ students, enrollments, onSelectEnrollmen
               title="跳至最前頁"
             >
               <ChevronsLeft size={16} style={{ display: 'block' }} />
-            </button>
-            <button 
+            </Button>
+            <Button 
+              type="button"
+              variant="outline"
+              size="icon"
               className="btn-secondary"
               onClick={() => setHistoryPage(p => Math.max(p - 1, 1))}
               disabled={historyPage === 1}
               id="btn-history-prev"
+              aria-label="上一頁"
             >
               <ChevronLeft size={16} style={{ display: 'block' }} />
-            </button>
-            <button 
+            </Button>
+            <Button 
+              type="button"
+              variant="outline"
+              size="icon"
               className="btn-secondary"
               onClick={() => setHistoryPage(p => Math.min(p + 1, totalHistoryPages))}
               disabled={historyPage === totalHistoryPages}
               id="btn-history-next"
+              aria-label="下一頁"
             >
               <ChevronRight size={16} style={{ display: 'block' }} />
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="outline"
+              size="icon"
               className="btn-secondary"
               onClick={() => setHistoryPage(totalHistoryPages)}
               disabled={historyPage === totalHistoryPages}
@@ -217,8 +267,8 @@ export default function EnrollmentTab({ students, enrollments, onSelectEnrollmen
               title="跳至最尾頁"
             >
               <ChevronsRight size={16} style={{ display: 'block' }} />
-            </button>
-          </div>
+            </Button>
+          </nav>
         </div>
       </div>
     </div>
