@@ -153,6 +153,13 @@ describe('App header access controls', () => {
     expect(document.querySelector('#tab-manual')).toBeTruthy()
   })
 
+  it('visually highlights the user manual navigation', () => {
+    authState.role = 'editor'
+    render(<App />)
+
+    expect(document.querySelector('#tab-manual')?.classList.contains('tab-btn-manual')).toBe(true)
+  })
+
   it.each(['admin', 'owner'])('places the user manual immediately before troubleshooting for %s', (role) => {
     authState.role = role
     render(<App />)

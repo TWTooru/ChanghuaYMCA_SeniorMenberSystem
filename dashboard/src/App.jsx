@@ -139,7 +139,7 @@ function AuthenticatedDashboard() {
             </button>
           )}
           {permissions.canViewManual && (
-            <button className={`tab-btn ${activeTab === 'manual' ? 'active' : ''}`} onClick={() => setActiveTab('manual')} id="tab-manual" aria-current={activeTab === 'manual' ? 'page' : undefined}>
+            <button className={`tab-btn tab-btn-manual ${activeTab === 'manual' ? 'active' : ''}`} onClick={() => setActiveTab('manual')} id="tab-manual" aria-current={activeTab === 'manual' ? 'page' : undefined}>
               <BookMarked size={18} /><span>使用者手冊</span>
             </button>
           )}
