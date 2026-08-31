@@ -7,6 +7,13 @@ import useAdminUsers from '../../hooks/useAdminUsers'
 vi.mock('../../contexts/AuthContext', () => ({ useAuth: vi.fn() }))
 vi.mock('../../hooks/useAdminUsers', () => ({ default: vi.fn() }))
 
+const ROLE_LABELS = {
+  owner: '最高管理員',
+  admin: '管理員',
+  editor: '編輯者',
+  viewer: '瀏覽者',
+}
+
 const signedInAt = '2026-07-14T00:00:00.000Z'
 const makeUser = (id, role, overrides = {}) => ({
   id,
@@ -52,9 +59,18 @@ function expectNoAccountActions(row, target) {
 
 function expectRoleOptions(row, expectedValues) {
   const select = within(row).getByRole('combobox')
-  expect(within(select).getAllByRole('option').map(option => option.value)).toEqual(expectedValues)
-  expect(within(select).queryByRole('option', { name: '最高管理員' })).toBeNull()
+  fireEvent.click(select)
+  expect(screen.getAllByRole('option').map(option => option.textContent)).toEqual(expectedValues.map(value => ROLE_LABELS[value]))
+  fireEvent.keyDown(select, { key: 'Escape' })
   return select
+}
+
+function chooseRole(email, label) {
+  const select = screen.getByLabelText(`變更 ${email} 的角色`)
+  fireEvent.click(select)
+  const option = screen.getByRole('option', { name: label })
+  fireEvent.pointerDown(option, { pointerType: 'mouse' })
+  fireEvent.click(option)
 }
 
 describe('AdminAccountPage', () => {
@@ -104,23 +120,14 @@ describe('AdminAccountPage', () => {
     expectNoAccountActions(row, target)
   })
 
-  it.each(['admin', 'editor', 'viewer'])('lets the owner manage a %s with admin/editor/viewer options and enabled actions', targetRole => {
+  it.each(['owner', 'admin', 'editor', 'viewer'])('lets the owner manage a %s with owner/admin/editor/viewer options and enabled actions', targetRole => {
     const target = makeUser(`target-${targetRole}`, targetRole)
     renderFor('owner', target, 'owner-1')
 
     const row = getTargetRow(target)
-    expectRoleOptions(row, ['admin', 'editor', 'viewer'])
+    expectRoleOptions(row, ['owner', 'admin', 'editor', 'viewer'])
     expect(within(row).getByLabelText(`寄送密碼重設 ${target.email}`).disabled).toBe(false)
     expect(within(row).getByLabelText(`刪除 ${target.email}`).disabled).toBe(false)
-  })
-
-  it('locks a target owner even when the actor is another owner', () => {
-    const target = makeUser('owner-2', 'owner')
-    renderFor('owner', target, 'owner-1')
-
-    const row = getTargetRow(target)
-    expect(within(row).getByText('最高管理員')).toBeTruthy()
-    expectNoAccountActions(row, target)
   })
 
   it('locks an ordinary admin self row without relying on the number of admins', () => {
@@ -169,7 +176,7 @@ describe('AdminAccountPage', () => {
     renderFor('admin', target)
 
     const row = getTargetRow(target)
-    expect(expectRoleOptions(row, ['editor', 'viewer']).disabled).toBe(true)
+    expect(within(row).getByRole('combobox').disabled).toBe(true)
     expect(within(row).getByLabelText(`重新寄送邀請 ${target.email}`).disabled).toBe(false)
     expect(within(row).getByLabelText(`刪除 ${target.email}`).disabled).toBe(false)
   })
@@ -218,7 +225,7 @@ describe('AdminAccountPage', () => {
     const target = makeUser('member', 'editor')
     renderFor('admin', target)
 
-    fireEvent.change(screen.getByLabelText(`變更 ${target.email} 的角色`), { target: { value: 'viewer' } })
+    chooseRole(target.email, '瀏覽者')
 
     expect(adminState.changeRole).toHaveBeenCalledWith(target.id, 'viewer')
     await waitFor(() => expect(screen.getByText('角色權限已更新。')).toBeTruthy())
@@ -230,7 +237,7 @@ describe('AdminAccountPage', () => {
     const target = makeUser('member', 'editor')
     renderFor('admin', target)
 
-    fireEvent.change(screen.getByLabelText(`變更 ${target.email} 的角色`), { target: { value: 'viewer' } })
+    chooseRole(target.email, '瀏覽者')
 
     await waitFor(() => expect(adminState.changeRole).toHaveBeenCalledWith(target.id, 'viewer'))
     expect(screen.queryByText('角色權限已更新。')).toBeNull()
@@ -305,5 +312,11 @@ describe('AdminAccountPage', () => {
     adminState.errorCode = 'EMAIL_RATE_LIMITED'
     rerender(<AdminAccountPage />)
     expect(screen.getByText('邀請信寄送額度已滿，帳號可能已建立，請稍後從列表重新寄送邀請。')).toBeTruthy()
+  })
+
+  it('labels the account table for assistive technology', () => {
+    renderFor('admin', makeUser('member', 'viewer'))
+
+    expect(screen.getByRole('table', { name: '帳號列表' })).toBeTruthy()
   })
 })
