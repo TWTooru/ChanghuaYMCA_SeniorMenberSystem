@@ -155,10 +155,9 @@ describe('StudentListTab list navigation', () => {
 
   it.each(['admin', 'owner'])('keeps the %s merge dialog available', (role) => {
     authState.role = role
-    const { container } = render(<StudentListTab students={[student]} enrollments={[]} onSelectStudent={vi.fn()} />)
+    render(<StudentListTab students={[student]} enrollments={[]} onSelectStudent={vi.fn()} />)
 
-    fireEvent.click(container.querySelector('.btn-primary'))
+    fireEvent.click(screen.getByRole('button', { name: '合併學員' }))
     expect(screen.getByRole('dialog')).not.toBeNull()
-
   })
 })

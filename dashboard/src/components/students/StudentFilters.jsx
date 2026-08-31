@@ -55,9 +55,8 @@ export default function StudentFilters({
           {onShowMerge && (
             <Button
               type="button"
-              className="btn-primary"
+              variant="destructive"
               onClick={onShowMerge}
-              style={{ backgroundColor: 'var(--color-danger, #ef4444)', borderColor: 'var(--color-danger, #ef4444)' }}
             >
               <span>合併學員</span>
             </Button>
@@ -94,7 +93,6 @@ export default function StudentFilters({
         <div className="filter-group">
           <label className="filter-label" htmlFor="student-gender">篩選性別</label>
           <Select
-            items={genderOptions}
             value={studentGenderFilter || ALL_OPTIONS}
             onValueChange={(value) => onGenderChange(value === ALL_OPTIONS ? '' : value)}
           >
@@ -113,7 +111,6 @@ export default function StudentFilters({
         <div className="filter-group">
           <label className="filter-label" htmlFor="student-age">篩選年齡層</label>
           <Select
-            items={ageOptions}
             value={studentAgeFilter || ALL_OPTIONS}
             onValueChange={(value) => onAgeChange(value === ALL_OPTIONS ? '' : value)}
           >
@@ -132,7 +129,6 @@ export default function StudentFilters({
         <div className="filter-group">
           <label className="filter-label" htmlFor="student-edu">篩選學歷</label>
           <Select
-            items={eduOptions}
             value={studentEduFilter || ALL_OPTIONS}
             onValueChange={(value) => onEduChange(value === ALL_OPTIONS ? '' : value)}
           >

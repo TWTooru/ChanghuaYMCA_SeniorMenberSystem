@@ -155,7 +155,6 @@ export default function StudentTable({
         <div className="page-size-selector">
           <label htmlFor="student-page-size">每頁筆數</label>
           <Select
-            items={pageSizeOptions}
             value={String(itemsPerPage)}
             onValueChange={value => onPageSizeChange(Number(value))}
           >

@@ -84,7 +84,6 @@ export default function EnrollmentTab({ students, enrollments, onSelectEnrollmen
         <div className="filter-group">
           <Label className="filter-label" htmlFor="history-season">篩選季別</Label>
           <Select
-            items={[{ value: 'all', label: '全部期別' }, ...seasonsList.map(s => ({ value: s, label: s }))]}
             value={historySeasonFilter || 'all'}
             onValueChange={(value) => {
               setHistorySeasonFilter(value === 'all' ? '' : value)
@@ -105,11 +104,6 @@ export default function EnrollmentTab({ students, enrollments, onSelectEnrollmen
         <div className="filter-group">
           <Label className="filter-label" htmlFor="history-refund">退費狀況</Label>
           <Select
-            items={[
-              { value: 'all', label: '全部狀態' },
-              { value: 'normal', label: '正常 (無退費)' },
-              { value: 'refunded', label: '已退費' },
-            ]}
             value={historyRefundFilter || 'all'}
             onValueChange={(value) => {
               setHistoryRefundFilter(value === 'all' ? '' : value)

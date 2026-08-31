@@ -148,7 +148,6 @@ function AuthorizedAdminAccountPage({ actor }) {
               {policy.locked
                 ? <Badge variant="secondary" className={`admin-role-badge admin-role-badge--${VALID_TARGET_ROLES.has(target.role) ? target.role : 'missing'}`}>{policy.roleLabel}</Badge>
                 : <Select
-                    items={policy.roleOptions.map(roleOption => ({ value: roleOption, label: ROLE_LABELS[roleOption] }))}
                     aria-label={`變更 ${target.email} 的角色`}
                     value={target.role}
                     disabled={firstLoginRequired || mutation === `role:${target.id}`}
