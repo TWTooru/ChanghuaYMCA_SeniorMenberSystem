@@ -372,21 +372,34 @@ Deno.test('owners and admins cannot mutate themselves and every denial is audite
   }
 })
 
-Deno.test('owner targets are protected from every actor and mutation with stored-role audits', async () => {
-  for (const actorRole of ['owner', 'admin'] as const) {
-    for (const action of mutationActions) {
-      const deps = fakeDeps({ actorRole })
-      addTarget(deps, 'owner-target', 'owner')
-      const response = await createAdminUsersHandler(deps)(
-        request(mutationBody(action, 'owner-target', 'owner')),
-      )
+Deno.test('owner targets are protected from admin actors with stored-role audits', async () => {
+  for (const action of mutationActions) {
+    const deps = fakeDeps({ actorRole: 'admin' })
+    addTarget(deps, 'owner-target', 'owner')
+    const response = await createAdminUsersHandler(deps)(
+      request(mutationBody(action, 'owner-target', 'owner')),
+    )
 
-      assertEquals(response.status, 409)
-      assertEquals((await response.json() as any).error.code, 'OWNER_PROTECTED')
-      assertEquals(deps.insertedAudits[0]?.old_role, 'owner')
-      assertEquals(deps.completedAudits[0]?.errorCode, 'OWNER_PROTECTED')
-      assertDeniedMutationHasNoSideEffects(deps, action, 'owner-target', 'owner')
-    }
+    assertEquals(response.status, 409)
+    assertEquals((await response.json() as any).error.code, 'OWNER_PROTECTED')
+    assertEquals(deps.insertedAudits[0]?.old_role, 'owner')
+    assertEquals(deps.completedAudits[0]?.errorCode, 'OWNER_PROTECTED')
+    assertDeniedMutationHasNoSideEffects(deps, action, 'owner-target', 'owner')
+  }
+})
+
+Deno.test('owner can perform every mutation against another owner', async () => {
+  for (const action of mutationActions) {
+    const deps = fakeDeps({ actorRole: 'owner' })
+    addTarget(deps, 'owner-target', 'owner')
+    const response = await createAdminUsersHandler(deps)(
+      request(mutationBody(action, 'owner-target', 'owner')),
+    )
+
+    assertEquals(response.status, 200)
+    assertEquals(deps.insertedAudits[0]?.actor_role, 'owner')
+    assertEquals(deps.insertedAudits[0]?.old_role, 'owner')
+    assertEquals(deps.completedAudits[0]?.status, 'success')
   }
 })
 
@@ -461,25 +474,27 @@ Deno.test('every target mutation fails closed and audits a missing stored target
   }
 })
 
-Deno.test('admin cannot assign admin while owner can, and owner is never assignable', async () => {
-  for (const actorRole of ['admin', 'owner'] as const) {
-    const deps = fakeDeps({ actorRole })
-    addTarget(deps, 'viewer-target', 'viewer')
-    const response = await createAdminUsersHandler(deps)(request({
-      action: 'update_role', userId: 'viewer-target', role: 'admin',
-    }))
+Deno.test('admin cannot assign admin or owner while owner can assign both', async () => {
+  for (const targetAssignRole of ['admin', 'owner'] as const) {
+    for (const actorRole of ['admin', 'owner'] as const) {
+      const deps = fakeDeps({ actorRole })
+      addTarget(deps, 'viewer-target', 'viewer')
+      const response = await createAdminUsersHandler(deps)(request({
+        action: 'update_role', userId: 'viewer-target', role: targetAssignRole,
+      }))
 
-    assertEquals(response.status, actorRole === 'owner' ? 200 : 403)
-    assertEquals(
-      actorRole === 'owner' ? deps.roles.get('viewer-target') : (await response.json() as any).error.code,
-      actorRole === 'owner' ? 'admin' : 'OWNER_REQUIRED',
-    )
+      assertEquals(response.status, actorRole === 'owner' ? 200 : 403)
+      assertEquals(
+        actorRole === 'owner' ? deps.roles.get('viewer-target') : (await response.json() as any).error.code,
+        actorRole === 'owner' ? targetAssignRole : 'OWNER_REQUIRED',
+      )
+    }
   }
 
   const invalid = fakeDeps({ actorRole: 'owner' })
   addTarget(invalid, 'viewer-target', 'viewer')
   const response = await createAdminUsersHandler(invalid)(request({
-    action: 'update_role', userId: 'viewer-target', role: 'owner',
+    action: 'update_role', userId: 'viewer-target', role: 'invalid_role',
   }))
   assertEquals(response.status, 400)
   assertEquals((await response.json() as any).error.code, 'INVALID_INPUT')

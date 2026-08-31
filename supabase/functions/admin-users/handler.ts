@@ -34,7 +34,7 @@ export type HandlerDeps = {
   listUsers(): Promise<AuthUser[]>
   listRoles(userIds: string[]): Promise<RoleRecord[]>
   inviteUser(email: string): Promise<AuthUser>
-  updateRole(userId: string, role: AssignableRole): Promise<RoleRecord>
+  updateRole(userId: string, role: AppRole): Promise<RoleRecord>
   deleteUser(userId: string): Promise<void>
   resendInvite(email: string): Promise<void>
   sendPasswordReset(email: string): Promise<void>
@@ -145,7 +145,7 @@ function targetAuditRow(
   actor: AccountActor,
   action: AccountMutationAction,
   target: { user: AuthUser; role: AppRole | null },
-  newRole?: AssignableRole,
+  newRole?: AppRole,
 ) {
   return {
     actor_user_id: actor.id,
@@ -182,7 +182,7 @@ function assertTargetAllowed(
   actor: AccountActor,
   target: { user: AuthUser; role: AppRole | null },
   action: AccountMutationAction,
-  nextRole?: AssignableRole,
+  nextRole?: AppRole,
 ) {
   assertTargetMutationAllowed({
     actorId: actor.id,

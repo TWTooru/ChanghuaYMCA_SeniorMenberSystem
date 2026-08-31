@@ -7,6 +7,7 @@ describe('useStats', () => {
     const { result } = renderHook(() => useStats([], []))
     expect(result.current.totalStudents).toBe(0)
     expect(result.current.popularCourses).toEqual([])
+    expect(result.current).not.toHaveProperty('totalRevenue')
   })
 
   it('computes gender counts', () => {
@@ -44,39 +45,4 @@ describe('useStats', () => {
     expect(result.current.popularCourses[1]).toEqual({ name: '北歐健走', count: 1 })
   })
 
-  it('aggregates current receipt and legacy revenue while excluding refunds', () => {
-    const students = [{ name: 'A' }, { name: 'B' }, { name: 'C' }]
-    const enrollments = [
-      { student_id: '1', season: 'Season A', refunded: false, courses: ['A'], billingReceipts: [{ receiptId: 1, amount: 1000 }] },
-      { student_id: '2', season: 'Season A', refunded: false, courses: ['B'], amount: 500, invoice_number: 'OLD' },
-      { student_id: '3', season: 'Season B', refunded: true, courses: ['C'], billingReceipts: [{ receiptId: 2, amount: 900 }] },
-    ]
-
-    const { result } = renderHook(() => useStats(students, enrollments))
-
-    expect(result.current.totalRevenue).toBe(1500)
-    expect(result.current.seasonStats.find(item => item.season === 'Season A').revenue).toBe(1500)
-    expect(result.current.seasonStats.find(item => item.season === 'Season B').revenue).toBe(0)
-  })
-
-  it('counts a grouped receipt once and skips an enrollment with unknown revenue', () => {
-    const students = [{ name: 'A' }, { name: 'B' }]
-    const enrollments = [
-      {
-        student_id: '1',
-        season: 'Season A',
-        refunded: false,
-        courses: ['A', 'B'],
-        billingReceipts: [
-          { receiptId: 7, amount: 1200, courses: [{ courseId: 'A' }, { courseId: 'B' }] },
-        ],
-      },
-      { student_id: '2', season: 'Season A', refunded: false, courses: ['C'] },
-    ]
-
-    const { result } = renderHook(() => useStats(students, enrollments))
-
-    expect(result.current.totalRevenue).toBe(1200)
-    expect(result.current.seasonStats.find(item => item.season === 'Season A').revenue).toBe(1200)
-  })
 })

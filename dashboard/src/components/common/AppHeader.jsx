@@ -22,7 +22,7 @@ export default function AppHeader({
         <div className="header-title-area">
           <FileSpreadsheet size={32} className="header-icon" />
           <div>
-            <h1 className="header-title">YMCA社教學員聯絡簿</h1>
+            <h1 className="header-title">YMCA樂齡學員資料聯絡簿</h1>
             <p className="header-subtitle">資訊整理與智慧查詢系統</p>
           </div>
           <div style={{ marginLeft: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>

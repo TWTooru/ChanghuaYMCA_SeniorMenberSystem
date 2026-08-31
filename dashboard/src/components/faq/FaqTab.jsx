@@ -72,7 +72,7 @@ const INITIAL_NOTES = [
 
 **Step 1. 進入 Supabase Dashboard**
 * 點擊右上角「Dashboard」，理論上會看到 Organizations。
-* [點此前往本專案 Supabase 捷徑](https://supabase.com/dashboard/project/hkmbzvyxynpqsxfsinht)
+* [點此前往本專案 Supabase 捷徑](https://supabase.com/dashboard/project/nychrjrezpuxwuurpcvh)
 
 ![1](/faq/q1/1.jpg)
 

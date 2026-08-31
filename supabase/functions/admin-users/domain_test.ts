@@ -41,12 +41,12 @@ Deno.test('required stored roles fail closed when missing or invalid', () => {
   }
 })
 
-Deno.test('only non-owner roles are assignable', () => {
+Deno.test('all roles including owner are assignable', () => {
   assertEquals(
-    ['viewer', 'editor', 'admin'].map(requireAssignableRole),
-    ['viewer', 'editor', 'admin'],
+    ['viewer', 'editor', 'admin', 'owner'].map(requireAssignableRole),
+    ['viewer', 'editor', 'admin', 'owner'],
   )
-  for (const value of ['owner', undefined, 'unknown']) {
+  for (const value of [undefined, 'unknown']) {
     assertApiError('INVALID_INPUT', () => requireAssignableRole(value))
   }
 })
@@ -153,20 +153,31 @@ Deno.test('a missing target role fails closed before role-specific checks', () =
   }
 })
 
-Deno.test('owners are protected from every other account manager and action', () => {
-  for (const actorRole of ['owner', 'admin'] as const) {
-    for (const action of mutationActions) {
-      assertApiError('OWNER_PROTECTED', () => {
-        assertTargetMutationAllowed({
-          actorId: `${actorRole}-actor`,
-          actorRole,
-          targetId: 'owner-target',
-          targetRole: 'owner',
-          action,
-          nextRole: action === 'update_role' ? 'viewer' : undefined,
-        })
+Deno.test('owners are protected from non-owner account managers across all actions', () => {
+  for (const action of mutationActions) {
+    assertApiError('OWNER_PROTECTED', () => {
+      assertTargetMutationAllowed({
+        actorId: 'admin-actor',
+        actorRole: 'admin',
+        targetId: 'owner-target',
+        targetRole: 'owner',
+        action,
+        nextRole: action === 'update_role' ? 'viewer' : undefined,
       })
-    }
+    })
+  }
+})
+
+Deno.test('owner can manage another owner across actions', () => {
+  for (const action of mutationActions) {
+    assertTargetMutationAllowed({
+      actorId: 'owner-actor-1',
+      actorRole: 'owner',
+      targetId: 'owner-actor-2',
+      targetRole: 'owner',
+      action,
+      nextRole: action === 'update_role' ? 'admin' : undefined,
+    })
   }
 })
 

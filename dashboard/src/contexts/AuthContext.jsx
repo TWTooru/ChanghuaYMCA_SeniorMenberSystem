@@ -115,6 +115,17 @@ export const AuthProvider = ({ children }) => {
 
     const authState = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!mountedRef.current) return
+      if (event === 'TOKEN_REFRESHED') return
+      // Supabase 在切回分頁時會因 visibilitychange 觸發 SIGNED_IN，
+      // 若使用者身份沒變就跳過，避免整頁資料重新載入。
+      if (
+        event === 'SIGNED_IN'
+        && sessionRef.current?.user?.id
+        && nextSession?.user?.id === sessionRef.current.user.id
+      ) {
+        sessionRef.current = nextSession
+        return
+      }
       if (event === 'PASSWORD_RECOVERY') setPasswordFlow('recovery')
       void applySession(nextSession)
     })

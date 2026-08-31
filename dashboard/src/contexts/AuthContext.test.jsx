@@ -235,29 +235,42 @@ describe('AuthProvider stored role lifecycle', () => {
     })
   })
 
-  it.each(['TOKEN_REFRESHED', 'USER_UPDATED'])(
-    'clears access and rereads the stored role on %s',
-    async (event) => {
-      const initialSession = createSession('event-user')
-      supabaseMocks.getSession.mockResolvedValue({ data: { session: initialSession }, error: null })
-      enqueueRoleRequest(storedRole('viewer'))
+  it('keeps ready access in place when the auth client refreshes a token', async () => {
+    const initialSession = createSession('event-user')
+    supabaseMocks.getSession.mockResolvedValue({ data: { session: initialSession }, error: null })
+    enqueueRoleRequest(storedRole('viewer'))
 
-      const view = renderProvider()
-      await screen.findByTestId('auth-probe')
-      expect(view.current().role).toBe('viewer')
+    const view = renderProvider()
+    await screen.findByTestId('auth-probe')
+    expect(view.current()).toMatchObject({ role: 'viewer', roleStatus: 'ready' })
 
-      const refreshedRole = createDeferred()
-      enqueueRoleRequest(refreshedRole.promise)
-      emitAuthEvent(event, createSession('event-user', { app_metadata: { role: 'owner' } }))
-      expect(screen.queryByTestId('auth-probe')).toBeNull()
+    emitAuthEvent('TOKEN_REFRESHED', createSession('event-user'))
 
-      await act(async () => {
-        refreshedRole.resolve(storedRole('editor'))
-      })
-      await screen.findByTestId('auth-probe')
-      expect(view.current()).toMatchObject({ role: 'editor', roleStatus: 'ready' })
-    },
-  )
+    expect(screen.getByTestId('auth-probe').textContent).toBe('event-user')
+    expect(view.current()).toMatchObject({ role: 'viewer', roleStatus: 'ready', loading: false })
+    expect(supabaseMocks.from).toHaveBeenCalledOnce()
+  })
+
+  it('clears access and rereads the stored role when a user is updated', async () => {
+    const initialSession = createSession('event-user')
+    supabaseMocks.getSession.mockResolvedValue({ data: { session: initialSession }, error: null })
+    enqueueRoleRequest(storedRole('viewer'))
+
+    const view = renderProvider()
+    await screen.findByTestId('auth-probe')
+    expect(view.current().role).toBe('viewer')
+
+    const refreshedRole = createDeferred()
+    enqueueRoleRequest(refreshedRole.promise)
+    emitAuthEvent('USER_UPDATED', createSession('event-user', { app_metadata: { role: 'owner' } }))
+    expect(screen.queryByTestId('auth-probe')).toBeNull()
+
+    await act(async () => {
+      refreshedRole.resolve(storedRole('editor'))
+    })
+    await screen.findByTestId('auth-probe')
+    expect(view.current()).toMatchObject({ role: 'editor', roleStatus: 'ready' })
+  })
 
   it('does not let an older slow lookup overwrite a newer signed-in session', async () => {
     const olderRole = createDeferred()
@@ -398,7 +411,7 @@ describe('AuthProvider stored role lifecycle', () => {
 
     const pendingRole = createDeferred()
     enqueueRoleRequest(pendingRole.promise)
-    emitAuthEvent('TOKEN_REFRESHED', createSession('mounted-user'))
+    emitAuthEvent('USER_UPDATED', createSession('mounted-user'))
     expect(supabaseMocks.from).toHaveBeenCalledTimes(2)
 
     view.unmount()
