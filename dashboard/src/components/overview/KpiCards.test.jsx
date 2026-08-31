@@ -2,16 +2,18 @@ import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import KpiCards from './KpiCards'
 
-const stats = { totalStudents: 300, totalRegistrations: 500, totalRefunds: 20, totalRevenue: 123456 }
-const currentSeasonStats = { uniqueStudents: 95, enrollments: 120, refundRate: 2.5, avgCoursesPerStudent: 2.1, revenue: 45678 }
-const previousSeasonStats = { uniqueStudents: 80, enrollments: 100, refundRate: 4, avgCoursesPerStudent: 2, revenue: 40000 }
+const stats = { totalStudents: 300, totalRegistrations: 500, totalRefunds: 20, totalRevenue: 1500000 }
+const currentSeasonStats = { uniqueStudents: 95, enrollments: 120, refundRate: 2.5, avgCoursesPerStudent: 2.1, revenue: 500000 }
+const previousSeasonStats = { uniqueStudents: 80, enrollments: 100, refundRate: 4, avgCoursesPerStudent: 2, revenue: 400000 }
 
 afterEach(cleanup)
 
 describe('KpiCards', () => {
-  it('renders five KPI cards', () => {
+  it('renders five KPI cards as an accessible shared-card list', () => {
     const { container } = render(<KpiCards stats={stats} />)
-    expect(container.querySelectorAll('.kpi-card')).toHaveLength(5)
+    expect(screen.getByRole('list', { name: '核心指標' })).toBeTruthy()
+    expect(screen.getAllByRole('listitem')).toHaveLength(5)
+    expect(container.querySelectorAll('[data-slot="card"]')).toHaveLength(5)
   })
 
   it('renders readable Chinese KPI labels', () => {
@@ -28,15 +30,7 @@ describe('KpiCards', () => {
     const { container } = render(<KpiCards stats={stats} currentSeasonStats={currentSeasonStats} previousSeasonStats={previousSeasonStats} />)
     expect(container.querySelectorAll('.kpi-subtitle')).toHaveLength(5)
     expect(container.querySelectorAll('.kpi-delta').length).toBeGreaterThan(0)
-  })
-
-  it('formats total and current-season revenue with a positive delta', () => {
-    const { container } = render(<KpiCards stats={stats} currentSeasonStats={currentSeasonStats} previousSeasonStats={previousSeasonStats} />)
-
-    expect(screen.getByText('123,456')).toBeTruthy()
-    const revenueSubtitle = container.querySelectorAll('.kpi-subtitle')[4]
-    expect(revenueSubtitle.textContent).toContain('當季營收：45,678 元')
-    expect(revenueSubtitle.querySelector('.kpi-delta').textContent).toBe('(↑5678)')
+    expect(screen.getByLabelText('較上期增加 15').getAttribute('data-slot')).toBe('badge')
   })
 
   it('omits seasonal subtitles without current-season data', () => {

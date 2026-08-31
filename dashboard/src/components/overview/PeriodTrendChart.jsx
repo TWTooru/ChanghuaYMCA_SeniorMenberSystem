@@ -1,0 +1,28 @@
+import { Progress } from '@/components/ui/progress'
+
+export default function PeriodTrendChart({ periodStats = [] }) {
+  if (!periodStats || periodStats.length === 0) {
+    return <p style={{ color: 'var(--text-muted)' }}>尚無歷期資料</p>;
+  }
+
+  const maxEnrollments = Math.max(...periodStats.map(p => p.enrollments), 1);
+
+  return (
+    <div className="period-trend-chart">
+      {periodStats.map(p => {
+        const percentage = (p.enrollments / maxEnrollments) * 100;
+        return (
+          <div key={p.period} className="trend-bar-row">
+            <div className="trend-label">{p.period}</div>
+            <Progress
+              value={percentage}
+              aria-label={`${p.period}報名趨勢`}
+              className="trend-bar-track"
+            />
+            <div className="trend-value">{p.enrollments} 人次</div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
