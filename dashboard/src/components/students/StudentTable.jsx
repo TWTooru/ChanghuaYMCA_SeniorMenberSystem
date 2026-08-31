@@ -8,6 +8,27 @@ import {
   ArrowUp,
   ArrowDown
 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+
+const pageSizeOptions = [10, 20, 50, 100].map(size => ({
+  label: `${size} 筆/頁`,
+  value: String(size),
+}))
 
 export default function StudentTable({
   students,
@@ -50,58 +71,59 @@ export default function StudentTable({
   const getAriaSort = (field) => sortField === field ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'
 
   return (
-    <div className="table-wrapper">
+    <div className="table-wrapper student-table">
       <div className="table-scroll">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th aria-sort={getAriaSort('student_id')}>
+        <Table className="data-table">
+          <TableHeader>
+            <TableRow>
+              <TableHead aria-sort={getAriaSort('student_id')}>
                 <button type="button" className="table-sort-button" onClick={() => onSort('student_id')}>
                   學員ID
                   {renderSortIcon('student_id')}
                 </button>
-              </th>
-              <th aria-sort={getAriaSort('name')}>
+              </TableHead>
+              <TableHead aria-sort={getAriaSort('name')}>
                 <button type="button" className="table-sort-button" onClick={() => onSort('name')}>
                   姓名
                   {renderSortIcon('name')}
                 </button>
-              </th>
-              <th>性別</th>
-              <th>目前年齡</th>
-              <th>出生日期</th>
-              <th>手機電話</th>
-              <th>緊急聯絡人</th>
-              <th>關係</th>
-              <th>教育程度</th>
-              <th>現況操作</th>
-            </tr>
-          </thead>
-          <tbody>
+              </TableHead>
+              <TableHead>性別</TableHead>
+              <TableHead>目前年齡</TableHead>
+              <TableHead>出生日期</TableHead>
+              <TableHead>手機電話</TableHead>
+              <TableHead>緊急聯絡人</TableHead>
+              <TableHead>關係</TableHead>
+              <TableHead>教育程度</TableHead>
+              <TableHead>現況操作</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {students && students.length > 0 ? (
               students.map(s => (
-                <tr 
+                <TableRow 
                   key={s.student_id} 
                   className="clickable"
                   onClick={() => onSelectStudent(s, 'profile')}
                   id={`row-student-${s.student_id}`}
                 >
-                  <td className="table-cell-bold">{s.student_id}</td>
-                  <td className="table-cell-bold">{s.name}</td>
-                  <td>
+                  <TableCell className="table-cell-bold">{s.student_id}</TableCell>
+                  <TableCell className="table-cell-bold">{s.name}</TableCell>
+                  <TableCell>
                     <span className={`badge ${s.gender === '男' ? 'neutral' : 'accent'}`}>
                       {s.gender || '未知'}
                     </span>
-                  </td>
-                  <td>{s.age ? `${s.age} 歲` : '未知'}</td>
-                  <td>{s.birth_date || '--'}</td>
-                  <td>{s.mobile_phone || '--'}</td>
-                  <td>{s.emergency_contact || '--'}</td>
-                  <td>{s.relationship || '--'}</td>
-                  <td>{s.education || '--'}</td>
-                  <td>
-                    <button 
+                  </TableCell>
+                  <TableCell>{s.age ? `${s.age} 歲` : '未知'}</TableCell>
+                  <TableCell>{s.birth_date || '--'}</TableCell>
+                  <TableCell>{s.mobile_phone || '--'}</TableCell>
+                  <TableCell>{s.emergency_contact || '--'}</TableCell>
+                  <TableCell>{s.relationship || '--'}</TableCell>
+                  <TableCell>{s.education || '--'}</TableCell>
+                  <TableCell>
+                    <Button 
                       type="button"
+                      variant="secondary"
                       className="btn-secondary" 
                       style={{ padding: '4px 8px', fontSize: '12px' }}
                       onClick={(e) => {
@@ -110,19 +132,19 @@ export default function StudentTable({
                       }}
                     >
                       查看歷程
-                    </button>
-                  </td>
-                </tr>
+                    </Button>
+                  </TableCell>
+                </TableRow>
               ))
             ) : (
-              <tr>
-                <td colSpan={10} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
+              <TableRow>
+                <TableCell colSpan={10} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
                   未找到符合條件的學員資料。
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             )}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
 
       {/* 目前篩選結果的分頁控制項。 */}
@@ -130,15 +152,30 @@ export default function StudentTable({
         <div className="footer-info">
           顯示第 {totalFilteredCount > 0 ? (studentPage - 1) * itemsPerPage + 1 : 0} 至 {Math.min(studentPage * itemsPerPage, totalFilteredCount)} 筆學員（共 {totalFilteredCount} 筆）
         </div>
-        <label className="page-size-selector">
-          每頁筆數
-          <select aria-label="每頁筆數" value={itemsPerPage} onChange={event => onPageSizeChange(Number(event.target.value))}>
-            {[10, 20, 50, 100].map(size => <option key={size} value={size}>{size}</option>)}
-          </select>
-        </label>
+        <div className="page-size-selector">
+          <label htmlFor="student-page-size">每頁筆數</label>
+          <Select
+            items={pageSizeOptions}
+            value={String(itemsPerPage)}
+            onValueChange={value => onPageSizeChange(Number(value))}
+          >
+            <SelectTrigger id="student-page-size" aria-label="每頁筆數" size="sm" className="page-size-trigger">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="end">
+              {pageSizeOptions.map(option => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <div className="pagination-buttons">
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="icon-sm"
             className="btn-secondary"
             onClick={() => onPageChange(1)}
             disabled={studentPage === 1}
@@ -147,16 +184,19 @@ export default function StudentTable({
             title="跳至最前頁"
           >
             <ChevronsLeft size={16} style={{ display: 'block' }} />
-          </button>
-          <button 
+          </Button>
+          <Button 
             type="button"
+            variant="outline"
+            size="icon-sm"
             className="btn-secondary"
             onClick={() => onPageChange(Math.max(studentPage - 1, 1))}
             disabled={studentPage === 1}
             id="btn-student-prev"
+            aria-label="上一頁"
           >
             <ChevronLeft size={16} style={{ display: 'block' }} />
-          </button>
+          </Button>
 
           {pageNumbers.map((page, index) => {
             if (page === '...') {
@@ -178,11 +218,15 @@ export default function StudentTable({
             }
             const isActive = page === studentPage
             return (
-              <button
+              <Button
                 key={`page-${page}`}
                 type="button"
+                variant={isActive ? 'default' : 'outline'}
+                size="icon-sm"
                 className={`btn-secondary ${isActive ? 'active' : ''}`}
                 onClick={() => onPageChange(page)}
+                aria-label={`第 ${page} 頁`}
+                aria-current={isActive ? 'page' : undefined}
                 style={isActive ? { 
                   backgroundColor: 'var(--color-accent)', 
                   borderColor: 'var(--color-accent)', 
@@ -191,21 +235,26 @@ export default function StudentTable({
                 } : undefined}
               >
                 {page}
-              </button>
+              </Button>
             )
           })}
 
-          <button 
+          <Button 
             type="button"
+            variant="outline"
+            size="icon-sm"
             className="btn-secondary"
             onClick={() => onPageChange(Math.min(studentPage + 1, totalStudentPages))}
             disabled={studentPage === totalStudentPages}
             id="btn-student-next"
+            aria-label="下一頁"
           >
             <ChevronRight size={16} style={{ display: 'block' }} />
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="outline"
+            size="icon-sm"
             className="btn-secondary"
             onClick={() => onPageChange(totalStudentPages)}
             disabled={studentPage === totalStudentPages}
@@ -214,7 +263,7 @@ export default function StudentTable({
             title="跳至最尾頁"
           >
             <ChevronsRight size={16} style={{ display: 'block' }} />
-          </button>
+          </Button>
         </div>
       </div>
     </div>

@@ -98,11 +98,16 @@ describe('StudentListTab list navigation', () => {
     expect(screen.queryByText(student.name)).toBeNull()
   })
 
-  it('changes page size and returns to the first page', () => {
+  it('changes page size and returns to the first page', async () => {
     render(<StudentListTab students={makeStudents(25)} enrollments={[]} onSelectStudent={vi.fn()} />)
 
     fireEvent.click(document.getElementById('btn-student-last'))
-    fireEvent.change(document.querySelector('.page-size-selector select'), { target: { value: '20' } })
+    expect(screen.getByText('Student 21')).not.toBeNull()
+
+    fireEvent.click(screen.getByRole('combobox', { name: '每頁筆數' }))
+    const option = await screen.findByRole('option', { name: '20 筆/頁' })
+    fireEvent.pointerDown(option, { pointerType: 'mouse' })
+    fireEvent.click(option)
 
     expect(screen.getByText('Student 1')).not.toBeNull()
     expect(screen.queryByText('Student 21')).toBeNull()
