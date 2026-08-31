@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { AlertCircle } from 'lucide-react'
 import useModalA11y from '../../hooks/useModalA11y'
+import useBodyScrollLock from '../../hooks/useBodyScrollLock'
 
 /** 可重用的破壞性操作確認層；是否允許操作仍由呼叫端與後端決定。 */
 function OpenConfirmDialog({ title, message, confirmLabel = '確認刪除', cancelLabel = '取消', tone = 'danger', onConfirm, onCancel }) {
@@ -28,5 +29,6 @@ function OpenConfirmDialog({ title, message, confirmLabel = '確認刪除', canc
 }
 
 export default function ConfirmDialog({ isOpen, ...props }) {
+  useBodyScrollLock(isOpen)
   return isOpen ? <OpenConfirmDialog {...props} /> : null
 }
