@@ -1,5 +1,5 @@
 begin;
-select plan(41);
+select no_plan();
 
 select has_table('public', 'app_user_roles', 'authoritative role table exists');
 select has_column('public', 'app_user_roles', 'user_id', 'role row references an auth user');
@@ -7,8 +7,15 @@ select has_column('public', 'app_user_roles', 'role', 'role value is stored in t
 select col_is_pk('public', 'app_user_roles', 'user_id', 'user_id is the primary key');
 
 insert into auth.users (id, email, raw_app_meta_data, raw_user_meta_data)
+values (
+  '10000000-0000-4000-8000-000000000001',
+  'admin@admin.com',
+  '{"app_role":"viewer"}',
+  '{}'
+);
+
+insert into auth.users (id, email, raw_app_meta_data, raw_user_meta_data)
 values
-  ('10000000-0000-4000-8000-000000000001', 'admin@admin.com', '{"app_role":"viewer"}', '{}'),
   ('10000000-0000-4000-8000-000000000002', 'stern4310910040@gmail.com', '{"app_role":"admin"}', '{}'),
   ('10000000-0000-4000-8000-000000000003', 'editor.fixture@example.com', '{"app_role":"editor"}', '{}'),
   ('10000000-0000-4000-8000-000000000004', 'deleted.fixture@example.com', '{"app_role":"admin"}', '{}');
@@ -32,21 +39,95 @@ select throws_like(
   '%violates check constraint "app_user_roles_role_check"%',
   'role values outside the supported application roles are rejected'
 );
+select is(
+  (
+    select count(*)::integer
+    from pg_catalog.pg_class relation
+    join pg_catalog.pg_namespace namespace_record
+      on namespace_record.oid = relation.relnamespace
+    where namespace_record.nspname = 'public'
+      and relation.relname = 'app_user_roles_single_owner_idx'
+  ),
+  0,
+  'the single-owner partial unique index is removed'
+);
+
+select has_table(
+  'private',
+  'owner_invariant',
+  'the private owner invariant table exists'
+);
+
+select is(
+  (
+    select count(*)::integer
+    from private.owner_invariant
+    where singleton is true
+  ),
+  1,
+  'the owner invariant has exactly one singleton row'
+);
+
+select has_trigger(
+  'public',
+  'app_user_roles',
+  'maintain_owner_invariant_after_change',
+  'role changes maintain the owner invariant'
+);
+
 select ok(
   exists (
     select 1
-    from pg_catalog.pg_index index_record
-    join pg_catalog.pg_class index_relation
-      on index_relation.oid = index_record.indexrelid
-    where index_record.indrelid = 'public.app_user_roles'::pg_catalog.regclass
-      and index_relation.relname = 'app_user_roles_single_owner_idx'
-      and index_record.indisunique
-      and pg_catalog.pg_get_expr(
-        index_record.indpred,
-        index_record.indrelid
-      ) like '%role%owner%'
+    from pg_catalog.pg_class relation
+    where relation.oid = 'private.owner_invariant'::pg_catalog.regclass
+      and relation.relowner = 'postgres'::pg_catalog.regrole
+      and relation.relrowsecurity
+      and not exists (
+        select 1
+        from pg_catalog.aclexplode(
+          coalesce(
+            relation.relacl,
+            pg_catalog.acldefault('r', relation.relowner)
+          )
+        ) access_entry
+        where access_entry.grantee in (
+          0,
+          'anon'::pg_catalog.regrole,
+          'authenticated'::pg_catalog.regrole,
+          'service_role'::pg_catalog.regrole
+        )
+      )
+  )
+  and not pg_catalog.has_schema_privilege('anon', 'private', 'usage')
+  and not pg_catalog.has_schema_privilege('authenticated', 'private', 'usage')
+  and not pg_catalog.has_schema_privilege('service_role', 'private', 'usage'),
+  'the postgres-owned invariant is RLS-protected and private from application roles'
+);
+
+select ok(
+  exists (
+    select 1
+    from pg_catalog.pg_proc procedure_record
+    join pg_catalog.pg_language language_record
+      on language_record.oid = procedure_record.prolang
+    where procedure_record.oid =
+          'private.maintain_owner_invariant()'::pg_catalog.regprocedure
+      and procedure_record.proowner = 'postgres'::pg_catalog.regrole
+      and language_record.lanname = 'plpgsql'
+      and procedure_record.prosecdef
+      and procedure_record.provolatile = 'v'
+      and procedure_record.proconfig = array['search_path=""']::text[]
+      and not pg_catalog.has_function_privilege(
+        'anon', procedure_record.oid, 'execute'
+      )
+      and not pg_catalog.has_function_privilege(
+        'authenticated', procedure_record.oid, 'execute'
+      )
+      and not pg_catalog.has_function_privilege(
+        'service_role', procedure_record.oid, 'execute'
+      )
   ),
-  'a partial unique index enforces the single-owner invariant'
+  'the invariant trigger function is hardened and trigger-only'
 );
 select ok(
   (
@@ -144,7 +225,7 @@ select is(
     where user_id = '10000000-0000-4000-8000-000000000001'
   ),
   'owner',
-  'the fixed owner email is always created as owner'
+  'the first Auth account bootstraps as owner'
 );
 select is(
   (
@@ -158,7 +239,33 @@ select is(
 select is(
   (select count(*)::integer from public.app_user_roles where role = 'owner'),
   1,
-  'exactly one stored owner exists'
+  'the bootstrap creates exactly one stored owner'
+);
+
+update public.app_user_roles
+set role = 'owner'
+where user_id = '10000000-0000-4000-8000-000000000003';
+
+select is(
+  (select count(*)::integer from public.app_user_roles where role = 'owner'),
+  2,
+  'multiple owners can coexist'
+);
+
+select is(
+  (select owner_count from private.owner_invariant where singleton is true),
+  (select count(*)::integer from public.app_user_roles where role = 'owner'),
+  'the invariant counter matches the authoritative role rows after promotion'
+);
+
+update public.app_user_roles
+set role = 'viewer'
+where user_id = '10000000-0000-4000-8000-000000000003';
+
+select is(
+  (select owner_count from private.owner_invariant where singleton is true),
+  1,
+  'a non-last owner can be demoted'
 );
 
 select is(
@@ -186,13 +293,81 @@ select is(
 );
 select is(
   private.resolve_initial_app_role(
-    'legacy-owner.fixture@example.com',
+    'admin@admin.com',
     'owner',
-    true
+    false
   ),
   'viewer',
-  'backfill rejects a legacy owner role for any other email'
+  'the former bootstrap Email has no permanent privilege after owner initialization'
 );
+
+savepoint reject_last_owner_update;
+select throws_ok(
+  $$update public.app_user_roles
+    set role = 'admin'
+    where user_id = '10000000-0000-4000-8000-000000000001'$$,
+  'P0001',
+  'LAST_OWNER_REQUIRED',
+  'the final owner cannot be demoted directly'
+);
+rollback to savepoint reject_last_owner_update;
+
+savepoint reject_last_owner_role_delete;
+select throws_ok(
+  $$delete from public.app_user_roles
+    where user_id = '10000000-0000-4000-8000-000000000001'$$,
+  'P0001',
+  'LAST_OWNER_REQUIRED',
+  'the final owner role row cannot be deleted directly'
+);
+rollback to savepoint reject_last_owner_role_delete;
+
+savepoint reject_last_owner_auth_delete;
+select throws_ok(
+  $$delete from auth.users
+    where id = '10000000-0000-4000-8000-000000000001'$$,
+  'P0001',
+  'LAST_OWNER_REQUIRED',
+  'an Auth cascade cannot delete the final owner'
+);
+rollback to savepoint reject_last_owner_auth_delete;
+
+savepoint allow_non_last_owner_auth_delete;
+update public.app_user_roles
+set role = 'owner'
+where user_id = '10000000-0000-4000-8000-000000000003';
+delete from auth.users
+where id = '10000000-0000-4000-8000-000000000003';
+select is(
+  (select owner_count from private.owner_invariant where singleton is true),
+  1,
+  'Auth cascade can delete a non-last owner'
+);
+rollback to savepoint allow_non_last_owner_auth_delete;
+
+savepoint fixed_email_has_no_permanent_privilege;
+update public.app_user_roles
+set role = 'owner'
+where user_id = '10000000-0000-4000-8000-000000000003';
+delete from auth.users
+where id = '10000000-0000-4000-8000-000000000001';
+insert into auth.users (id, email, raw_app_meta_data, raw_user_meta_data)
+values (
+  '10000000-0000-4000-8000-000000000001',
+  'admin@admin.com',
+  '{"app_role":"owner"}',
+  '{}'
+);
+select is(
+  (
+    select role
+    from public.app_user_roles
+    where user_id = '10000000-0000-4000-8000-000000000001'
+  ),
+  'viewer',
+  'a recreated former bootstrap Email is viewer while another owner exists'
+);
+rollback to savepoint fixed_email_has_no_permanent_privilege;
 
 select pg_catalog.set_config(
   'request.jwt.claims',
