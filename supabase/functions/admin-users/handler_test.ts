@@ -27,7 +27,7 @@ type FakeOptions = {
   updateError?: boolean
   inviteError?: boolean
   inviteRole?: AppRole | null
-  deleteError?: boolean | 'LAST_OWNER_REQUIRED'
+  deleteError?: boolean
   ownerCounts?: number[]
   resendError?: boolean
   resetError?: boolean
@@ -128,7 +128,6 @@ function fakeDeps({
     },
     async deleteUser(userId: string) {
       calls.push({ name: 'deleteUser', args: [userId] })
-      if (deleteError === 'LAST_OWNER_REQUIRED') throw new ApiError('LAST_OWNER_REQUIRED')
       if (deleteError) throw new Error('delete failed')
       deps.users = deps.users.filter(user => user.id !== userId)
       deps.roles.delete(userId)
@@ -653,12 +652,59 @@ Deno.test('delete Auth failure stays SUPABASE_AUTH_ERROR when the recheck finds 
   })
 })
 
-Deno.test('role-store LAST_OWNER_REQUIRED rejection completes a failure audit', async () => {
-  const deps = fakeDeps({ actorRole: 'owner', deleteError: 'LAST_OWNER_REQUIRED', ownerCounts: [2] })
+Deno.test('rechecks the target role and owner count concurrently after a delete Auth failure', async () => {
+  const deps = fakeDeps({ actorRole: 'owner', deleteError: true, ownerCounts: [2] })
   addTarget(deps, 'owner-target', 'owner')
+  const originalGetRole = deps.getRole
+  const originalCountOwners = deps.countOwners
+  let targetRoleReads = 0
+  let releaseRecheckRole: (role: AppRole | null) => void = () => undefined
+  let markRecheckRoleStarted: () => void = () => undefined
+  const recheckRoleStarted = new Promise<void>(resolve => {
+    markRecheckRoleStarted = resolve
+  })
+  let ownerCountReads = 0
+  let recheckCountStarted = false
+
+  deps.getRole = async userId => {
+    if (userId !== 'owner-target' || targetRoleReads++ === 0) return await originalGetRole(userId)
+    markRecheckRoleStarted()
+    return await new Promise<AppRole | null>(resolve => {
+      releaseRecheckRole = resolve
+    })
+  }
+  deps.countOwners = async () => {
+    ownerCountReads++
+    if (ownerCountReads === 2) {
+      recheckCountStarted = true
+      return 1
+    }
+    return await originalCountOwners()
+  }
+
+  const pendingResponse = createAdminUsersHandler(deps)(request({
+    action: 'delete_user', userId: 'owner-target', confirmEmail: 'owner-target@example.com',
+  }))
+  await recheckRoleStarted
+  await Promise.resolve()
+
+  assertEquals(recheckCountStarted, true)
+  releaseRecheckRole('owner')
+  const response = await pendingResponse
+
+  assertEquals(response.status, 409)
+  assertEquals((await response.json() as any).error.code, 'LAST_OWNER_REQUIRED')
+})
+
+Deno.test('role-store LAST_OWNER_REQUIRED rejection completes an update-role failure audit', async () => {
+  const deps = fakeDeps({ actorRole: 'owner' })
+  addTarget(deps, 'owner-target', 'owner')
+  deps.updateRole = async () => {
+    throw new ApiError('LAST_OWNER_REQUIRED')
+  }
 
   const response = await createAdminUsersHandler(deps)(request({
-    action: 'delete_user', userId: 'owner-target', confirmEmail: 'owner-target@example.com',
+    action: 'update_role', userId: 'owner-target', role: 'viewer',
   }))
 
   assertEquals(response.status, 409)

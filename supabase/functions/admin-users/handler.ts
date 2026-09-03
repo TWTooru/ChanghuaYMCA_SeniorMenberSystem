@@ -144,7 +144,8 @@ async function loadTarget(deps: HandlerDeps, userId: unknown) {
 
 async function isTargetSoleOwner(deps: HandlerDeps, userId: string): Promise<boolean> {
   try {
-    return await deps.getRole(userId) === 'owner' && await deps.countOwners() === 1
+    const [role, ownerCount] = await Promise.all([deps.getRole(userId), deps.countOwners()])
+    return role === 'owner' && ownerCount === 1
   } catch {
     return false
   }
