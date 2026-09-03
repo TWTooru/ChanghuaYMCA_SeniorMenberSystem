@@ -216,18 +216,20 @@ Deno.test('admin cannot resend or reset credentials for another admin', () => {
   }
 })
 
-Deno.test('admin cannot promote viewer or editor targets to admin', () => {
+Deno.test('admin cannot promote viewer or editor targets to privileged roles', () => {
   for (const targetRole of ['viewer', 'editor'] as const) {
-    assertApiError('OWNER_REQUIRED', () => {
-      assertTargetMutationAllowed({
-        actorId: 'admin-id',
-        actorRole: 'admin',
-        targetId: `${targetRole}-id`,
-        targetRole,
-        action: 'update_role',
-        nextRole: 'admin',
+    for (const nextRole of ['admin', 'owner'] as const) {
+      assertApiError('OWNER_REQUIRED', () => {
+        assertTargetMutationAllowed({
+          actorId: 'admin-id',
+          actorRole: 'admin',
+          targetId: `${targetRole}-id`,
+          targetRole,
+          action: 'update_role',
+          nextRole,
+        })
       })
-    })
+    }
   }
 })
 
