@@ -1,4 +1,5 @@
 import { assertEquals } from 'jsr:@std/assert'
+import { ApiError } from './domain.ts'
 import {
   createAdminUsersHandler,
   type AuthUser,
@@ -7,12 +8,14 @@ import {
 } from './handler.ts'
 import type { AccountMutationAction, AppRole, AssignableRole } from './domain.ts'
 
-type RecordedCall = { name: keyof HandlerDeps; args: unknown[] }
+type RecordedCall = { name: keyof HandlerDeps | 'countOwners'; args: unknown[] }
 
 type FakeDeps = HandlerDeps & {
   actor: AuthUser | null
   users: AuthUser[]
   roles: Map<string, AppRole>
+  ownerCounts: number[]
+  countOwners(): Promise<number>
   auditLogs: Record<string, unknown>[]
   calls: RecordedCall[]
   insertedAudits: Record<string, unknown>[]
@@ -24,7 +27,8 @@ type FakeOptions = {
   updateError?: boolean
   inviteError?: boolean
   inviteRole?: AppRole | null
-  deleteError?: boolean
+  deleteError?: boolean | 'LAST_OWNER_REQUIRED'
+  ownerCounts?: number[]
   resendError?: boolean
   resetError?: boolean
   insertAuditError?: boolean
@@ -63,6 +67,7 @@ function fakeDeps({
   inviteError = false,
   inviteRole = 'viewer',
   deleteError = false,
+  ownerCounts = [2],
   resendError = false,
   resetError = false,
   insertAuditError = false,
@@ -75,6 +80,7 @@ function fakeDeps({
     actor: signedInUser('actor', 'actor@example.com', actorMetadataRole),
     users: [] as AuthUser[],
     roles: new Map<string, AppRole>(),
+    ownerCounts: [...ownerCounts],
     auditLogs: [] as Record<string, unknown>[],
     calls,
     insertedAudits: [] as Record<string, unknown>[],
@@ -116,8 +122,13 @@ function fakeDeps({
       deps.roles.set(userId, role)
       return { userId, role }
     },
+    async countOwners() {
+      calls.push({ name: 'countOwners', args: [] })
+      return deps.ownerCounts.shift() ?? 0
+    },
     async deleteUser(userId: string) {
       calls.push({ name: 'deleteUser', args: [userId] })
+      if (deleteError === 'LAST_OWNER_REQUIRED') throw new ApiError('LAST_OWNER_REQUIRED')
       if (deleteError) throw new Error('delete failed')
       deps.users = deps.users.filter(user => user.id !== userId)
       deps.roles.delete(userId)
@@ -154,7 +165,7 @@ function fakeDeps({
   return deps
 }
 
-function callsNamed(deps: FakeDeps, name: keyof HandlerDeps) {
+function callsNamed(deps: FakeDeps, name: RecordedCall['name']) {
   return deps.calls.filter(call => call.name === name)
 }
 
@@ -587,6 +598,74 @@ Deno.test('email confirmation mismatch is audited before delete and blocks delet
   assertEquals((await response.json() as any).error.code, 'EMAIL_CONFIRMATION_MISMATCH')
   assertEquals(callsNamed(deps, 'deleteUser').length, 0)
   assertEquals(deps.completedAudits[0]?.errorCode, 'EMAIL_CONFIRMATION_MISMATCH')
+})
+
+Deno.test('deleting the known final owner returns LAST_OWNER_REQUIRED without calling Auth Admin', async () => {
+  const deps = fakeDeps({ actorRole: 'owner', ownerCounts: [1] })
+  addTarget(deps, 'owner-target', 'owner')
+
+  const response = await createAdminUsersHandler(deps)(request({
+    action: 'delete_user', userId: 'owner-target', confirmEmail: 'owner-target@example.com',
+  }))
+
+  assertEquals(response.status, 409)
+  assertEquals((await response.json() as any).error.code, 'LAST_OWNER_REQUIRED')
+  assertEquals(callsNamed(deps, 'deleteUser').length, 0)
+  assertEquals(deps.completedAudits[0], {
+    id: 'audit-1', status: 'failure', errorCode: 'LAST_OWNER_REQUIRED',
+  })
+})
+
+Deno.test('delete Auth failure becomes LAST_OWNER_REQUIRED when a fresh recheck finds the target is sole owner', async () => {
+  const deps = fakeDeps({ actorRole: 'owner', deleteError: true, ownerCounts: [2, 1] })
+  addTarget(deps, 'owner-target', 'owner')
+
+  const response = await createAdminUsersHandler(deps)(request({
+    action: 'delete_user', userId: 'owner-target', confirmEmail: 'owner-target@example.com',
+  }))
+
+  assertEquals(response.status, 409)
+  assertEquals((await response.json() as any).error.code, 'LAST_OWNER_REQUIRED')
+  assertEquals(callsNamed(deps, 'deleteUser').length, 1)
+  assertEquals(callsNamed(deps, 'getRole').map(call => call.args), [
+    ['actor'], ['owner-target'], ['owner-target'],
+  ])
+  assertEquals(callsNamed(deps, 'countOwners').length, 2)
+  assertEquals(deps.completedAudits[0], {
+    id: 'audit-1', status: 'failure', errorCode: 'LAST_OWNER_REQUIRED',
+  })
+})
+
+Deno.test('delete Auth failure stays SUPABASE_AUTH_ERROR when the recheck finds another owner', async () => {
+  const deps = fakeDeps({ actorRole: 'owner', deleteError: true, ownerCounts: [2, 2] })
+  addTarget(deps, 'owner-target', 'owner')
+
+  const response = await createAdminUsersHandler(deps)(request({
+    action: 'delete_user', userId: 'owner-target', confirmEmail: 'owner-target@example.com',
+  }))
+
+  assertEquals(response.status, 502)
+  assertEquals((await response.json() as any).error.code, 'SUPABASE_AUTH_ERROR')
+  assertEquals(callsNamed(deps, 'deleteUser').length, 1)
+  assertEquals(callsNamed(deps, 'countOwners').length, 2)
+  assertEquals(deps.completedAudits[0], {
+    id: 'audit-1', status: 'failure', errorCode: 'SUPABASE_AUTH_ERROR',
+  })
+})
+
+Deno.test('role-store LAST_OWNER_REQUIRED rejection completes a failure audit', async () => {
+  const deps = fakeDeps({ actorRole: 'owner', deleteError: 'LAST_OWNER_REQUIRED', ownerCounts: [2] })
+  addTarget(deps, 'owner-target', 'owner')
+
+  const response = await createAdminUsersHandler(deps)(request({
+    action: 'delete_user', userId: 'owner-target', confirmEmail: 'owner-target@example.com',
+  }))
+
+  assertEquals(response.status, 409)
+  assertEquals((await response.json() as any).error.code, 'LAST_OWNER_REQUIRED')
+  assertEquals(deps.completedAudits[0], {
+    id: 'audit-1', status: 'failure', errorCode: 'LAST_OWNER_REQUIRED',
+  })
 })
 
 Deno.test('unknown target fails before role lookup or audit insertion', async () => {

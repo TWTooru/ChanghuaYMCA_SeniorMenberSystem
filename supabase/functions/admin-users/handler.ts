@@ -35,6 +35,7 @@ export type HandlerDeps = {
   listRoles(userIds: string[]): Promise<RoleRecord[]>
   inviteUser(email: string): Promise<AuthUser>
   updateRole(userId: string, role: AssignableRole): Promise<RoleRecord>
+  countOwners(): Promise<number>
   deleteUser(userId: string): Promise<void>
   resendInvite(email: string): Promise<void>
   sendPasswordReset(email: string): Promise<void>
@@ -139,6 +140,14 @@ async function loadTarget(deps: HandlerDeps, userId: unknown) {
   const users = await deps.listUsers()
   const user = findTarget(users, userId)
   return { user, role: await deps.getRole(user.id) }
+}
+
+async function isTargetSoleOwner(deps: HandlerDeps, userId: string): Promise<boolean> {
+  try {
+    return await deps.getRole(userId) === 'owner' && await deps.countOwners() === 1
+  } catch {
+    return false
+  }
 }
 
 function targetAuditRow(
@@ -249,7 +258,17 @@ async function handleMutation(
           throw new ApiError('EMAIL_CONFIRMATION_MISMATCH')
         }
         assertTargetAllowed(actor, target, action)
-        await deps.deleteUser(target.user.id)
+        if (target.role === 'owner' && await deps.countOwners() <= 1) {
+          throw new ApiError('LAST_OWNER_REQUIRED')
+        }
+        try {
+          await deps.deleteUser(target.user.id)
+        } catch (caught) {
+          if (target.role === 'owner' && await isTargetSoleOwner(deps, target.user.id)) {
+            throw new ApiError('LAST_OWNER_REQUIRED')
+          }
+          throw caught
+        }
       })
       return json(200, { deletedUserId: target.user.id })
     }
