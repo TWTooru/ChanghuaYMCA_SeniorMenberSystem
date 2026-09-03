@@ -1,6 +1,6 @@
 /** Pure request validation and account-management authorization rules. */
 export const APP_ROLES = ['viewer', 'editor', 'admin', 'owner'] as const
-export const ASSIGNABLE_ROLES = ['viewer', 'editor', 'admin'] as const
+export const ASSIGNABLE_ROLES = ['viewer', 'editor', 'admin', 'owner'] as const
 
 export type AppRole = typeof APP_ROLES[number]
 export type AssignableRole = typeof ASSIGNABLE_ROLES[number]
@@ -39,6 +39,7 @@ export const ERROR_STATUS = {
   SELF_MUTATION_FORBIDDEN: 409,
   ROLE_NOT_ASSIGNED: 403,
   OWNER_PROTECTED: 409,
+  LAST_OWNER_REQUIRED: 409,
   ADMIN_TARGET_FORBIDDEN: 403,
   OWNER_REQUIRED: 403,
   ROLE_STORE_ERROR: 500,
@@ -122,7 +123,7 @@ export function assertTargetMutationAllowed(input: {
   }
 
   const targetRole = requireStoredRole(input.targetRole)
-  if (targetRole === 'owner') throw new ApiError('OWNER_PROTECTED')
+  if (targetRole === 'owner' && input.actorRole !== 'owner') throw new ApiError('OWNER_PROTECTED')
 
   if (input.actorRole === 'admin' && targetRole === 'admin') {
     if (input.action === 'update_role' || input.action === 'delete_user') {
@@ -132,6 +133,10 @@ export function assertTargetMutationAllowed(input: {
   }
 
   if (input.actorRole === 'admin' && input.nextRole === 'admin') {
+    throw new ApiError('OWNER_REQUIRED')
+  }
+
+  if (input.actorRole === 'admin' && input.nextRole === 'owner') {
     throw new ApiError('OWNER_REQUIRED')
   }
 
