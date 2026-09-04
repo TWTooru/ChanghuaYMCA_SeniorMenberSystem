@@ -235,7 +235,7 @@ export default function UserManualTab({ role = 'editor' }) {
                   <tr><th scope="row">新增／修改會員與報名</th><td>—</td><td>可使用</td><td>可使用</td><td>可使用</td></tr>
                   <tr><th scope="row">Excel／CSV 匯入與整理同步</th><td>—</td><td>可使用</td><td>可使用</td><td>可使用</td></tr>
                   <tr><th scope="row">刪除資料與課程管理</th><td>—</td><td>—</td><td>可使用</td><td>可使用</td></tr>
-                  <tr><th scope="row">帳號管理</th><td>—</td><td>—</td><td>限檢視者／編輯者</td><td>可管理一般管理員</td></tr>
+                  <tr><th scope="row">帳號管理</th><td>—</td><td>—</td><td>限檢視者／編輯者</td><td>可管理其他最高管理員與所有角色</td></tr>
                   <tr><th scope="row">查看本使用者手冊</th><td>—</td><td>可使用</td><td>可使用</td><td>可使用</td></tr>
                 </tbody>
               </table>
@@ -273,9 +273,9 @@ export default function UserManualTab({ role = 'editor' }) {
               <div className="manual-access-note manual-access-note--governance">
                 <ShieldCheck size={19} aria-hidden="true" />
                 <div>
-                  <p>只有最高管理員可以管理一般管理員。</p>
+                  <p>最高管理員可以指派其他最高管理員，並管理其他最高管理員帳號。</p>
                   <p>一般管理員只能管理檢視者與編輯者，不能管理其他管理員或最高管理員。</p>
-                  <p>最高管理員帳號固定，無法透過 UI 或 API 指派、變更或刪除。</p>
+                  <p>系統至少保留一位最高管理員；任何人都不能變更自己的角色或刪除自己的帳號。</p>
                 </div>
               </div>
               <div className="manual-callout manual-callout--danger">

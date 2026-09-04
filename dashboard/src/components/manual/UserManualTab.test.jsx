@@ -33,24 +33,25 @@ describe('UserManualTab', () => {
     expect(screen.queryByText(/編輯者無法使用帳號管理、課程管理及刪除功能/)).toBeNull()
   })
 
-  it('shows all four roles and the fixed owner governance model to admins', () => {
+  it('documents equal peer owner governance to admins', () => {
     render(<UserManualTab role="admin" />)
 
     const table = screen.getByRole('table', { name: '角色權限一覽' })
+    expect(within(table).getByRole('cell', { name: '可管理其他最高管理員與所有角色' })).toBeTruthy()
     for (const roleName of ['檢視者', '編輯者', '管理員', '最高管理員']) {
       expect(within(table).getByRole('columnheader', { name: roleName })).toBeTruthy()
     }
-    expect(screen.getByText('只有最高管理員可以管理一般管理員。')).toBeTruthy()
+    expect(screen.getByText('最高管理員可以指派其他最高管理員，並管理其他最高管理員帳號。')).toBeTruthy()
     expect(screen.getByText('一般管理員只能管理檢視者與編輯者，不能管理其他管理員或最高管理員。')).toBeTruthy()
-    expect(screen.getByText('最高管理員帳號固定，無法透過 UI 或 API 指派、變更或刪除。')).toBeTruthy()
+    expect(screen.getByText('系統至少保留一位最高管理員；任何人都不能變更自己的角色或刪除自己的帳號。')).toBeTruthy()
   })
 
   it('keeps account-governance instructions hidden from editors', () => {
     render(<UserManualTab role="editor" />)
 
-    expect(screen.queryByText('只有最高管理員可以管理一般管理員。')).toBeNull()
+    expect(screen.queryByText('最高管理員可以指派其他最高管理員，並管理其他最高管理員帳號。')).toBeNull()
     expect(screen.queryByText(/一般管理員只能管理檢視者與編輯者/)).toBeNull()
-    expect(screen.queryByText(/最高管理員帳號固定/)).toBeNull()
+    expect(screen.queryByText(/系統至少保留一位最高管理員/)).toBeNull()
   })
 
   it('gives owner the highest-admin badge and every admin-only section', () => {
@@ -60,6 +61,6 @@ describe('UserManualTab', () => {
     expect(badge).toBeTruthy()
     expect(within(badge).getByText('最高管理員')).toBeTruthy()
     expect(screen.getByRole('heading', { name: '管理員專屬操作' })).toBeTruthy()
-    expect(screen.getByText('只有最高管理員可以管理一般管理員。')).toBeTruthy()
+    expect(screen.getByText('最高管理員可以指派其他最高管理員，並管理其他最高管理員帳號。')).toBeTruthy()
   })
 })
