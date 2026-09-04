@@ -52,10 +52,20 @@ function unwrap<T>(result: { data: T; error: unknown }): T {
   return result.data
 }
 
+function isLastOwnerError(error: unknown): boolean {
+  return Boolean(
+    error &&
+    typeof error === 'object' &&
+    (error as { code?: unknown }).code === 'P0001' &&
+    (error as { message?: unknown }).message === 'LAST_OWNER_REQUIRED',
+  )
+}
+
 async function roleStoreOperation<T>(operation: () => Promise<T>): Promise<T> {
   try {
     return await operation()
-  } catch {
+  } catch (error) {
+    if (isLastOwnerError(error)) throw new ApiError('LAST_OWNER_REQUIRED')
     throw new ApiError('ROLE_STORE_ERROR')
   }
 }
@@ -122,6 +132,19 @@ export function createSupabaseDeps(client: SupabaseClientLike, env: Environment)
           .maybeSingle()
         if (error) throw error
         return data == null ? null : requireStoredRole(data.role)
+      })
+    },
+    async countOwners() {
+      return await roleStoreOperation(async () => {
+        const { count, error } = await client
+          .from('app_user_roles')
+          .select('user_id', { count: 'exact', head: true })
+          .eq('role', 'owner')
+        if (error) throw error
+        if (typeof count !== 'number' || !Number.isFinite(count) || count < 0) {
+          throw new Error('Invalid owner count')
+        }
+        return count
       })
     },
     async listUsers() {

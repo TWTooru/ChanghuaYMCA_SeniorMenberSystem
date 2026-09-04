@@ -9,16 +9,20 @@ function roleTableFake(results: {
   get?: QueryResult
   list?: QueryResult
   update?: QueryResult
+  count?: QueryResult & { count?: unknown }
   fromError?: unknown
 } = {}) {
   const calls: unknown[][] = []
   const builder: Record<string, (...args: unknown[]) => unknown> = {
-    select(columns: unknown) {
-      calls.push(['select', columns])
+    select(...args: unknown[]) {
+      calls.push(['select', ...args])
       return builder
     },
     eq(column: unknown, value: unknown) {
       calls.push(['eq', column, value])
+      if (column === 'role' && value === 'owner') {
+        return Promise.resolve(results.count ?? { data: null, error: null, count: 0 })
+      }
       return builder
     },
     in(column: unknown, values: unknown) {
@@ -146,6 +150,27 @@ Deno.test('getRole maps a missing database row to null', async () => {
   assertEquals(await deps.getRole('missing-id'), null)
 })
 
+Deno.test('countOwners emits the exact owner-count query', async () => {
+  const fake = roleTableFake({ count: { data: null, error: null, count: 2 } })
+  const deps = createSupabaseDeps(fake.client as any, {})
+
+  assertEquals(await deps.countOwners(), 2)
+  assertEquals(fake.calls, [
+    ['from', 'app_user_roles'],
+    ['select', 'user_id', { count: 'exact', head: true }],
+    ['eq', 'role', 'owner'],
+  ])
+})
+
+Deno.test('countOwners rejects missing, malformed, and negative counts', async () => {
+  for (const count of [undefined, null, '2', Number.NaN, Number.POSITIVE_INFINITY, -1]) {
+    const fake = roleTableFake({ count: { data: null, error: null, count } })
+    const deps = createSupabaseDeps(fake.client as any, {})
+
+    await assertRoleStoreError(() => deps.countOwners())
+  }
+})
+
 Deno.test('listRoles skips the database for an empty user list', async () => {
   const fake = roleTableFake()
   const deps = createSupabaseDeps(fake.client as any, {})
@@ -215,14 +240,38 @@ Deno.test('updateRole emits one update query and validates the returned row', as
 Deno.test('role-table query errors map to stable ROLE_STORE_ERROR', async () => {
   for (const [operation, results] of [
     ['get', { get: { data: null, error: { message: 'select failed', details: 'secret' } } }],
+    ['count', { count: { data: null, error: { message: 'count failed', details: 'secret' }, count: undefined } }],
     ['list', { list: { data: null, error: { message: 'list failed', details: 'secret' } } }],
     ['update', { update: { data: null, error: { message: 'update failed', details: 'secret' } } }],
   ] as const) {
     const fake = roleTableFake(results)
     const deps = createSupabaseDeps(fake.client as any, {})
     if (operation === 'get') await assertRoleStoreError(() => deps.getRole('user-id'))
+    else if (operation === 'count') await assertRoleStoreError(() => deps.countOwners())
     else if (operation === 'list') await assertRoleStoreError(() => deps.listRoles(['user-id']))
     else await assertRoleStoreError(() => deps.updateRole('user-id', 'viewer'))
+  }
+})
+
+Deno.test('only the exact last-owner database conflict maps to LAST_OWNER_REQUIRED', async () => {
+  const exactConflict = roleTableFake({
+    update: { data: null, error: { code: 'P0001', message: 'LAST_OWNER_REQUIRED' } },
+  })
+  const exactDeps = createSupabaseDeps(exactConflict.client as any, {})
+  const exactError = await assertRejects(
+    () => exactDeps.updateRole('owner-id', 'admin'),
+    ApiError,
+    'LAST_OWNER_REQUIRED',
+  )
+  assertEquals((exactError as ApiError).code, 'LAST_OWNER_REQUIRED')
+
+  for (const error of [
+    { code: 'P0001', message: 'a different constraint failed' },
+    { code: '23505', message: 'LAST_OWNER_REQUIRED' },
+  ]) {
+    const fake = roleTableFake({ update: { data: null, error } })
+    const deps = createSupabaseDeps(fake.client as any, {})
+    await assertRoleStoreError(() => deps.updateRole('owner-id', 'admin'))
   }
 })
 
