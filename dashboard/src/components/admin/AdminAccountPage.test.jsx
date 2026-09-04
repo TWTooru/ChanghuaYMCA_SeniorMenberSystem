@@ -53,7 +53,6 @@ function expectNoAccountActions(row, target) {
 function expectRoleOptions(row, expectedValues) {
   const select = within(row).getByRole('combobox')
   expect(within(select).getAllByRole('option').map(option => option.value)).toEqual(expectedValues)
-  expect(within(select).queryByRole('option', { name: '最高管理員' })).toBeNull()
   return select
 }
 
@@ -104,23 +103,14 @@ describe('AdminAccountPage', () => {
     expectNoAccountActions(row, target)
   })
 
-  it.each(['admin', 'editor', 'viewer'])('lets the owner manage a %s with admin/editor/viewer options and enabled actions', targetRole => {
+  it.each(['owner', 'admin', 'editor', 'viewer'])('lets the owner manage a peer %s with all role options and enabled actions', targetRole => {
     const target = makeUser(`target-${targetRole}`, targetRole)
     renderFor('owner', target, 'owner-1')
 
     const row = getTargetRow(target)
-    expectRoleOptions(row, ['admin', 'editor', 'viewer'])
+    expectRoleOptions(row, ['owner', 'admin', 'editor', 'viewer'])
     expect(within(row).getByLabelText(`寄送密碼重設 ${target.email}`).disabled).toBe(false)
     expect(within(row).getByLabelText(`刪除 ${target.email}`).disabled).toBe(false)
-  })
-
-  it('locks a target owner even when the actor is another owner', () => {
-    const target = makeUser('owner-2', 'owner')
-    renderFor('owner', target, 'owner-1')
-
-    const row = getTargetRow(target)
-    expect(within(row).getByText('最高管理員')).toBeTruthy()
-    expectNoAccountActions(row, target)
   })
 
   it('locks an ordinary admin self row without relying on the number of admins', () => {
@@ -238,10 +228,11 @@ describe('AdminAccountPage', () => {
 
   it.each([
     ['ROLE_NOT_ASSIGNED', '此帳號尚未設定有效角色，請由最高管理員修正資料。'],
-    ['OWNER_PROTECTED', '最高管理員帳號不可修改、重設或刪除。'],
+    ['OWNER_PROTECTED', '一般管理員不能操作最高管理員帳號。'],
     ['ADMIN_TARGET_FORBIDDEN', '一般管理員不能操作其他管理員帳號。'],
     ['OWNER_REQUIRED', '此操作僅限最高管理員。'],
     ['ROLE_STORE_ERROR', '角色資料目前無法讀取或更新，請稍後重試。'],
+    ['LAST_OWNER_REQUIRED', '至少必須保留一位最高管理員；另一項操作可能已先完成，請重新整理後再試。'],
   ])('maps %s to its exact actionable message', (errorCode, message) => {
     adminState.errorCode = errorCode
     renderFor('owner', makeUser('member', 'viewer'), 'owner-1')
@@ -305,5 +296,15 @@ describe('AdminAccountPage', () => {
     adminState.errorCode = 'EMAIL_RATE_LIMITED'
     rerender(<AdminAccountPage />)
     expect(screen.getByText('邀請信寄送額度已滿，帳號可能已建立，請稍後從列表重新寄送邀請。')).toBeTruthy()
+  })
+
+  it('keeps the account list visible for a last-owner conflict without a success notice', () => {
+    adminState.errorCode = 'LAST_OWNER_REQUIRED'
+    const target = makeUser('owner-2', 'owner')
+    renderFor('owner', target, 'owner-1')
+
+    expect(screen.getByText(target.email)).toBeTruthy()
+    expect(screen.getByText('至少必須保留一位最高管理員；另一項操作可能已先完成，請重新整理後再試。')).toBeTruthy()
+    expect(screen.queryByText('角色權限已更新。')).toBeNull()
   })
 })

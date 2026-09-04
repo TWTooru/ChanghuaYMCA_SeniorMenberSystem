@@ -178,6 +178,25 @@ describe('useAdminUsers', () => {
     },
   )
 
+  it('keeps loaded account data after LAST_OWNER_REQUIRED', async () => {
+    const users = [{ id: 'owner-2', role: 'owner' }]
+    const auditLogs = [{ id: 'audit-1' }]
+    listUsers.mockResolvedValue({ users })
+    listAuditLogs.mockResolvedValue({ auditLogs })
+    updateRole.mockRejectedValueOnce(new AdminUserError('LAST_OWNER_REQUIRED'))
+
+    const { result } = renderHook(() => useAdminUsers())
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    await act(async () => {
+      await expect(result.current.changeRole('owner-2', 'admin')).resolves.toBe(false)
+    })
+
+    expect(result.current.errorCode).toBe('LAST_OWNER_REQUIRED')
+    expect(result.current.users).toEqual(users)
+    expect(result.current.auditLogs).toEqual(auditLogs)
+  })
+
   it('keeps the cache cleared when an older list response resolves after a role-store failure', async () => {
     listUsers.mockResolvedValueOnce({ users: [{ id: 'initial' }] })
     listAuditLogs.mockResolvedValueOnce({ auditLogs: [{ id: 'initial-log' }] })

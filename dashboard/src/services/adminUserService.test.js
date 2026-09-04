@@ -107,12 +107,12 @@ describe('adminUserService', () => {
     invoke.mockResolvedValue({
       data: null,
       error: {
-        context: { json: vi.fn().mockResolvedValue({ error: { code: 'LAST_ADMIN_PROTECTED' } }) },
+        context: { json: vi.fn().mockResolvedValue({ error: { code: 'LAST_OWNER_REQUIRED' } }) },
       },
     })
 
     await expect(deleteUser('u1', 'admin@example.com')).rejects.toMatchObject({
-      code: 'LAST_ADMIN_PROTECTED',
+      code: 'LAST_OWNER_REQUIRED',
     })
   })
 

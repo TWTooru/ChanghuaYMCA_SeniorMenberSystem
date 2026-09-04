@@ -18,7 +18,7 @@ const ROLE_LABELS = {
 }
 const VALID_TARGET_ROLES = new Set(Object.keys(ROLE_LABELS))
 const VALID_ACTOR_ROLES = new Set(['owner', 'admin'])
-const OWNER_ROLE_OPTIONS = ['admin', 'editor', 'viewer']
+const OWNER_ROLE_OPTIONS = ['owner', 'admin', 'editor', 'viewer']
 const ADMIN_ROLE_OPTIONS = ['editor', 'viewer']
 const ERROR_MESSAGES = {
   FIRST_LOGIN_REQUIRED: '受邀帳號必須先完成首次登入，之後才能變更角色。',
@@ -33,10 +33,11 @@ const ERROR_MESSAGES = {
   SUPABASE_AUTH_ERROR: '帳號服務暫時無法使用，請稍後再試。',
   AUDIT_WRITE_ERROR: '無法寫入操作紀錄，操作未完成。',
   ROLE_NOT_ASSIGNED: '此帳號尚未設定有效角色，請由最高管理員修正資料。',
-  OWNER_PROTECTED: '最高管理員帳號不可修改、重設或刪除。',
+  OWNER_PROTECTED: '一般管理員不能操作最高管理員帳號。',
   ADMIN_TARGET_FORBIDDEN: '一般管理員不能操作其他管理員帳號。',
   OWNER_REQUIRED: '此操作僅限最高管理員。',
   ROLE_STORE_ERROR: '角色資料目前無法讀取或更新，請稍後重試。',
+  LAST_OWNER_REQUIRED: '至少必須保留一位最高管理員；另一項操作可能已先完成，請重新整理後再試。',
 }
 
 /**
@@ -46,15 +47,14 @@ function getAccountRowPolicy(actor, target) {
   const actorAllowed = Boolean(actor?.id) && VALID_ACTOR_ROLES.has(actor?.role)
   const targetRoleValid = VALID_TARGET_ROLES.has(target?.role)
   const self = Boolean(actor?.id) && actor.id === target?.id
-  const targetIsOwner = target?.role === 'owner'
-  const adminTargetingAdmin = actor?.role === 'admin' && target?.role === 'admin'
-  const locked = !actorAllowed || !targetRoleValid || self || targetIsOwner || adminTargetingAdmin
+  const adminTargetingProtectedRole = actor?.role === 'admin'
+    && (target?.role === 'owner' || target?.role === 'admin')
+  const locked = !actorAllowed || !targetRoleValid || self || adminTargetingProtectedRole
 
   let lockMessage = null
   if (self) lockMessage = '目前登入帳號'
   else if (!targetRoleValid) lockMessage = '角色資料異常'
-  else if (actor?.role === 'admin' && (targetIsOwner || target?.role === 'admin')) lockMessage = '僅最高管理員可管理'
-  else if (targetIsOwner) lockMessage = '最高管理員帳號受保護'
+  else if (adminTargetingProtectedRole) lockMessage = '僅最高管理員可管理'
 
   return {
     locked,
