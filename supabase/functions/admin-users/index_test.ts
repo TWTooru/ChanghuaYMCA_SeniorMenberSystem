@@ -245,40 +245,15 @@ Deno.test('updateRole emits one update query and validates the returned row', as
   ])
 })
 
-Deno.test('deleteUser reserves the expected role before calling Auth Admin', async () => {
+Deno.test('deleteUser acquires a durable role reservation before calling Auth Admin', async () => {
   const calls: unknown[][] = []
-  const reservedRole = {
-    user_id: 'viewer-id',
-    role: 'viewer',
-    created_at: '2026-09-05T00:00:00.000Z',
-    updated_at: '2026-09-05T01:00:00.000Z',
-  }
-  const reserveBuilder: Record<string, (...args: unknown[]) => unknown> = {
-    delete() {
-      calls.push(['delete'])
-      return reserveBuilder
-    },
-    eq(...args: unknown[]) {
-      calls.push(['eq', ...args])
-      return reserveBuilder
-    },
-    select(...args: unknown[]) {
-      calls.push(['select', ...args])
-      return reserveBuilder
-    },
-    maybeSingle() {
-      calls.push(['maybeSingle'])
-      return Promise.resolve({ data: reservedRole, error: null })
-    },
-    insert(...args: unknown[]) {
-      calls.push(['insert', ...args])
-      return Promise.resolve({ data: null, error: null })
-    },
-  }
   const deps = createSupabaseDeps({
-    from(table: string) {
-      calls.push(['from', table])
-      return reserveBuilder
+    rpc(name: string, args: Record<string, unknown>) {
+      calls.push(['rpc', name, args])
+      return Promise.resolve({ data: true, error: null })
+    },
+    from() {
+      throw new Error('deleteUser must not remove the authoritative role row')
     },
     auth: { admin: { deleteUser: async (...args: unknown[]) => {
       calls.push(['auth.deleteUser', ...args])
@@ -288,51 +263,23 @@ Deno.test('deleteUser reserves the expected role before calling Auth Admin', asy
 
   await deps.deleteUser('viewer-id', 'viewer')
 
-  assertEquals(calls, [
-    ['from', 'app_user_roles'],
-    ['delete'],
-    ['eq', 'user_id', 'viewer-id'],
-    ['eq', 'role', 'viewer'],
-    ['select', 'user_id,role,created_at,updated_at'],
-    ['maybeSingle'],
-    ['auth.deleteUser', 'viewer-id'],
-  ])
+  assertEquals(calls.length, 2)
+  assertEquals(calls[0][0], 'rpc')
+  assertEquals(calls[0][1], 'reserve_app_user_deletion')
+  const reserveArgs = calls[0][2] as Record<string, unknown>
+  assertEquals(reserveArgs.p_user_id, 'viewer-id')
+  assertEquals(reserveArgs.p_expected_role, 'viewer')
+  assertEquals(typeof reserveArgs.p_token, 'string')
+  assertEquals((reserveArgs.p_token as string).length > 0, true)
+  assertEquals(calls[1], ['auth.deleteUser', 'viewer-id'])
 })
 
-Deno.test('deleteUser restores the reserved role before propagating an Auth failure', async () => {
+Deno.test('deleteUser releases the same durable reservation after an Auth failure', async () => {
   const calls: unknown[][] = []
-  const reservedRole = {
-    user_id: 'viewer-id',
-    role: 'viewer',
-    created_at: '2026-09-05T00:00:00.000Z',
-    updated_at: '2026-09-05T01:00:00.000Z',
-  }
-  const reserveBuilder: Record<string, (...args: unknown[]) => unknown> = {
-    delete() {
-      calls.push(['delete'])
-      return reserveBuilder
-    },
-    eq(...args: unknown[]) {
-      calls.push(['eq', ...args])
-      return reserveBuilder
-    },
-    select(...args: unknown[]) {
-      calls.push(['select', ...args])
-      return reserveBuilder
-    },
-    maybeSingle() {
-      calls.push(['maybeSingle'])
-      return Promise.resolve({ data: reservedRole, error: null })
-    },
-    insert(...args: unknown[]) {
-      calls.push(['insert', ...args])
-      return Promise.resolve({ data: null, error: null })
-    },
-  }
   const deps = createSupabaseDeps({
-    from(table: string) {
-      calls.push(['from', table])
-      return reserveBuilder
+    rpc(name: string, args: Record<string, unknown>) {
+      calls.push(['rpc', name, args])
+      return Promise.resolve({ data: true, error: null })
     },
     auth: { admin: { deleteUser: async (...args: unknown[]) => {
       calls.push(['auth.deleteUser', ...args])
@@ -347,20 +294,22 @@ Deno.test('deleteUser restores the reserved role before propagating an Auth fail
   )
 
   assertEquals((error as ApiError).code, 'SUPABASE_AUTH_ERROR')
-  assertEquals(calls.at(-2), ['from', 'app_user_roles'])
-  assertEquals(calls.at(-1), ['insert', reservedRole])
+  assertEquals(calls.length, 3)
+  assertEquals(calls[0][1], 'reserve_app_user_deletion')
+  assertEquals(calls[1], ['auth.deleteUser', 'viewer-id'])
+  assertEquals(calls[2][1], 'release_app_user_deletion')
+  const reserveArgs = calls[0][2] as Record<string, unknown>
+  const releaseArgs = calls[2][2] as Record<string, unknown>
+  assertEquals(releaseArgs, {
+    p_user_id: 'viewer-id',
+    p_token: reserveArgs.p_token,
+  })
 })
 
 Deno.test('deleteUser never calls Auth when the expected role reservation misses', async () => {
   let authCalled = false
-  const reserveBuilder: Record<string, (...args: unknown[]) => unknown> = {
-    delete: () => reserveBuilder,
-    eq: () => reserveBuilder,
-    select: () => reserveBuilder,
-    maybeSingle: () => Promise.resolve({ data: null, error: null }),
-  }
   const deps = createSupabaseDeps({
-    from: () => reserveBuilder,
+    rpc: () => Promise.resolve({ data: false, error: null }),
     auth: { admin: { deleteUser: async () => {
       authCalled = true
       return { data: {}, error: null }
@@ -369,6 +318,85 @@ Deno.test('deleteUser never calls Auth when the expected role reservation misses
 
   await assertRoleStoreError(() => deps.deleteUser('viewer-id', 'viewer'))
   assertEquals(authCalled, false)
+})
+
+Deno.test('deleteUser never calls Auth when durable reservation storage fails', async () => {
+  let authCalled = false
+  const deps = createSupabaseDeps({
+    rpc: () => Promise.resolve({ data: null, error: new Error('reservation unavailable') }),
+    auth: { admin: { deleteUser: () => {
+      authCalled = true
+      return { data: {}, error: null }
+    } } },
+  }, {})
+
+  await assertRoleStoreError(() => deps.deleteUser('viewer-id', 'viewer'))
+  assertEquals(authCalled, false)
+})
+
+Deno.test('deleteUser fails closed when Auth-error reservation recovery fails', async () => {
+  const calls: unknown[][] = []
+  const deps = createSupabaseDeps({
+    rpc(name: string, args: Record<string, unknown>) {
+      calls.push(['rpc', name, args])
+      return Promise.resolve({
+        data: name === 'reserve_app_user_deletion',
+        error: name === 'release_app_user_deletion'
+          ? new Error('reservation recovery unavailable')
+          : null,
+      })
+    },
+    auth: { admin: { deleteUser: () => ({
+      data: {},
+      error: new Error('Auth unavailable'),
+    }) } },
+  }, {})
+
+  await assertRoleStoreError(() => deps.deleteUser('viewer-id', 'viewer'))
+  assertEquals(calls.map(call => call[1]), [
+    'reserve_app_user_deletion',
+    'release_app_user_deletion',
+  ])
+})
+
+Deno.test('deleteUser treats a rejected reservation release as recovery failure', async () => {
+  const deps = createSupabaseDeps({
+    rpc(name: string) {
+      return Promise.resolve({
+        data: name === 'reserve_app_user_deletion',
+        error: null,
+      })
+    },
+    auth: { admin: { deleteUser: () => ({
+      data: {},
+      error: new Error('Auth unavailable'),
+    }) } },
+  }, {})
+
+  await assertRoleStoreError(() => deps.deleteUser('viewer-id', 'viewer'))
+})
+
+Deno.test('deleteUser maps an expired or stale Auth cascade to ROLE_STORE_ERROR', async () => {
+  const calls: string[] = []
+  const deps = createSupabaseDeps({
+    rpc(name: string) {
+      calls.push(name)
+      return Promise.resolve({ data: true, error: null })
+    },
+    auth: { admin: { deleteUser: () => ({
+      data: {},
+      error: {
+        code: 'P0001',
+        message: 'ACCOUNT_DELETE_RESERVATION_INVALID',
+      },
+    }) } },
+  }, {})
+
+  await assertRoleStoreError(() => deps.deleteUser('viewer-id', 'viewer'))
+  assertEquals(calls, [
+    'reserve_app_user_deletion',
+    'release_app_user_deletion',
+  ])
 })
 
 Deno.test('role-table query errors map to stable ROLE_STORE_ERROR', async () => {

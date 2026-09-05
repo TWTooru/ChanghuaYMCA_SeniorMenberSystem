@@ -129,6 +129,369 @@ select ok(
   ),
   'the invariant trigger function is hardened and trigger-only'
 );
+
+select has_table(
+  'public',
+  'app_user_deletion_reservations',
+  'durable account-deletion reservations exist'
+);
+select has_column(
+  'public',
+  'app_user_deletion_reservations',
+  'user_id',
+  'each deletion reservation identifies its role row'
+);
+select has_column(
+  'public',
+  'app_user_deletion_reservations',
+  'token',
+  'each deletion reservation has an unguessable ownership token'
+);
+select has_column(
+  'public',
+  'app_user_deletion_reservations',
+  'expected_role',
+  'each deletion reservation snapshots the authorized target role'
+);
+select has_column(
+  'public',
+  'app_user_deletion_reservations',
+  'expires_at',
+  'each deletion reservation expires for worker-crash recovery'
+);
+select has_column(
+  'public',
+  'app_user_deletion_reservations',
+  'released_at',
+  'failed Auth recovery retires but preserves the stale-worker fence'
+);
+select col_is_pk(
+  'public',
+  'app_user_deletion_reservations',
+  'user_id',
+  'a user has at most one deletion reservation'
+);
+
+select ok(
+  (
+    select relation.relrowsecurity
+    from pg_catalog.pg_class relation
+    where relation.oid =
+          'public.app_user_deletion_reservations'::pg_catalog.regclass
+  )
+  and not pg_catalog.has_table_privilege(
+    'anon',
+    'public.app_user_deletion_reservations',
+    'select,insert,update,delete'
+  )
+  and not pg_catalog.has_table_privilege(
+    'authenticated',
+    'public.app_user_deletion_reservations',
+    'select,insert,update,delete'
+  )
+  and pg_catalog.has_table_privilege(
+    'service_role',
+    'public.app_user_deletion_reservations',
+    'select,insert,update,delete'
+  ),
+  'deletion reservations are RLS-protected and writable only by service_role'
+);
+
+select ok(
+  (
+    select procedure_record.proowner = 'postgres'::pg_catalog.regrole
+      and not procedure_record.prosecdef
+      and procedure_record.provolatile = 'v'
+      and procedure_record.proconfig = array['search_path=""']::text[]
+      and not pg_catalog.has_function_privilege(
+        'anon', procedure_record.oid, 'execute'
+      )
+      and not pg_catalog.has_function_privilege(
+        'authenticated', procedure_record.oid, 'execute'
+      )
+      and pg_catalog.has_function_privilege(
+        'service_role', procedure_record.oid, 'execute'
+      )
+    from pg_catalog.pg_proc procedure_record
+    where procedure_record.oid =
+          'public.reserve_app_user_deletion(uuid,text,uuid)'::pg_catalog.regprocedure
+  )
+  and (
+    select procedure_record.proowner = 'postgres'::pg_catalog.regrole
+      and not procedure_record.prosecdef
+      and procedure_record.provolatile = 'v'
+      and procedure_record.proconfig = array['search_path=""']::text[]
+      and not pg_catalog.has_function_privilege(
+        'anon', procedure_record.oid, 'execute'
+      )
+      and not pg_catalog.has_function_privilege(
+        'authenticated', procedure_record.oid, 'execute'
+      )
+      and pg_catalog.has_function_privilege(
+        'service_role', procedure_record.oid, 'execute'
+      )
+    from pg_catalog.pg_proc procedure_record
+    where procedure_record.oid =
+          'public.release_app_user_deletion(uuid,uuid)'::pg_catalog.regprocedure
+  ),
+  'reservation RPCs are hardened invoker functions executable only by service_role'
+);
+
+select has_trigger(
+  'public',
+  'app_user_roles',
+  'enforce_app_user_deletion_reservation_before_change',
+  'role mutations atomically honor deletion reservations'
+);
+
+select ok(
+  exists (
+    select 1
+    from pg_catalog.pg_proc procedure_record
+    where procedure_record.oid =
+          'private.enforce_app_user_deletion_reservation()'::pg_catalog.regprocedure
+      and procedure_record.proowner = 'postgres'::pg_catalog.regrole
+      and procedure_record.prosecdef
+      and procedure_record.provolatile = 'v'
+      and procedure_record.proconfig = array['search_path=""']::text[]
+      and not pg_catalog.has_function_privilege(
+        'anon', procedure_record.oid, 'execute'
+      )
+      and not pg_catalog.has_function_privilege(
+        'authenticated', procedure_record.oid, 'execute'
+      )
+      and not pg_catalog.has_function_privilege(
+        'service_role', procedure_record.oid, 'execute'
+      )
+  ),
+  'the reservation enforcement function is hardened and trigger-only'
+);
+
+insert into auth.users (id, email, raw_app_meta_data, raw_user_meta_data)
+values (
+  '10000000-0000-4000-8000-000000000005',
+  'reservation.fixture@example.com',
+  '{}',
+  '{}'
+);
+
+savepoint mismatched_deletion_reservation;
+set local role service_role;
+select ok(
+  not public.reserve_app_user_deletion(
+    '10000000-0000-4000-8000-000000000005',
+    'admin',
+    '20000000-0000-4000-8000-000000000000'
+  ),
+  'service_role cannot reserve a target whose current role changed'
+);
+reset role;
+select is(
+  (
+    select count(*)::integer
+    from public.app_user_deletion_reservations
+    where user_id = '10000000-0000-4000-8000-000000000005'
+  ),
+  0,
+  'a role-snapshot mismatch leaves no deletion reservation'
+);
+rollback to savepoint mismatched_deletion_reservation;
+
+savepoint durable_deletion_reservation;
+set local role service_role;
+select ok(
+  public.reserve_app_user_deletion(
+    '10000000-0000-4000-8000-000000000005',
+    'viewer',
+    '20000000-0000-4000-8000-000000000001'
+  ),
+  'a matching target role can be reserved for deletion'
+);
+reset role;
+select is(
+  (
+    select role
+    from public.app_user_roles
+    where user_id = '10000000-0000-4000-8000-000000000005'
+  ),
+  'viewer',
+  'reserving deletion does not remove the authoritative role row'
+);
+select throws_ok(
+  $$update public.app_user_roles
+    set role = 'admin'
+    where user_id = '10000000-0000-4000-8000-000000000005'$$,
+  'P0001',
+  'ACCOUNT_DELETE_IN_PROGRESS',
+  'an active deletion lease atomically blocks a concurrent role update'
+);
+select ok(
+  not public.release_app_user_deletion(
+    '10000000-0000-4000-8000-000000000005',
+    '20000000-0000-4000-8000-000000000099'
+  ),
+  'a worker cannot release a reservation owned by another token'
+);
+select is(
+  (
+    select count(*)::integer
+    from public.app_user_roles
+    where user_id = '10000000-0000-4000-8000-000000000005'
+  ),
+  1,
+  'failed reservation recovery cannot remove the authoritative role row'
+);
+select ok(
+  public.release_app_user_deletion(
+    '10000000-0000-4000-8000-000000000005',
+    '20000000-0000-4000-8000-000000000001'
+  ),
+  'the reservation owner can release its lease after an Auth failure'
+);
+select ok(
+  exists (
+    select 1
+    from public.app_user_deletion_reservations reservation
+    where reservation.user_id = '10000000-0000-4000-8000-000000000005'
+      and reservation.released_at is not null
+  ),
+  'Auth-error recovery keeps a durable fence against a resumed stale worker'
+);
+select lives_ok(
+  $$update public.app_user_roles
+    set role = 'editor'
+    where user_id = '10000000-0000-4000-8000-000000000005'$$,
+  'a released reservation immediately unblocks role management'
+);
+select throws_ok(
+  $$delete from auth.users
+    where id = '10000000-0000-4000-8000-000000000005'$$,
+  'P0001',
+  'ACCOUNT_DELETE_RESERVATION_INVALID',
+  'a released reservation rejects a resumed stale Auth deletion'
+);
+rollback to savepoint durable_deletion_reservation;
+
+savepoint expired_worker_cannot_delete;
+select ok(
+  public.reserve_app_user_deletion(
+    '10000000-0000-4000-8000-000000000005',
+    'viewer',
+    '20000000-0000-4000-8000-000000000002'
+  ),
+  'the worker acquires a deletion lease before pausing'
+);
+update public.app_user_deletion_reservations
+set expires_at = pg_catalog.statement_timestamp() - interval '1 second'
+where user_id = '10000000-0000-4000-8000-000000000005';
+select lives_ok(
+  $$update public.app_user_roles
+    set role = 'admin'
+    where user_id = '10000000-0000-4000-8000-000000000005'$$,
+  'role changes recover automatically after an abandoned lease expires'
+);
+select throws_ok(
+  $$delete from auth.users
+    where id = '10000000-0000-4000-8000-000000000005'$$,
+  'P0001',
+  'ACCOUNT_DELETE_RESERVATION_INVALID',
+  'a paused worker cannot delete after its role snapshot or lease expires'
+);
+select is(
+  (
+    select role
+    from public.app_user_roles
+    where user_id = '10000000-0000-4000-8000-000000000005'
+  ),
+  'admin',
+  'the stale deletion failure preserves the newly authorized role'
+);
+rollback to savepoint expired_worker_cannot_delete;
+
+savepoint expired_reservation_takeover;
+select ok(
+  public.reserve_app_user_deletion(
+    '10000000-0000-4000-8000-000000000005',
+    'viewer',
+    '20000000-0000-4000-8000-000000000003'
+  ),
+  'the first worker acquires a lease'
+);
+update public.app_user_deletion_reservations
+set expires_at = pg_catalog.statement_timestamp() - interval '1 second'
+where user_id = '10000000-0000-4000-8000-000000000005';
+select ok(
+  public.reserve_app_user_deletion(
+    '10000000-0000-4000-8000-000000000005',
+    'viewer',
+    '20000000-0000-4000-8000-000000000004'
+  ),
+  'a new worker can atomically take over an expired lease'
+);
+select ok(
+  not public.release_app_user_deletion(
+    '10000000-0000-4000-8000-000000000005',
+    '20000000-0000-4000-8000-000000000003'
+  ),
+  'the old worker cannot release the replacement lease'
+);
+select ok(
+  public.release_app_user_deletion(
+    '10000000-0000-4000-8000-000000000005',
+    '20000000-0000-4000-8000-000000000004'
+  ),
+  'the replacement worker can release its own lease'
+);
+rollback to savepoint expired_reservation_takeover;
+
+savepoint valid_reservation_auth_delete;
+select ok(
+  public.reserve_app_user_deletion(
+    '10000000-0000-4000-8000-000000000005',
+    'viewer',
+    '20000000-0000-4000-8000-000000000005'
+  ),
+  'a viewer deletion obtains an active matching lease'
+);
+delete from auth.users
+where id = '10000000-0000-4000-8000-000000000005';
+select is(
+  (
+    select count(*)::integer
+    from public.app_user_roles
+    where user_id = '10000000-0000-4000-8000-000000000005'
+  ),
+  0,
+  'an active matching lease permits the Auth cascade'
+);
+select is(
+  (
+    select count(*)::integer
+    from public.app_user_deletion_reservations
+    where user_id = '10000000-0000-4000-8000-000000000005'
+  ),
+  0,
+  'the Auth cascade also removes its completed reservation'
+);
+rollback to savepoint valid_reservation_auth_delete;
+
+savepoint reservation_preserves_last_owner;
+select ok(
+  public.reserve_app_user_deletion(
+    '10000000-0000-4000-8000-000000000001',
+    'owner',
+    '20000000-0000-4000-8000-000000000006'
+  ),
+  'the final owner can reach the database invariant under an active lease'
+);
+select throws_ok(
+  $$delete from auth.users
+    where id = '10000000-0000-4000-8000-000000000001'$$,
+  'P0001',
+  'LAST_OWNER_REQUIRED',
+  'the durable lease preserves the database last-owner invariant'
+);
+rollback to savepoint reservation_preserves_last_owner;
 select ok(
   (
     select relation.relrowsecurity
@@ -336,6 +699,14 @@ savepoint allow_non_last_owner_auth_delete;
 update public.app_user_roles
 set role = 'owner'
 where user_id = '10000000-0000-4000-8000-000000000003';
+select ok(
+  public.reserve_app_user_deletion(
+    '10000000-0000-4000-8000-000000000003',
+    'owner',
+    '20000000-0000-4000-8000-000000000007'
+  ),
+  'an owner peer can reserve another non-last owner for deletion'
+);
 delete from auth.users
 where id = '10000000-0000-4000-8000-000000000003';
 select is(

@@ -1,6 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.110.0'
 import { createCorsHeaders } from '../_shared/cors.ts'
-import { ApiError, requireStoredRole, type AppRole } from './domain.ts'
+import { ApiError, requireStoredRole } from './domain.ts'
 import { createAdminUsersHandler, type HandlerDeps, type RoleRecord } from './handler.ts'
 
 type Environment = Record<string, string | undefined>
@@ -61,6 +61,16 @@ function isLastOwnerError(error: unknown): boolean {
   )
 }
 
+function isDeletionReservationError(error: unknown): boolean {
+  return Boolean(
+    error &&
+    typeof error === 'object' &&
+    (error as { code?: unknown }).code === 'P0001' &&
+    (error as { message?: unknown }).message ===
+      'ACCOUNT_DELETE_RESERVATION_INVALID',
+  )
+}
+
 async function roleStoreOperation<T>(operation: () => Promise<T>): Promise<T> {
   try {
     return await operation()
@@ -85,35 +95,6 @@ function mapRoleRecord(row: unknown, expectedUserId?: string): RoleRecord {
   return {
     userId: stored.user_id,
     role: requireStoredRole(stored.role),
-  }
-}
-
-type ReservedRoleRecord = {
-  user_id: string
-  role: AppRole
-  created_at: string
-  updated_at: string
-}
-
-function mapReservedRoleRecord(
-  row: unknown,
-  expectedUserId: string,
-  expectedRole: AppRole,
-): ReservedRoleRecord {
-  const roleRecord = mapRoleRecord(row, expectedUserId)
-  const stored = row as Record<string, unknown>
-  if (
-    roleRecord.role !== expectedRole ||
-    typeof stored.created_at !== 'string' ||
-    typeof stored.updated_at !== 'string'
-  ) {
-    throw new Error('Invalid reserved role row')
-  }
-  return {
-    user_id: roleRecord.userId,
-    role: roleRecord.role,
-    created_at: stored.created_at,
-    updated_at: stored.updated_at,
   }
 }
 
@@ -208,17 +189,15 @@ export function createSupabaseDeps(client: SupabaseClientLike, env: Environment)
       })
     },
     async deleteUser(id, expectedRole) {
-      const reservedRole = await roleStoreOperation(async () => {
-        const { data, error } = await client
-          .from('app_user_roles')
-          .delete()
-          .eq('user_id', id)
-          .eq('role', expectedRole)
-          .select('user_id,role,created_at,updated_at')
-          .maybeSingle()
+      const reservationToken = crypto.randomUUID()
+      await roleStoreOperation(async () => {
+        const { data, error } = await client.rpc('reserve_app_user_deletion', {
+          p_user_id: id,
+          p_expected_role: expectedRole,
+          p_token: reservationToken,
+        })
         if (error) throw error
-        if (!data) throw new Error('Role deletion reservation returned no row')
-        return mapReservedRoleRecord(data, id, expectedRole)
+        if (data !== true) throw new Error('Role deletion reservation rejected')
       })
 
       try {
@@ -226,11 +205,14 @@ export function createSupabaseDeps(client: SupabaseClientLike, env: Environment)
         if (result.error) throw result.error
       } catch (error) {
         await roleStoreOperation(async () => {
-          const { error: restoreError } = await client
-            .from('app_user_roles')
-            .insert(reservedRole)
-          if (restoreError) throw restoreError
+          const { data, error: releaseError } = await client.rpc(
+            'release_app_user_deletion',
+            { p_user_id: id, p_token: reservationToken },
+          )
+          if (releaseError) throw releaseError
+          if (data !== true) throw new Error('Role deletion reservation release rejected')
         })
+        if (isDeletionReservationError(error)) throw new ApiError('ROLE_STORE_ERROR')
         throwForError(error)
       }
     },
