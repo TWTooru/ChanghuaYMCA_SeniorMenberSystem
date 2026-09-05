@@ -116,9 +116,14 @@ function fakeDeps({
       if (inviteRole) deps.roles.set(invited.id, inviteRole)
       return invited
     },
-    async updateRole(userId: string, role: AssignableRole): Promise<RoleRecord> {
-      calls.push({ name: 'updateRole', args: [userId, role] })
+    async updateRole(
+      userId: string,
+      role: AssignableRole,
+      expectedRole: AppRole,
+    ): Promise<RoleRecord> {
+      calls.push({ name: 'updateRole', args: [userId, role, expectedRole] })
       if (updateError) throw new Error('update failed')
+      if (deps.roles.get(userId) !== expectedRole) throw new ApiError('ROLE_STORE_ERROR')
       deps.roles.set(userId, role)
       return { userId, role }
     },
@@ -126,9 +131,10 @@ function fakeDeps({
       calls.push({ name: 'countOwners', args: [] })
       return deps.ownerCounts.shift() ?? 0
     },
-    async deleteUser(userId: string) {
-      calls.push({ name: 'deleteUser', args: [userId] })
+    async deleteUser(userId: string, expectedRole: AppRole) {
+      calls.push({ name: 'deleteUser', args: [userId, expectedRole] })
       if (deleteError) throw new Error('delete failed')
+      if (deps.roles.get(userId) !== expectedRole) throw new ApiError('ROLE_STORE_ERROR')
       deps.users = deps.users.filter(user => user.id !== userId)
       deps.roles.delete(userId)
     },
@@ -382,21 +388,34 @@ Deno.test('owners and admins cannot mutate themselves and every denial is audite
   }
 })
 
-Deno.test('owner targets are protected from every actor and mutation with stored-role audits', async () => {
-  for (const actorRole of ['owner', 'admin'] as const) {
-    for (const action of mutationActions) {
-      const deps = fakeDeps({ actorRole })
-      addTarget(deps, 'owner-target', 'owner')
-      const response = await createAdminUsersHandler(deps)(
-        request(mutationBody(action, 'owner-target', 'owner')),
-      )
+Deno.test('owner targets are protected from admin actors with stored-role audits', async () => {
+  for (const action of mutationActions) {
+    const deps = fakeDeps({ actorRole: 'admin' })
+    addTarget(deps, 'owner-target', 'owner')
+    const response = await createAdminUsersHandler(deps)(
+      request(mutationBody(action, 'owner-target', 'owner')),
+    )
 
-      assertEquals(response.status, 409)
-      assertEquals((await response.json() as any).error.code, 'OWNER_PROTECTED')
-      assertEquals(deps.insertedAudits[0]?.old_role, 'owner')
-      assertEquals(deps.completedAudits[0]?.errorCode, 'OWNER_PROTECTED')
-      assertDeniedMutationHasNoSideEffects(deps, action, 'owner-target', 'owner')
-    }
+    assertEquals(response.status, 409)
+    assertEquals((await response.json() as any).error.code, 'OWNER_PROTECTED')
+    assertEquals(deps.insertedAudits[0]?.old_role, 'owner')
+    assertEquals(deps.completedAudits[0]?.errorCode, 'OWNER_PROTECTED')
+    assertDeniedMutationHasNoSideEffects(deps, action, 'owner-target', 'owner')
+  }
+})
+
+Deno.test('owner can perform every mutation against another owner', async () => {
+  for (const action of mutationActions) {
+    const deps = fakeDeps({ actorRole: 'owner' })
+    addTarget(deps, 'owner-target', 'owner')
+    const response = await createAdminUsersHandler(deps)(
+      request(mutationBody(action, 'owner-target', 'owner')),
+    )
+
+    assertEquals(response.status, 200)
+    assertEquals(deps.insertedAudits[0]?.actor_role, 'owner')
+    assertEquals(deps.insertedAudits[0]?.old_role, 'owner')
+    assertEquals(deps.completedAudits[0]?.status, 'success')
   }
 })
 
@@ -471,25 +490,27 @@ Deno.test('every target mutation fails closed and audits a missing stored target
   }
 })
 
-Deno.test('admin cannot assign admin while owner can, and owner is never assignable', async () => {
-  for (const actorRole of ['admin', 'owner'] as const) {
-    const deps = fakeDeps({ actorRole })
-    addTarget(deps, 'viewer-target', 'viewer')
-    const response = await createAdminUsersHandler(deps)(request({
-      action: 'update_role', userId: 'viewer-target', role: 'admin',
-    }))
+Deno.test('admin cannot assign admin or owner while owner can assign both', async () => {
+  for (const targetAssignRole of ['admin', 'owner'] as const) {
+    for (const actorRole of ['admin', 'owner'] as const) {
+      const deps = fakeDeps({ actorRole })
+      addTarget(deps, 'viewer-target', 'viewer')
+      const response = await createAdminUsersHandler(deps)(request({
+        action: 'update_role', userId: 'viewer-target', role: targetAssignRole,
+      }))
 
-    assertEquals(response.status, actorRole === 'owner' ? 200 : 403)
-    assertEquals(
-      actorRole === 'owner' ? deps.roles.get('viewer-target') : (await response.json() as any).error.code,
-      actorRole === 'owner' ? 'admin' : 'OWNER_REQUIRED',
-    )
+      assertEquals(response.status, actorRole === 'owner' ? 200 : 403)
+      assertEquals(
+        actorRole === 'owner' ? deps.roles.get('viewer-target') : (await response.json() as any).error.code,
+        actorRole === 'owner' ? targetAssignRole : 'OWNER_REQUIRED',
+      )
+    }
   }
 
   const invalid = fakeDeps({ actorRole: 'owner' })
   addTarget(invalid, 'viewer-target', 'viewer')
   const response = await createAdminUsersHandler(invalid)(request({
-    action: 'update_role', userId: 'viewer-target', role: 'owner',
+    action: 'update_role', userId: 'viewer-target', role: 'invalid_role',
   }))
   assertEquals(response.status, 400)
   assertEquals((await response.json() as any).error.code, 'INVALID_INPUT')
@@ -505,7 +526,9 @@ Deno.test('update role uses only the role store and summarizes the unchanged Aut
   const body: any = await response.json()
 
   assertEquals(response.status, 200)
-  assertEquals(callsNamed(deps, 'updateRole').map(call => call.args), [['admin-target', 'editor']])
+  assertEquals(callsNamed(deps, 'updateRole').map(call => call.args), [[
+    'admin-target', 'editor', 'admin',
+  ]])
   assertEquals(body.user.email, 'admin-target@example.com')
   assertEquals(body.user.role, 'editor')
   assertEquals(body.requiresRelogin, true)
@@ -517,6 +540,38 @@ Deno.test('update role uses only the role store and summarizes the unchanged Aut
       methodOrder.indexOf('updateRole') < methodOrder.indexOf('completeAudit'),
     true,
   )
+})
+
+Deno.test('admin role update cannot overwrite a target concurrently promoted to owner', async () => {
+  const deps = fakeDeps({ actorRole: 'admin' })
+  addTarget(deps, 'viewer-target', 'viewer')
+  deps.updateRole = async (
+    userId: string,
+    role: AssignableRole,
+    expectedRole?: AppRole,
+  ): Promise<RoleRecord> => {
+    deps.calls.push({ name: 'updateRole', args: [userId, role, expectedRole] })
+    deps.roles.set(userId, 'owner')
+    if (expectedRole !== undefined && deps.roles.get(userId) !== expectedRole) {
+      throw new ApiError('ROLE_STORE_ERROR')
+    }
+    deps.roles.set(userId, role)
+    return { userId, role }
+  }
+
+  const response = await createAdminUsersHandler(deps)(request({
+    action: 'update_role', userId: 'viewer-target', role: 'editor',
+  }))
+
+  assertEquals(response.status, 500)
+  assertEquals((await response.json() as any).error.code, 'ROLE_STORE_ERROR')
+  assertEquals(deps.roles.get('viewer-target'), 'owner')
+  assertEquals(callsNamed(deps, 'updateRole').map(call => call.args), [[
+    'viewer-target', 'editor', 'viewer',
+  ]])
+  assertEquals(deps.completedAudits[0], {
+    id: 'audit-1', status: 'failure', errorCode: 'ROLE_STORE_ERROR',
+  })
 })
 
 Deno.test('role updates still require the invited user to sign in first', async () => {
@@ -599,6 +654,35 @@ Deno.test('email confirmation mismatch is audited before delete and blocks delet
   assertEquals(deps.completedAudits[0]?.errorCode, 'EMAIL_CONFIRMATION_MISMATCH')
 })
 
+Deno.test('admin deletion cannot remove a target concurrently promoted to owner', async () => {
+  const deps = fakeDeps({ actorRole: 'admin' })
+  addTarget(deps, 'viewer-target', 'viewer')
+  deps.deleteUser = async (userId: string, expectedRole?: AppRole) => {
+    deps.calls.push({ name: 'deleteUser', args: [userId, expectedRole] })
+    deps.roles.set(userId, 'owner')
+    if (expectedRole !== undefined && deps.roles.get(userId) !== expectedRole) {
+      throw new ApiError('ROLE_STORE_ERROR')
+    }
+    deps.users = deps.users.filter(user => user.id !== userId)
+    deps.roles.delete(userId)
+  }
+
+  const response = await createAdminUsersHandler(deps)(request({
+    action: 'delete_user', userId: 'viewer-target', confirmEmail: 'viewer-target@example.com',
+  }))
+
+  assertEquals(response.status, 500)
+  assertEquals((await response.json() as any).error.code, 'ROLE_STORE_ERROR')
+  assertEquals(deps.users.some(user => user.id === 'viewer-target'), true)
+  assertEquals(deps.roles.get('viewer-target'), 'owner')
+  assertEquals(callsNamed(deps, 'deleteUser').map(call => call.args), [[
+    'viewer-target', 'viewer',
+  ]])
+  assertEquals(deps.completedAudits[0], {
+    id: 'audit-1', status: 'failure', errorCode: 'ROLE_STORE_ERROR',
+  })
+})
+
 Deno.test('deleting the known final owner returns LAST_OWNER_REQUIRED without calling Auth Admin', async () => {
   const deps = fakeDeps({ actorRole: 'owner', ownerCounts: [1] })
   addTarget(deps, 'owner-target', 'owner')
@@ -630,6 +714,30 @@ Deno.test('delete Auth failure becomes LAST_OWNER_REQUIRED when a fresh recheck 
     ['actor'], ['owner-target'], ['owner-target'],
   ])
   assertEquals(callsNamed(deps, 'countOwners').length, 2)
+  assertEquals(deps.completedAudits[0], {
+    id: 'audit-1', status: 'failure', errorCode: 'LAST_OWNER_REQUIRED',
+  })
+})
+
+Deno.test('delete Auth failure rechecks a stale non-owner target that became the sole owner', async () => {
+  const deps = fakeDeps({ actorRole: 'owner', ownerCounts: [1] })
+  addTarget(deps, 'viewer-target', 'viewer')
+  deps.deleteUser = async (userId: string) => {
+    deps.calls.push({ name: 'deleteUser', args: [userId] })
+    deps.roles.set(userId, 'owner')
+    throw new Error('Database error deleting user')
+  }
+
+  const response = await createAdminUsersHandler(deps)(request({
+    action: 'delete_user', userId: 'viewer-target', confirmEmail: 'viewer-target@example.com',
+  }))
+
+  assertEquals(response.status, 409)
+  assertEquals((await response.json() as any).error.code, 'LAST_OWNER_REQUIRED')
+  assertEquals(callsNamed(deps, 'getRole').map(call => call.args), [
+    ['actor'], ['viewer-target'], ['viewer-target'],
+  ])
+  assertEquals(callsNamed(deps, 'countOwners').length, 1)
   assertEquals(deps.completedAudits[0], {
     id: 'audit-1', status: 'failure', errorCode: 'LAST_OWNER_REQUIRED',
   })

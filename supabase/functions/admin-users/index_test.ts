@@ -13,14 +13,16 @@ function roleTableFake(results: {
   fromError?: unknown
 } = {}) {
   const calls: unknown[][] = []
+  let queryKind: 'read' | 'count' | 'update' = 'read'
   const builder: Record<string, (...args: unknown[]) => unknown> = {
     select(...args: unknown[]) {
       calls.push(['select', ...args])
+      if ((args[1] as { head?: unknown } | undefined)?.head === true) queryKind = 'count'
       return builder
     },
     eq(column: unknown, value: unknown) {
       calls.push(['eq', column, value])
-      if (column === 'role' && value === 'owner') {
+      if (queryKind === 'count' && column === 'role' && value === 'owner') {
         return Promise.resolve(results.count ?? { data: null, error: null, count: 0 })
       }
       return builder
@@ -31,11 +33,16 @@ function roleTableFake(results: {
     },
     update(attributes: unknown) {
       calls.push(['update', attributes])
+      queryKind = 'update'
       return builder
     },
     maybeSingle() {
       calls.push(['maybeSingle'])
-      return Promise.resolve(results.get ?? { data: null, error: null })
+      return Promise.resolve(
+        queryKind === 'update'
+          ? results.update ?? { data: null, error: null }
+          : results.get ?? { data: null, error: null },
+      )
     },
     single() {
       calls.push(['single'])
@@ -220,7 +227,7 @@ Deno.test('updateRole emits one update query and validates the returned row', as
   })
   const deps = createSupabaseDeps(fake.client as any, {})
 
-  assertEquals(await deps.updateRole('admin-id', 'editor'), {
+  assertEquals(await deps.updateRole('admin-id', 'editor', 'admin'), {
     userId: 'admin-id',
     role: 'editor',
   })
@@ -232,9 +239,136 @@ Deno.test('updateRole emits one update query and validates the returned row', as
   assertEquals(Number.isNaN(Date.parse(updatePayload.updated_at as string)), false)
   assertEquals(fake.calls.slice(2), [
     ['eq', 'user_id', 'admin-id'],
+    ['eq', 'role', 'admin'],
     ['select', 'user_id,role'],
-    ['single'],
+    ['maybeSingle'],
   ])
+})
+
+Deno.test('deleteUser reserves the expected role before calling Auth Admin', async () => {
+  const calls: unknown[][] = []
+  const reservedRole = {
+    user_id: 'viewer-id',
+    role: 'viewer',
+    created_at: '2026-09-05T00:00:00.000Z',
+    updated_at: '2026-09-05T01:00:00.000Z',
+  }
+  const reserveBuilder: Record<string, (...args: unknown[]) => unknown> = {
+    delete() {
+      calls.push(['delete'])
+      return reserveBuilder
+    },
+    eq(...args: unknown[]) {
+      calls.push(['eq', ...args])
+      return reserveBuilder
+    },
+    select(...args: unknown[]) {
+      calls.push(['select', ...args])
+      return reserveBuilder
+    },
+    maybeSingle() {
+      calls.push(['maybeSingle'])
+      return Promise.resolve({ data: reservedRole, error: null })
+    },
+    insert(...args: unknown[]) {
+      calls.push(['insert', ...args])
+      return Promise.resolve({ data: null, error: null })
+    },
+  }
+  const deps = createSupabaseDeps({
+    from(table: string) {
+      calls.push(['from', table])
+      return reserveBuilder
+    },
+    auth: { admin: { deleteUser: async (...args: unknown[]) => {
+      calls.push(['auth.deleteUser', ...args])
+      return { data: {}, error: null }
+    } } },
+  } as any, {})
+
+  await deps.deleteUser('viewer-id', 'viewer')
+
+  assertEquals(calls, [
+    ['from', 'app_user_roles'],
+    ['delete'],
+    ['eq', 'user_id', 'viewer-id'],
+    ['eq', 'role', 'viewer'],
+    ['select', 'user_id,role,created_at,updated_at'],
+    ['maybeSingle'],
+    ['auth.deleteUser', 'viewer-id'],
+  ])
+})
+
+Deno.test('deleteUser restores the reserved role before propagating an Auth failure', async () => {
+  const calls: unknown[][] = []
+  const reservedRole = {
+    user_id: 'viewer-id',
+    role: 'viewer',
+    created_at: '2026-09-05T00:00:00.000Z',
+    updated_at: '2026-09-05T01:00:00.000Z',
+  }
+  const reserveBuilder: Record<string, (...args: unknown[]) => unknown> = {
+    delete() {
+      calls.push(['delete'])
+      return reserveBuilder
+    },
+    eq(...args: unknown[]) {
+      calls.push(['eq', ...args])
+      return reserveBuilder
+    },
+    select(...args: unknown[]) {
+      calls.push(['select', ...args])
+      return reserveBuilder
+    },
+    maybeSingle() {
+      calls.push(['maybeSingle'])
+      return Promise.resolve({ data: reservedRole, error: null })
+    },
+    insert(...args: unknown[]) {
+      calls.push(['insert', ...args])
+      return Promise.resolve({ data: null, error: null })
+    },
+  }
+  const deps = createSupabaseDeps({
+    from(table: string) {
+      calls.push(['from', table])
+      return reserveBuilder
+    },
+    auth: { admin: { deleteUser: async (...args: unknown[]) => {
+      calls.push(['auth.deleteUser', ...args])
+      return { data: {}, error: new Error('Auth unavailable') }
+    } } },
+  } as any, {})
+
+  const error = await assertRejects(
+    () => deps.deleteUser('viewer-id', 'viewer'),
+    ApiError,
+    'SUPABASE_AUTH_ERROR',
+  )
+
+  assertEquals((error as ApiError).code, 'SUPABASE_AUTH_ERROR')
+  assertEquals(calls.at(-2), ['from', 'app_user_roles'])
+  assertEquals(calls.at(-1), ['insert', reservedRole])
+})
+
+Deno.test('deleteUser never calls Auth when the expected role reservation misses', async () => {
+  let authCalled = false
+  const reserveBuilder: Record<string, (...args: unknown[]) => unknown> = {
+    delete: () => reserveBuilder,
+    eq: () => reserveBuilder,
+    select: () => reserveBuilder,
+    maybeSingle: () => Promise.resolve({ data: null, error: null }),
+  }
+  const deps = createSupabaseDeps({
+    from: () => reserveBuilder,
+    auth: { admin: { deleteUser: async () => {
+      authCalled = true
+      return { data: {}, error: null }
+    } } },
+  } as any, {})
+
+  await assertRoleStoreError(() => deps.deleteUser('viewer-id', 'viewer'))
+  assertEquals(authCalled, false)
 })
 
 Deno.test('role-table query errors map to stable ROLE_STORE_ERROR', async () => {
@@ -249,7 +383,7 @@ Deno.test('role-table query errors map to stable ROLE_STORE_ERROR', async () => 
     if (operation === 'get') await assertRoleStoreError(() => deps.getRole('user-id'))
     else if (operation === 'count') await assertRoleStoreError(() => deps.countOwners())
     else if (operation === 'list') await assertRoleStoreError(() => deps.listRoles(['user-id']))
-    else await assertRoleStoreError(() => deps.updateRole('user-id', 'viewer'))
+    else await assertRoleStoreError(() => deps.updateRole('user-id', 'viewer', 'editor'))
   }
 })
 
@@ -259,7 +393,7 @@ Deno.test('only the exact last-owner database conflict maps to LAST_OWNER_REQUIR
   })
   const exactDeps = createSupabaseDeps(exactConflict.client as any, {})
   const exactError = await assertRejects(
-    () => exactDeps.updateRole('owner-id', 'admin'),
+    () => exactDeps.updateRole('owner-id', 'admin', 'owner'),
     ApiError,
     'LAST_OWNER_REQUIRED',
   )
@@ -271,7 +405,7 @@ Deno.test('only the exact last-owner database conflict maps to LAST_OWNER_REQUIR
   ]) {
     const fake = roleTableFake({ update: { data: null, error } })
     const deps = createSupabaseDeps(fake.client as any, {})
-    await assertRoleStoreError(() => deps.updateRole('owner-id', 'admin'))
+    await assertRoleStoreError(() => deps.updateRole('owner-id', 'admin', 'owner'))
   }
 })
 
@@ -287,12 +421,12 @@ Deno.test('invalid roles returned by every role-table adapter fail closed', asyn
   const updateFake = roleTableFake({
     update: { data: { user_id: 'user-id', role: 'superadmin' }, error: null },
   })
-  await assertRoleStoreError(() => createSupabaseDeps(updateFake.client as any, {}).updateRole('user-id', 'viewer'))
+  await assertRoleStoreError(() => createSupabaseDeps(updateFake.client as any, {}).updateRole('user-id', 'viewer', 'editor'))
 })
 
 Deno.test('updateRole treats a missing returned row as ROLE_STORE_ERROR', async () => {
   const fake = roleTableFake({ update: { data: null, error: null } })
-  await assertRoleStoreError(() => createSupabaseDeps(fake.client as any, {}).updateRole('user-id', 'viewer'))
+  await assertRoleStoreError(() => createSupabaseDeps(fake.client as any, {}).updateRole('user-id', 'viewer', 'editor'))
 })
 
 Deno.test('updateRole rejects a missing, malformed, or mismatched returned user_id', async () => {
@@ -304,7 +438,7 @@ Deno.test('updateRole rejects a missing, malformed, or mismatched returned user_
   ]) {
     const fake = roleTableFake({ update: { data: row, error: null } })
     const deps = createSupabaseDeps(fake.client as any, {})
-    await assertRoleStoreError(() => deps.updateRole('requested-id', 'viewer'))
+    await assertRoleStoreError(() => deps.updateRole('requested-id', 'viewer', 'editor'))
   }
 })
 
@@ -314,5 +448,5 @@ Deno.test('role-table client failures map to stable ROLE_STORE_ERROR', async () 
 
   await assertRoleStoreError(() => deps.getRole('user-id'))
   await assertRoleStoreError(() => deps.listRoles(['user-id']))
-  await assertRoleStoreError(() => deps.updateRole('user-id', 'viewer'))
+  await assertRoleStoreError(() => deps.updateRole('user-id', 'viewer', 'editor'))
 })

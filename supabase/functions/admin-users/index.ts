@@ -1,6 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.110.0'
 import { createCorsHeaders } from '../_shared/cors.ts'
-import { ApiError, requireStoredRole } from './domain.ts'
+import { ApiError, requireStoredRole, type AppRole } from './domain.ts'
 import { createAdminUsersHandler, type HandlerDeps, type RoleRecord } from './handler.ts'
 
 type Environment = Record<string, string | undefined>
@@ -88,6 +88,35 @@ function mapRoleRecord(row: unknown, expectedUserId?: string): RoleRecord {
   }
 }
 
+type ReservedRoleRecord = {
+  user_id: string
+  role: AppRole
+  created_at: string
+  updated_at: string
+}
+
+function mapReservedRoleRecord(
+  row: unknown,
+  expectedUserId: string,
+  expectedRole: AppRole,
+): ReservedRoleRecord {
+  const roleRecord = mapRoleRecord(row, expectedUserId)
+  const stored = row as Record<string, unknown>
+  if (
+    roleRecord.role !== expectedRole ||
+    typeof stored.created_at !== 'string' ||
+    typeof stored.updated_at !== 'string'
+  ) {
+    throw new Error('Invalid reserved role row')
+  }
+  return {
+    user_id: roleRecord.userId,
+    role: roleRecord.role,
+    created_at: stored.created_at,
+    updated_at: stored.updated_at,
+  }
+}
+
 // 將資料庫的 snake_case 稽核欄位轉為 domain/handler 對外使用的 camelCase。
 function mapAuditLog(row: Record<string, any>) {
   return {
@@ -164,22 +193,46 @@ export function createSupabaseDeps(client: SupabaseClientLike, env: Environment)
     async inviteUser(email) {
       return unwrap<any>(await client.auth.admin.inviteUserByEmail(email, inviteOptions())).user
     },
-    async updateRole(userId, role) {
+    async updateRole(userId, role, expectedRole) {
       return await roleStoreOperation(async () => {
         const { data, error } = await client
           .from('app_user_roles')
           .update({ role, updated_at: new Date().toISOString() })
           .eq('user_id', userId)
+          .eq('role', expectedRole)
           .select('user_id,role')
-          .single()
+          .maybeSingle()
         if (error) throw error
         if (!data) throw new Error('Role update returned no row')
         return mapRoleRecord(data, userId)
       })
     },
-    async deleteUser(id) {
-      const result = await client.auth.admin.deleteUser(id)
-      if (result.error) throwForError(result.error)
+    async deleteUser(id, expectedRole) {
+      const reservedRole = await roleStoreOperation(async () => {
+        const { data, error } = await client
+          .from('app_user_roles')
+          .delete()
+          .eq('user_id', id)
+          .eq('role', expectedRole)
+          .select('user_id,role,created_at,updated_at')
+          .maybeSingle()
+        if (error) throw error
+        if (!data) throw new Error('Role deletion reservation returned no row')
+        return mapReservedRoleRecord(data, id, expectedRole)
+      })
+
+      try {
+        const result = await client.auth.admin.deleteUser(id)
+        if (result.error) throw result.error
+      } catch (error) {
+        await roleStoreOperation(async () => {
+          const { error: restoreError } = await client
+            .from('app_user_roles')
+            .insert(reservedRole)
+          if (restoreError) throw restoreError
+        })
+        throwForError(error)
+      }
     },
     async resendInvite(email) {
       const result = await client.auth.admin.inviteUserByEmail(email, redirectOptions(env.INVITE_REDIRECT_URL))
