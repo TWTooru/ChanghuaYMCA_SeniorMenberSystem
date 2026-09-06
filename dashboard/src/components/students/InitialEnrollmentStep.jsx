@@ -1,13 +1,17 @@
 import CourseTagPicker from '../enrollment/CourseTagPicker'
+import { Input } from '../ui/input'
+import { Label } from '../ui/label'
+import { Textarea } from '../ui/textarea'
 
 export default function InitialEnrollmentStep({
   enrollment, onChange, onCoursesChange, account, disabled = false,
 }) {
   const input = (id, name, type = 'text', extra = {}) => (
-    <input id={id} className="form-input" name={name} type={type}
+    <Input id={id} className="h-10" name={name} type={type}
       value={enrollment[name] ?? ''} onChange={onChange} disabled={disabled} {...extra} />
   )
   const money = (id, name) => input(id, name, 'number', { min: '0', step: '1', inputMode: 'numeric' })
+  const changeNotes = event => onChange({ target: { name: event.target.name, value: event.target.value } })
 
   return <>
     <fieldset className="member-wizard-section">
@@ -16,9 +20,9 @@ export default function InitialEnrollmentStep({
         <Field label="期別" id="initial-enrollment-period">
           <div className="period-input-group member-wizard-period-input">
             <span className="period-prefix">第</span>
-            <input
+            <Input
               id="initial-enrollment-period"
-              className="form-input period-number-input"
+              className="h-10 period-number-input"
               name="period"
               type="number"
               min="1"
@@ -57,9 +61,9 @@ export default function InitialEnrollmentStep({
     <fieldset className="member-wizard-section">
       <legend>其他資料</legend>
       <div className="member-wizard-section-grid">
-        <Field label="備註" id="initial-enrollment-notes" fullWidth><textarea id="initial-enrollment-notes" className="form-input form-textarea" name="notes" rows={3} value={enrollment.notes ?? ''} onChange={onChange} disabled={disabled} /></Field>
+        <Field label="備註" id="initial-enrollment-notes" fullWidth><Textarea id="initial-enrollment-notes" name="notes" rows={3} value={enrollment.notes ?? ''} onChange={changeNotes} disabled={disabled} /></Field>
         <Field label="經手人姓名" id="initial-enrollment-handler">{input('initial-enrollment-handler', 'handled_by_name')}</Field>
-        <Field label="登入帳號（自動帶入）" id="initial-enrollment-account"><input id="initial-enrollment-account" className="form-input" value={account || ''} readOnly aria-readonly="true" /></Field>
+        <Field label="登入帳號（自動帶入）" id="initial-enrollment-account"><Input id="initial-enrollment-account" className="h-10" value={account || ''} readOnly aria-readonly="true" /></Field>
         <Field label="報到日期" id="initial-enrollment-reported-on">{input('initial-enrollment-reported-on', 'reported_on', 'date')}</Field>
       </div>
     </fieldset>
@@ -67,5 +71,5 @@ export default function InitialEnrollmentStep({
 }
 
 function Field({ label, id, fullWidth = false, children }) {
-  return <div className={`form-group${fullWidth ? ' full-width' : ''}`}><label className="form-label" htmlFor={id}>{label}</label>{children}</div>
+  return <div className={`form-group${fullWidth ? ' full-width' : ''}`}><Label htmlFor={id}>{label}</Label>{children}</div>
 }

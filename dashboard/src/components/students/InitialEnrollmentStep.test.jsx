@@ -61,4 +61,26 @@ describe('InitialEnrollmentStep', () => {
     fireEvent.click(screen.getByRole('button', { name: '選擇瑜珈基礎' }))
     expect(onCoursesChange).toHaveBeenCalledWith(['瑜珈基礎'])
   })
+
+  it('passes multiline notes through the enrollment change contract', () => {
+    const onChange = vi.fn()
+    render(<InitialEnrollmentStep enrollment={enrollment} onChange={onChange}
+      onCoursesChange={vi.fn()} account="editor@example.com" />)
+
+    fireEvent.change(screen.getByLabelText('備註'), { target: { value: '第一行\n第二行' } })
+
+    const event = onChange.mock.calls[0][0]
+    expect(event.target.name).toBe('notes')
+    expect(event.target.value).toBe('第一行\n第二行')
+  })
+
+  it('locks editable enrollment fields while keeping the account readonly', () => {
+    render(<InitialEnrollmentStep enrollment={enrollment} onChange={vi.fn()}
+      onCoursesChange={vi.fn()} account="editor@example.com" disabled />)
+
+    for (const label of ['期別', '開始日期', '結束日期', '預繳金額', '學費', '教材費', '會友費', '備註', '經手人姓名', '報到日期']) {
+      expect(screen.getByLabelText(label).disabled).toBe(true)
+    }
+    expect(screen.getByLabelText('登入帳號（自動帶入）').readOnly).toBe(true)
+  })
 })
