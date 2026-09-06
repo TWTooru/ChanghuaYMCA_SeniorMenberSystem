@@ -1,7 +1,8 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { INITIAL_ENROLLMENT_ERROR_MESSAGES } from '../../domain/initialEnrollment'
 import AddStudentModal from './AddStudentModal'
+import StudentFilters from './StudentFilters'
 
 const { createStudentWithInitialEnrollment } = vi.hoisted(() => ({
   createStudentWithInitialEnrollment: vi.fn(),
@@ -62,6 +63,24 @@ describe('AddStudentModal', () => {
     expect(screen.getByText('步驟 1 / 2')).not.toBeNull()
     expect(screen.getByLabelText('姓名')).not.toBeNull()
     expect(screen.queryByLabelText('期別')).toBeNull()
+  })
+
+  it('keeps the profile gender control labelled when student filters are behind the dialog', () => {
+    render(<>
+      <StudentFilters
+        studentSearch=""
+        onSearchChange={vi.fn()}
+        studentGenderFilter=""
+        onGenderChange={vi.fn()}
+        studentEduFilter=""
+        onEduChange={vi.fn()}
+        permissions={{ canAddStudent: true }}
+        onShowAddStudent={vi.fn()}
+      />
+      <AddStudentModal onClose={vi.fn()} onRefresh={vi.fn()} />
+    </>)
+
+    expect(within(screen.getByRole('dialog')).getByRole('combobox', { name: '性別' })).not.toBeNull()
   })
 
   it('closes when Escape is pressed while the dialog is open', () => {

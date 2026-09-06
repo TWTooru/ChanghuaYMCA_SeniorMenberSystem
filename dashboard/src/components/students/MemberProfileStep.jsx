@@ -8,7 +8,7 @@ export default function MemberProfileStep({ profile, onChange, disabled = false 
     <Field label="ID（選填）"><Input id="student-id" className="h-10" name="student_id" inputMode="numeric" value={profile.student_id} onChange={onChange} disabled={disabled} /></Field>
     <Field label="姓名"><Input id="student-name" className="h-10" name="name" value={profile.name} onChange={onChange} disabled={disabled} required /></Field>
     <StudentProfileSelectField
-      id="student-gender" label="性別" name="gender"
+      id="member-profile-gender" label="性別" name="gender"
       value={profile.gender} options={['男', '女']}
       onChange={onChange} required disabled={disabled}
     />
