@@ -1,19 +1,30 @@
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { EDUCATION_OPTIONS } from '../../domain/studentFields'
+import StudentProfileSelectField from './StudentProfileSelectField'
 
 export default function MemberProfileStep({ profile, onChange, disabled = false }) {
   return <>
-    <Field label="ID（選填）"><input id="student-id" className="form-input" name="student_id" inputMode="numeric" value={profile.student_id} onChange={onChange} disabled={disabled} /></Field>
-    <Field label="姓名"><input id="student-name" className="form-input" name="name" value={profile.name} onChange={onChange} disabled={disabled} required /></Field>
-    <Field label="性別"><select id="student-gender" className="form-select" name="gender" value={profile.gender} onChange={onChange} disabled={disabled} required><option value="">請選擇</option><option value="男">男</option><option value="女">女</option></select></Field>
-    <Field label="電子郵件"><input id="student-email" className="form-input" name="email" type="email" value={profile.email} onChange={onChange} disabled={disabled} /></Field>
-    <Field label="電話"><input id="student-phone" className="form-input" name="phone" value={profile.phone} onChange={onChange} disabled={disabled} /></Field>
-    <Field label="出生年月日"><input id="student-birth-date" className="form-input" name="birth_date" type="date" value={profile.birth_date} onChange={onChange} disabled={disabled} /></Field>
-    <Field label="通訊處"><input id="student-address" className="form-input" name="address" value={profile.address} onChange={onChange} disabled={disabled} /></Field>
-    <Field label="服務機關 / 學校"><input id="student-organization" className="form-input" name="organization" value={profile.organization} onChange={onChange} disabled={disabled} /></Field>
-    <Field label="教育程度"><select id="student-education" className="form-select" name="education" value={profile.education} onChange={onChange} disabled={disabled}><option value="">請選擇</option>{EDUCATION_OPTIONS.map(option => <option key={option} value={option}>{option}</option>)}</select></Field>
+    <Field label="ID（選填）"><Input id="student-id" className="h-10" name="student_id" inputMode="numeric" value={profile.student_id} onChange={onChange} disabled={disabled} /></Field>
+    <Field label="姓名"><Input id="student-name" className="h-10" name="name" value={profile.name} onChange={onChange} disabled={disabled} required /></Field>
+    <StudentProfileSelectField
+      id="student-gender" label="性別" name="gender"
+      value={profile.gender} options={['男', '女']}
+      onChange={onChange} required disabled={disabled}
+    />
+    <Field label="電子郵件"><Input id="student-email" className="h-10" name="email" type="email" value={profile.email} onChange={onChange} disabled={disabled} /></Field>
+    <Field label="電話"><Input id="student-phone" className="h-10" name="phone" value={profile.phone} onChange={onChange} disabled={disabled} /></Field>
+    <Field label="出生年月日"><Input id="student-birth-date" className="h-10" name="birth_date" type="date" value={profile.birth_date} onChange={onChange} disabled={disabled} /></Field>
+    <Field label="通訊處"><Input id="student-address" className="h-10" name="address" value={profile.address} onChange={onChange} disabled={disabled} /></Field>
+    <Field label="服務機關 / 學校"><Input id="student-organization" className="h-10" name="organization" value={profile.organization} onChange={onChange} disabled={disabled} /></Field>
+    <StudentProfileSelectField
+      id="student-education" label="教育程度" name="education"
+      value={profile.education} options={EDUCATION_OPTIONS}
+      onChange={onChange} disabled={disabled}
+    />
   </>
 }
 
 function Field({ label, children }) {
-  return <div className="form-group"><label className="form-label" htmlFor={children.props.id}>{label}</label>{children}</div>
+  return <div className="form-group"><Label htmlFor={children.props.id}>{label}</Label>{children}</div>
 }

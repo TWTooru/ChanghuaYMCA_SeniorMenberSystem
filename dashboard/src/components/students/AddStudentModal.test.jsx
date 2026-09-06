@@ -23,14 +23,21 @@ const renderModal = (props = {}) => {
   return { onClose, onRefresh }
 }
 
-const completeProfile = () => {
-  fireEvent.change(screen.getByLabelText('姓名'), { target: { value: '王小明' } })
-  fireEvent.change(screen.getByLabelText('性別'), { target: { value: '男' } })
-  fireEvent.change(screen.getByLabelText('教育程度'), { target: { value: '高中' } })
+async function selectOption(label, optionName) {
+  fireEvent.click(screen.getByRole('combobox', { name: label }))
+  const option = await screen.findByRole('option', { name: optionName, exact: true })
+  fireEvent.pointerDown(option, { pointerType: 'mouse' })
+  fireEvent.click(option)
 }
 
-const goToEnrollment = () => {
-  completeProfile()
+const completeProfile = async () => {
+  fireEvent.change(screen.getByLabelText('姓名'), { target: { value: '王小明' } })
+  await selectOption('性別', '男')
+  await selectOption('教育程度', '高中')
+}
+
+const goToEnrollment = async () => {
+  await completeProfile()
   fireEvent.click(screen.getByRole('button', { name: '下一步' }))
 }
 
@@ -65,9 +72,9 @@ describe('AddStudentModal', () => {
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
-  it('moves to step 2 and displays enrollment fields with the login account', () => {
+  it('moves to step 2 and displays enrollment fields with the login account', async () => {
     renderModal()
-    goToEnrollment()
+    await goToEnrollment()
 
     expect(screen.getByText('步驟 2 / 2')).not.toBeNull()
     for (const label of ['期別', '開始日期', '結束日期', '預繳金額', '預繳 No.', '學費', '教材費', '會友費', '正式收據 No.', '備註', '經手人姓名', '登入帳號（自動帶入）', '報到日期']) {
@@ -77,20 +84,20 @@ describe('AddStudentModal', () => {
     expect(screen.getByLabelText('登入帳號（自動帶入）').readOnly).toBe(true)
   })
 
-  it('preserves profile values when navigating forward then back', () => {
+  it('preserves profile values when navigating forward then back', async () => {
     renderModal()
     fireEvent.change(screen.getByLabelText('姓名'), { target: { value: '王小明' } })
-    fireEvent.change(screen.getByLabelText('性別'), { target: { value: '男' } })
-    fireEvent.change(screen.getByLabelText('教育程度'), { target: { value: '高中' } })
+    await selectOption('性別', '男')
+    await selectOption('教育程度', '高中')
     fireEvent.click(screen.getByRole('button', { name: '下一步' }))
     fireEvent.click(screen.getByRole('button', { name: '上一步' }))
 
     expect(screen.getByLabelText('姓名').value).toBe('王小明')
   })
 
-  it('shows an email-format error from the visible next button and stays on step 1', () => {
+  it('shows an email-format error from the visible next button and stays on step 1', async () => {
     renderModal()
-    completeProfile()
+    await completeProfile()
     fireEvent.change(screen.getByLabelText('電子郵件'), { target: { value: 'not-an-email' } })
     fireEvent.click(screen.getByRole('button', { name: '下一步' }))
 
@@ -100,9 +107,9 @@ describe('AddStudentModal', () => {
     expect(createStudentWithInitialEnrollment).not.toHaveBeenCalled()
   })
 
-  it('shows the missing-date error and does not call the service', () => {
+  it('shows the missing-date error and does not call the service', async () => {
     renderModal()
-    goToEnrollment()
+    await goToEnrollment()
     fireEvent.change(screen.getByLabelText('期別'), { target: { value: '16' } })
     fireEvent.click(screen.getByRole('button', { name: '選擇瑜珈基礎' }))
     submitForm()
@@ -111,9 +118,9 @@ describe('AddStudentModal', () => {
     expect(createStudentWithInitialEnrollment).not.toHaveBeenCalled()
   })
 
-  it('shows the reversed-date error and does not call the service', () => {
+  it('shows the reversed-date error and does not call the service', async () => {
     renderModal()
-    goToEnrollment()
+    await goToEnrollment()
     completeEnrollment()
     fireEvent.change(screen.getByLabelText('開始日期'), { target: { value: '2026-12-31' } })
     fireEvent.change(screen.getByLabelText('結束日期'), { target: { value: '2026-09-01' } })
@@ -123,9 +130,9 @@ describe('AddStudentModal', () => {
     expect(createStudentWithInitialEnrollment).not.toHaveBeenCalled()
   })
 
-  it('shows the no-course error and does not call the service', () => {
+  it('shows the no-course error and does not call the service', async () => {
     renderModal()
-    goToEnrollment()
+    await goToEnrollment()
     completeEnrollment({ course: false })
     submitForm()
 
@@ -133,9 +140,9 @@ describe('AddStudentModal', () => {
     expect(createStudentWithInitialEnrollment).not.toHaveBeenCalled()
   })
 
-  it('shows the invalid-amount error and does not call the service', () => {
+  it('shows the invalid-amount error and does not call the service', async () => {
     renderModal()
-    goToEnrollment()
+    await goToEnrollment()
     completeEnrollment()
     fireEvent.change(screen.getByLabelText('學費'), { target: { value: '-1' } })
     submitForm()
@@ -147,7 +154,7 @@ describe('AddStudentModal', () => {
   it('submits normalized student and enrollment payloads without actor fields', async () => {
     createStudentWithInitialEnrollment.mockResolvedValue({ student_id: 1, enrollment_id: 2 })
     renderModal()
-    goToEnrollment()
+    await goToEnrollment()
     completeEnrollment()
     fireEvent.change(screen.getByLabelText('學費'), { target: { value: '2400' } })
     fireEvent.click(screen.getByRole('button', { name: '新增會員並報名' }))
@@ -171,7 +178,7 @@ describe('AddStudentModal', () => {
     createStudentWithInitialEnrollment.mockResolvedValue({ student_id: 1, enrollment_id: 2 })
     renderModal()
     fireEvent.change(screen.getByLabelText('姓名'), { target: { value: '王小明' } })
-    fireEvent.change(screen.getByLabelText('性別'), { target: { value: '男' } })
+    await selectOption('性別', '男')
     fireEvent.click(screen.getByRole('button', { name: '下一步' }))
     completeEnrollment()
     submitForm()
@@ -187,7 +194,7 @@ describe('AddStudentModal', () => {
     let resolveRequest
     createStudentWithInitialEnrollment.mockImplementation(() => new Promise(resolve => { resolveRequest = resolve }))
     renderModal()
-    goToEnrollment()
+    await goToEnrollment()
     completeEnrollment()
     const submit = screen.getByRole('button', { name: '新增會員並報名' })
     fireEvent.click(submit)
@@ -206,7 +213,7 @@ describe('AddStudentModal', () => {
   it('keeps the dialog open and shows a rejection message without callbacks', async () => {
     createStudentWithInitialEnrollment.mockRejectedValue(new Error('送出失敗'))
     const { onClose, onRefresh } = renderModal()
-    goToEnrollment()
+    await goToEnrollment()
     completeEnrollment()
     fireEvent.click(screen.getByRole('button', { name: '新增會員並報名' }))
 
@@ -219,7 +226,7 @@ describe('AddStudentModal', () => {
   it('refreshes and closes exactly once after a successful submission', async () => {
     createStudentWithInitialEnrollment.mockResolvedValue({ student_id: 1, enrollment_id: 2 })
     const { onClose, onRefresh } = renderModal()
-    goToEnrollment()
+    await goToEnrollment()
     completeEnrollment()
     fireEvent.click(screen.getByRole('button', { name: '新增會員並報名' }))
 
