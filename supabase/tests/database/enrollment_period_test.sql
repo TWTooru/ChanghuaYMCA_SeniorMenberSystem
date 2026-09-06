@@ -2,6 +2,14 @@ begin;
 
 insert into auth.users (id, email, raw_app_meta_data, raw_user_meta_data)
 values (
+  '00000000-0000-4000-8000-000000000001',
+  'owner.enrollment-period-fixture@example.com',
+  '{}',
+  '{}'
+);
+
+insert into auth.users (id, email, raw_app_meta_data, raw_user_meta_data)
+values (
   '11111111-1111-4111-8111-111111111111',
   'editor.enrollment-period-fixture@example.com',
   '{"app_role":"viewer"}',

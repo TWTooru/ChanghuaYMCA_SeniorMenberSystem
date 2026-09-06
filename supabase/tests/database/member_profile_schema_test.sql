@@ -35,6 +35,10 @@ update public.app_user_roles
 set role = 'owner', updated_at = pg_catalog.now()
 where user_id = '33333333-3333-4333-8333-333333333333';
 
+update public.app_user_roles
+set role = 'viewer', updated_at = pg_catalog.now()
+where user_id = '11111111-1111-4111-8111-111111111111';
+
 delete from public.app_user_roles
 where user_id = '44444444-4444-4444-8444-444444444444';
 

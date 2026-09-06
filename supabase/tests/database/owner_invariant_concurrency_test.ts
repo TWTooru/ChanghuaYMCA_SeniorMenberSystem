@@ -29,13 +29,19 @@ Deno.test({
     try {
       await setup.query(
         `insert into auth.users (id, email, raw_app_meta_data, raw_user_meta_data)
-         values ($1, 'owner-a@example.com', '{}', '{}')`,
+         values ($1, 'owner-a@example.com', '{}', '{}')
+         on conflict (id) do nothing`,
         [ownerA],
       );
       await setup.query(
         `insert into auth.users (id, email, raw_app_meta_data, raw_user_meta_data)
-         values ($1, 'owner-b@example.com', '{}', '{}')`,
+         values ($1, 'owner-b@example.com', '{}', '{}')
+         on conflict (id) do nothing`,
         [ownerB],
+      );
+      await setup.query(
+        `update public.app_user_roles set role = 'owner' where user_id = $1`,
+        [ownerA],
       );
       await setup.query(
         `update public.app_user_roles set role = 'owner' where user_id = $1`,

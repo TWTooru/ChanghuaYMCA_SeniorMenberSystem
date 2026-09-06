@@ -163,7 +163,7 @@ select has_column(
   'public',
   'app_user_deletion_reservations',
   'released_at',
-  'failed Auth recovery retires but preserves the stale-worker fence'
+  'failed Auth recovery leaves a durable released marker'
 );
 select col_is_pk(
   'public',
@@ -308,6 +308,14 @@ select ok(
   'a matching target role can be reserved for deletion'
 );
 reset role;
+select ok(
+  (
+    select reservation.expires_at - reservation.created_at >= interval '10 minutes'
+    from public.app_user_deletion_reservations reservation
+    where reservation.user_id = '10000000-0000-4000-8000-000000000005'
+  ),
+  'the deletion lease covers the hosted Edge wall-clock limit'
+);
 select is(
   (
     select role
@@ -355,7 +363,7 @@ select ok(
     where reservation.user_id = '10000000-0000-4000-8000-000000000005'
       and reservation.released_at is not null
   ),
-  'Auth-error recovery keeps a durable fence against a resumed stale worker'
+  'Auth-error recovery durably marks the current lease released'
 );
 select lives_ok(
   $$update public.app_user_roles
@@ -368,7 +376,7 @@ select throws_ok(
     where id = '10000000-0000-4000-8000-000000000005'$$,
   'P0001',
   'ACCOUNT_DELETE_RESERVATION_INVALID',
-  'a released reservation rejects a resumed stale Auth deletion'
+  'a released reservation rejects an Auth cascade until a new request takes over'
 );
 rollback to savepoint durable_deletion_reservation;
 
@@ -395,7 +403,7 @@ select throws_ok(
     where id = '10000000-0000-4000-8000-000000000005'$$,
   'P0001',
   'ACCOUNT_DELETE_RESERVATION_INVALID',
-  'a paused worker cannot delete after its role snapshot or lease expires'
+  'an expired unreplaced reservation rejects a later Auth cascade'
 );
 select is(
   (
@@ -404,7 +412,7 @@ select is(
     where user_id = '10000000-0000-4000-8000-000000000005'
   ),
   'admin',
-  'the stale deletion failure preserves the newly authorized role'
+  'the invalid-reservation deletion failure preserves the newly authorized role'
 );
 rollback to savepoint expired_worker_cannot_delete;
 
@@ -426,7 +434,7 @@ select ok(
     'viewer',
     '20000000-0000-4000-8000-000000000004'
   ),
-  'a new worker can atomically take over an expired lease'
+  'a new authorized request can atomically take over an expired lease'
 );
 select ok(
   not public.release_app_user_deletion(
