@@ -4,6 +4,7 @@ import { Upload } from 'lucide-react'
 import Swal from 'sweetalert2'
 import withReactContent from 'sweetalert2-react-content'
 import { commitImport, prepareImport } from '../../services/dataImportService'
+import useBodyScrollLock from '../../hooks/useBodyScrollLock'
 import ImportPreviewDialog from './ImportPreviewDialog'
 import './sync.css'
 
@@ -19,6 +20,7 @@ export default function ExcelSync({ onSyncComplete }) {
   const [isImporting, setIsImporting] = useState(false)
   const [preview, setPreview] = useState(null)
   const [assignedIds, setAssignedIds] = useState([])
+  useBodyScrollLock(assignedIds.length > 0)
   const assignedIdText = assignedIds.map(({ sourceRow, studentId }) => `來源第 ${sourceRow} 列：${studentId}`).join('\n')
 
   const copyAssignedIds = async () => {

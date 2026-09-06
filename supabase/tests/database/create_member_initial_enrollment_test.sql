@@ -27,7 +27,7 @@ update public.app_user_roles
 set role = 'editor', updated_at = pg_catalog.now()
 where user_id = '11111111-1111-4111-8111-111111111111';
 
-select plan(33);
+select plan(34);
 
 truncate table public.students restart identity cascade;
 
@@ -164,6 +164,21 @@ select is(
    where form_id = (pg_catalog.current_setting('test.zero_fees')::jsonb ->> 'form_id')::bigint),
   0,
   'zero fee enrollment creates no billing receipts'
+);
+
+select pg_catalog.set_config(
+  'test.optional_education',
+  public.create_student_with_initial_enrollment(
+    '{"name":"教育程度選填會員","gender":"女"}'::jsonb,
+    '{"period":"第8期","period_start_date":"2026-09-01","period_end_date":"2026-12-31","courses":["瑜伽入門"]}'::jsonb
+  )::text,
+  true
+);
+select is(
+  (select education from public.students
+   where student_id = (pg_catalog.current_setting('test.optional_education')::jsonb ->> 'student_id')::bigint),
+  null,
+  'initial enrollment allows education to be omitted'
 );
 
 select pg_catalog.set_config(

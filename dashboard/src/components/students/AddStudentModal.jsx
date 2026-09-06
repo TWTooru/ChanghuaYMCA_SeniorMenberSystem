@@ -25,8 +25,8 @@ const initialEnrollment = {
 const EMAIL_VALIDATION_MESSAGE = '電子郵件格式不正確'
 
 function normalizeProfile(profile) {
-  if (!profile.name.trim() || !profile.gender || !profile.education) {
-    throw new Error('請完整填寫姓名、性別與教育程度')
+  if (!profile.name.trim() || !profile.gender) {
+    throw new Error('請完整填寫姓名與性別')
   }
   const payload = Object.fromEntries(
     Object.entries(profile).map(([key, value]) => [key, String(value).trim()]),
@@ -36,7 +36,7 @@ function normalizeProfile(profile) {
   if (payload.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email)) {
     throw new Error(EMAIL_VALIDATION_MESSAGE)
   }
-  for (const key of ['phone', 'birth_date', 'address', 'organization']) payload[key] ||= null
+  for (const key of ['phone', 'birth_date', 'address', 'organization', 'education']) payload[key] ||= null
   return payload
 }
 

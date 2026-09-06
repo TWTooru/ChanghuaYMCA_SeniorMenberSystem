@@ -47,9 +47,8 @@ export default function Login({ onLoginSuccess }) {
             {/* 登入表單主容器。 */}
             <div className="relative z-10 w-full max-w-md p-8 sm:p-10 mx-4 bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-[2rem] shadow-[0_8px_40px_-12px_rgba(0,0,0,0.8)]">
                 <div className="flex flex-col items-center mb-10">
-                    <div className="flex items-center justify-center gap-6 mb-6">
+                    <div className="flex items-center justify-center mb-6">
                         <img src="./YMCA.png" alt="YMCA Logo" className="h-16 w-auto object-contain drop-shadow-md" />
-                        <img src="./ActiveAgingCenter_LOGO.png" alt="Active Aging Center Logo" className="h-16 w-auto object-contain drop-shadow-md" />
                     </div>
                     <h2 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-b from-white to-white/60 tracking-tight">
                         YMCA社教學員資料庫

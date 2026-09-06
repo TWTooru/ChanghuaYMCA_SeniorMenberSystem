@@ -10,7 +10,7 @@ export default function MemberProfileStep({ profile, onChange, disabled = false 
     <Field label="出生年月日"><input id="student-birth-date" className="form-input" name="birth_date" type="date" value={profile.birth_date} onChange={onChange} disabled={disabled} /></Field>
     <Field label="通訊處"><input id="student-address" className="form-input" name="address" value={profile.address} onChange={onChange} disabled={disabled} /></Field>
     <Field label="服務機關 / 學校"><input id="student-organization" className="form-input" name="organization" value={profile.organization} onChange={onChange} disabled={disabled} /></Field>
-    <Field label="教育程度"><select id="student-education" className="form-select" name="education" value={profile.education} onChange={onChange} disabled={disabled} required><option value="">請選擇</option>{EDUCATION_OPTIONS.map(option => <option key={option} value={option}>{option}</option>)}</select></Field>
+    <Field label="教育程度"><select id="student-education" className="form-select" name="education" value={profile.education} onChange={onChange} disabled={disabled}><option value="">請選擇</option>{EDUCATION_OPTIONS.map(option => <option key={option} value={option}>{option}</option>)}</select></Field>
   </>
 }
 

@@ -11,6 +11,7 @@ import { comparePeriods } from '../../domain/period'
 import { useAuth } from '../../contexts/AuthContext'
 import usePermissions from '../../hooks/usePermissions'
 import useUnsavedChangesGuard from '../../hooks/useUnsavedChangesGuard'
+import useBodyScrollLock from '../../hooks/useBodyScrollLock'
 import { deleteStudent } from '../../services/studentService'
 import { deleteEnrollment } from '../../services/enrollmentService'
 import './students.css'
@@ -54,6 +55,7 @@ function containBillingLayerKeyDown(event, layer) {
 export default function StudentDetailModal({ student, enrollments, initialTab = 'history', isTabbed = true, onClose, onAddEnrollment, onRefresh, onStudentUpdated }) {
   /** 對話框統一管理焦點、未儲存變更保護與分頁切換；儲存後先更新選取學員，再要求外層重新整理快照。 */
   const { role } = useAuth()
+  useBodyScrollLock(Boolean(student))
   const permissions = usePermissions(role)
   const [isEditing, setIsEditing] = useState(false)
   const [activeDetailTab, setActiveDetailTab] = useState(initialTab)

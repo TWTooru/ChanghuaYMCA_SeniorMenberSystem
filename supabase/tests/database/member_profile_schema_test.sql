@@ -95,7 +95,12 @@ select is(
 );
 select col_not_null('public', 'students', 'name', 'name is required');
 select col_not_null('public', 'students', 'gender', 'gender is required');
-select col_not_null('public', 'students', 'education', 'education is required');
+select is(
+  (select is_nullable from information_schema.columns
+   where table_schema = 'public' and table_name = 'students' and column_name = 'education'),
+  'YES',
+  'education is optional'
+);
 select col_type_is('public', 'students', 'birth_date', 'date', 'birth date uses the date type');
 select ok(
   exists (

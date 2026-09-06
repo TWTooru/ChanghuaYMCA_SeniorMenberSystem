@@ -12,6 +12,42 @@ if (mode !== "role" && mode !== "cascade") {
 
 const ownerA = "20000000-0000-4000-8000-000000000001";
 const ownerB = "20000000-0000-4000-8000-000000000002";
+const raceFixtureIds = [ownerA, ownerB];
+
+type DatabaseClient = InstanceType<typeof Client>;
+
+async function removeRaceFixtures(client: DatabaseClient) {
+  await client.query("begin");
+
+  try {
+    await client.query(
+      "lock table public.app_user_roles in access exclusive mode",
+    );
+    await client.query(
+      "alter table public.app_user_roles disable trigger maintain_owner_invariant_after_change",
+    );
+    await client.query(
+      "delete from auth.users where id = any($1::uuid[])",
+      [raceFixtureIds],
+    );
+    await client.query(`
+      update private.owner_invariant
+      set owner_count = (
+        select count(*)::integer
+        from public.app_user_roles
+        where role = 'owner'
+      )
+      where singleton is true
+    `);
+    await client.query(
+      "alter table public.app_user_roles enable trigger maintain_owner_invariant_after_change",
+    );
+    await client.query("commit");
+  } catch (error) {
+    await client.query("rollback").catch(() => undefined);
+    throw error;
+  }
+}
 
 Deno.test({
   name: `owner invariant serializes the ${mode} race`,
@@ -83,7 +119,32 @@ Deno.test({
     } finally {
       await first.query("rollback").catch(() => undefined);
       await second.query("rollback").catch(() => undefined);
+      let cleanupError: unknown;
+      try {
+        await removeRaceFixtures(setup);
+      } catch (error) {
+        cleanupError = error;
+      }
       await Promise.allSettled([setup.end(), first.end(), second.end()]);
+      if (cleanupError) throw cleanupError;
     }
   },
+});
+
+Deno.test("owner race fixtures are removed after the concurrency check", async () => {
+  const verification = new Client({ connectionString: databaseUrl });
+  await verification.connect();
+
+  try {
+    const result = await verification.query(
+      `select count(*)::integer as fixture_count
+       from auth.users
+       where id = any($1::uuid[])`,
+      [raceFixtureIds],
+    );
+
+    assertEquals(result.rows[0], { fixture_count: 0 });
+  } finally {
+    await verification.end();
+  }
 });

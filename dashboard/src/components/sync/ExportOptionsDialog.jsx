@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { createPortal } from 'react-dom'
+import useBodyScrollLock from '../../hooks/useBodyScrollLock'
 import '../common/common.css'
 
 function getFocusableElements(container) {
@@ -18,6 +19,7 @@ export default function ExportOptionsDialog({
 }) {
   const dialogRef = useRef(null)
   const previousFocusRef = useRef(null)
+  useBodyScrollLock(true)
 
   // 依期別字串排序產生清單，讓選項呈現順序固定。
   const periodsList = useMemo(() => {

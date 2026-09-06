@@ -52,6 +52,21 @@ describe('StudentListTab', () => {
     })
   })
 
+  it('filters members through the gender menu', async () => {
+    render(<StudentListTab students={students} enrollments={[]} onSelectStudent={vi.fn()} onShowAddStudent={vi.fn()} />)
+
+    fireEvent.click(screen.getByRole('combobox', { name: '性別' }))
+    const femaleOption = await screen.findByRole('option', { name: '女' })
+    fireEvent.pointerDown(femaleOption, { pointerType: 'mouse' })
+    fireEvent.click(femaleOption)
+
+    await waitFor(() => {
+      expect(screen.queryByText('王小明')).toBeNull()
+      expect(screen.getByText('李小華')).not.toBeNull()
+      expect(screen.getByText('陳小美')).not.toBeNull()
+    })
+  })
+
   it('supports sorting by ID and Name', () => {
     render(<StudentListTab students={students} enrollments={[]} onSelectStudent={vi.fn()} onShowAddStudent={vi.fn()} />)
     
@@ -81,14 +96,52 @@ describe('StudentListTab', () => {
     expect(rows[0].textContent).toContain('陳小美')
   })
 
-  it('changes items per page', () => {
+  it('makes sortable columns keyboard accessible and announces the active direction', () => {
     render(<StudentListTab students={students} enrollments={[]} onSelectStudent={vi.fn()} onShowAddStudent={vi.fn()} />)
-    
-    const pageSizeSelect = screen.getAllByRole('combobox').find(select => select.innerHTML.includes('10 筆/頁'))
-    expect(pageSizeSelect).not.toBeUndefined()
-    
-    // Can change page size
-    fireEvent.change(pageSizeSelect, { target: { value: '20' } })
+
+    const idSort = screen.getByRole('button', { name: '依 ID 排序' })
+    const nameSort = screen.getByRole('button', { name: '依姓名排序' })
+
+    expect(idSort.closest('th')?.getAttribute('aria-sort')).toBe('ascending')
+    expect(nameSort.closest('th')?.getAttribute('aria-sort')).toBe('none')
+
+    fireEvent.click(nameSort)
+
+    expect(idSort.closest('th')?.getAttribute('aria-sort')).toBe('none')
+    expect(nameSort.closest('th')?.getAttribute('aria-sort')).toBe('ascending')
+  })
+
+  it('opens a member profile from a named keyboard-accessible control', () => {
+    const onSelectStudent = vi.fn()
+    render(<StudentListTab students={students} enrollments={[]} onSelectStudent={onSelectStudent} onShowAddStudent={vi.fn()} />)
+
+    fireEvent.click(screen.getByRole('button', { name: '查看王小明會員資料' }))
+
+    expect(onSelectStudent).toHaveBeenCalledWith(students[0], 'profile')
+    expect(onSelectStudent).toHaveBeenCalledTimes(1)
+  })
+
+  it('gives every pagination control an accessible name', () => {
+    render(<StudentListTab students={students} enrollments={[]} onSelectStudent={vi.fn()} onShowAddStudent={vi.fn()} />)
+
+    expect(screen.getByRole('button', { name: '跳至最前頁' })).not.toBeNull()
+    expect(screen.getByRole('button', { name: '上一頁' })).not.toBeNull()
+    expect(screen.getByRole('button', { name: '第 1 頁' }).getAttribute('aria-current')).toBe('page')
+    expect(screen.getByRole('button', { name: '下一頁' })).not.toBeNull()
+    expect(screen.getByRole('button', { name: '跳至最尾頁' })).not.toBeNull()
+  })
+
+  it('changes items per page through a labelled control', async () => {
+    render(<StudentListTab students={students} enrollments={[]} onSelectStudent={vi.fn()} onShowAddStudent={vi.fn()} />)
+
+    fireEvent.click(screen.getByRole('combobox', { name: '每頁筆數' }))
+    const twentyPerPage = await screen.findByRole('option', { name: '20 筆/頁' })
+    fireEvent.pointerDown(twentyPerPage, { pointerType: 'mouse' })
+    fireEvent.click(twentyPerPage)
+
+    await waitFor(() => {
+      expect(screen.getByRole('combobox', { name: '每頁筆數' }).textContent).toContain('20 筆/頁')
+    })
     expect(screen.getByText(/顯示第 1 至 3 筆會員/)).not.toBeNull()
   })
 })

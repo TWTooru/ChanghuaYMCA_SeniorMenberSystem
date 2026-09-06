@@ -19,11 +19,11 @@ describe('Login', () => {
 
   afterEach(cleanup)
 
-  it('loads logos relative to the deployed application directory', () => {
+  it('loads only the YMCA logo relative to the deployed application directory', () => {
     render(<Login />)
 
     expect(screen.getByAltText('YMCA Logo').getAttribute('src')).toBe('./YMCA.png')
-    expect(screen.getByAltText('Active Aging Center Logo').getAttribute('src')).toBe('./ActiveAgingCenter_LOGO.png')
+    expect(screen.queryByAltText('Active Aging Center Logo')).toBeNull()
   })
 
   it('submits the entered credentials and clears the form after success', async () => {

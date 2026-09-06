@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
+import useBodyScrollLock from '../../hooks/useBodyScrollLock'
 import '../common/common.css'
 
 function getFocusableElements(container) {
@@ -11,6 +12,7 @@ export default function ImportPreviewDialog({ preview, isImporting = false, onCo
   const dialogRef = useRef(null)
   const previousFocusRef = useRef(null)
   const confirmationDisabled = hasBlockingErrors || isImporting
+  useBodyScrollLock(true)
 
   useEffect(() => {
     previousFocusRef.current = document.activeElement

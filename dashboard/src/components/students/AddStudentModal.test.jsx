@@ -167,6 +167,22 @@ describe('AddStudentModal', () => {
     expect(enrollmentPayload).not.toHaveProperty('handled_by_account')
   })
 
+  it('submits with only name and gender when education is blank', async () => {
+    createStudentWithInitialEnrollment.mockResolvedValue({ student_id: 1, enrollment_id: 2 })
+    renderModal()
+    fireEvent.change(screen.getByLabelText('姓名'), { target: { value: '王小明' } })
+    fireEvent.change(screen.getByLabelText('性別'), { target: { value: '男' } })
+    fireEvent.click(screen.getByRole('button', { name: '下一步' }))
+    completeEnrollment()
+    submitForm()
+
+    await waitFor(() => expect(createStudentWithInitialEnrollment).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ name: '王小明', gender: '男', education: null }),
+      expect.anything(),
+    ))
+  })
+
   it('prevents duplicate submit while pending and disables controls', async () => {
     let resolveRequest
     createStudentWithInitialEnrollment.mockImplementation(() => new Promise(resolve => { resolveRequest = resolve }))

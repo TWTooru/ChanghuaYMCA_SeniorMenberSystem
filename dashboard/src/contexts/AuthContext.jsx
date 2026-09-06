@@ -116,6 +116,15 @@ export const AuthProvider = ({ children }) => {
     const authState = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!mountedRef.current) return
       if (event === 'PASSWORD_RECOVERY') setPasswordFlow('recovery')
+      const currentUserId = sessionRef.current?.user?.id
+      const nextUserId = nextSession?.user?.id
+      const isSameUserReconfirmed = event === 'SIGNED_IN'
+        && Boolean(currentUserId)
+        && currentUserId === nextUserId
+
+      // Token 更新與同一使用者的 SIGNED_IN 重新確認都可能在切回分頁時發生；
+      // 它們不代表帳號或角色改變，因此保留既有 React session 參考，避免 dashboard 重載。
+      if (event === 'TOKEN_REFRESHED' || isSameUserReconfirmed) return
       void applySession(nextSession)
     })
     const subscription = authState?.data?.subscription

@@ -27,7 +27,7 @@ update public.app_user_roles
 set role = 'editor', updated_at = pg_catalog.now()
 where user_id = '11111111-1111-4111-8111-111111111111';
 
-select plan(40);
+select plan(41);
 
 truncate table public.students restart identity cascade;
 
@@ -367,6 +367,14 @@ select throws_ok(
   }]'::jsonb)$$,
   'P0001', 'ROW_92:NAME_REQUIRED',
   'required-field errors include the source row number'
+);
+select throws_ok(
+  $$select public.import_student_profiles('[{
+    "source_row":93,
+    "student":{"email":"education@example.com","name":"教育程度缺漏","gender":"女","phone":"","birth_date":"","address":"","organization":""}
+  }]'::jsonb)$$,
+  'P0001', 'ROW_93:INVALID_EDUCATION',
+  'imports still require education after manual entry makes it optional'
 );
 
 select lives_ok(

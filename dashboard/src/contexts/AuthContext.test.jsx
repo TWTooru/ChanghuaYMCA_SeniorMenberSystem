@@ -235,7 +235,7 @@ describe('AuthProvider stored role lifecycle', () => {
     })
   })
 
-  it.each(['TOKEN_REFRESHED', 'USER_UPDATED'])(
+  it.each(['USER_UPDATED'])(
     'clears access and rereads the stored role on %s',
     async (event) => {
       const initialSession = createSession('event-user')
@@ -258,6 +258,36 @@ describe('AuthProvider stored role lifecycle', () => {
       expect(view.current()).toMatchObject({ role: 'editor', roleStatus: 'ready' })
     },
   )
+
+  it('keeps the current role without another lookup when a token refreshes', async () => {
+    const initialSession = createSession('event-user')
+    supabaseMocks.getSession.mockResolvedValue({ data: { session: initialSession }, error: null })
+    enqueueRoleRequest(storedRole('viewer'))
+
+    const view = renderProvider()
+    await screen.findByTestId('auth-probe')
+    expect(supabaseMocks.from).toHaveBeenCalledTimes(1)
+
+    emitAuthEvent('TOKEN_REFRESHED', createSession('event-user', { access_token: 'new-token' }))
+
+    expect(view.current()).toMatchObject({ role: 'viewer', roleStatus: 'ready', loading: false })
+    expect(supabaseMocks.from).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the current role when the signed-in event only reconfirms the same user', async () => {
+    const initialSession = createSession('event-user')
+    supabaseMocks.getSession.mockResolvedValue({ data: { session: initialSession }, error: null })
+    enqueueRoleRequest(storedRole('viewer'))
+
+    const view = renderProvider()
+    await screen.findByTestId('auth-probe')
+    expect(supabaseMocks.from).toHaveBeenCalledTimes(1)
+
+    emitAuthEvent('SIGNED_IN', createSession('event-user', { access_token: 'reconfirmed-token' }))
+
+    expect(view.current()).toMatchObject({ role: 'viewer', roleStatus: 'ready', loading: false })
+    expect(supabaseMocks.from).toHaveBeenCalledTimes(1)
+  })
 
   it('does not let an older slow lookup overwrite a newer signed-in session', async () => {
     const olderRole = createDeferred()
@@ -398,7 +428,7 @@ describe('AuthProvider stored role lifecycle', () => {
 
     const pendingRole = createDeferred()
     enqueueRoleRequest(pendingRole.promise)
-    emitAuthEvent('TOKEN_REFRESHED', createSession('mounted-user'))
+    emitAuthEvent('USER_UPDATED', createSession('mounted-user'))
     expect(supabaseMocks.from).toHaveBeenCalledTimes(2)
 
     view.unmount()

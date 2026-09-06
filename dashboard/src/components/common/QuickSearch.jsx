@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, X } from 'lucide-react';
+import useBodyScrollLock from '../../hooks/useBodyScrollLock';
 import './quickSearch.css';
 
 export default function QuickSearch({ students = [], onSelect, onClose }) {
+  useBodyScrollLock(true);
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef(null);

@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabaseClient'
 import { createEnrollmentForm } from '../../services/enrollmentService'
 import { normalizePeriod, periodNumber } from '../../domain/period'
+import useBodyScrollLock from '../../hooks/useBodyScrollLock'
 import CourseTagPicker from './CourseTagPicker'
 import '../common/common.css'
 
@@ -46,6 +47,7 @@ export default function AddEnrollModal({ student, enrollments = [], onClose, onR
   const dialogRef = useRef(null)
   const previousFocusRef = useRef(null)
   const hasStudent = Boolean(student)
+  useBodyScrollLock(hasStudent)
 
   const selectedPeriodName = normalizePeriod(newEnroll.period) || (newEnroll.period ? `第${newEnroll.period}期` : '')
   const existingEnrollment = selectedPeriodName

@@ -3,6 +3,7 @@ import { X } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import usePermissions from '../../hooks/usePermissions'
 import useUnsavedChangesGuard from '../../hooks/useUnsavedChangesGuard'
+import useBodyScrollLock from '../../hooks/useBodyScrollLock'
 import { supabase } from '../../lib/supabaseClient'
 import {
   updateEnrollmentFormRefundStatus,
@@ -31,6 +32,7 @@ export default function EnrollmentBillingDetailModal({
   const { role } = useAuth()
   const permissions = usePermissions(role)
   const enrollmentId = enrollment?.enrollment_id
+  useBodyScrollLock(Boolean(enrollment))
 
   const [editingFormId, setEditingFormId] = useState(null)
   const [refundTargetForm, setRefundTargetForm] = useState(null)

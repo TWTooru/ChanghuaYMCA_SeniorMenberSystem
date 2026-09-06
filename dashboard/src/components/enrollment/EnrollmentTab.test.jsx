@@ -2,6 +2,14 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import EnrollmentTab from './EnrollmentTab'
 
+function selectOption(label, optionName) {
+  const select = screen.getByLabelText(label)
+  fireEvent.click(select)
+  const option = screen.getByRole('option', { name: optionName })
+  fireEvent.pointerDown(option, { pointerType: 'mouse' })
+  fireEvent.click(option)
+}
+
 describe('EnrollmentTab', () => {
   afterEach(cleanup)
 
@@ -54,6 +62,18 @@ describe('EnrollmentTab', () => {
 
     expect(onSelectEnrollment).toHaveBeenCalledOnce()
     expect(onSelectEnrollment).toHaveBeenCalledWith(students[0], enrollment)
+  })
+
+  it('opens an enrollment from a named keyboard-accessible member control', () => {
+    const students = [{ student_id: '1', name: 'Student One' }]
+    const enrollment = { enrollment_id: 100, student_id: '1', student_name: 'Student One', refunded: false, courses: ['Course A'] }
+    const onSelectEnrollment = vi.fn()
+
+    render(<EnrollmentTab students={students} enrollments={[enrollment]} onSelectEnrollment={onSelectEnrollment} />)
+    fireEvent.click(screen.getByRole('button', { name: '查看Student One的選課明細' }))
+
+    expect(onSelectEnrollment).toHaveBeenCalledWith(students[0], enrollment)
+    expect(onSelectEnrollment).toHaveBeenCalledTimes(1)
   })
 
   it('does not open another student when an enrollment student_id is missing', () => {
@@ -129,7 +149,7 @@ describe('EnrollmentTab', () => {
     const table = container.querySelector('table')
     const historyTable = within(table)
 
-    expect(table.className).toBe('data-table')
+    expect(table.className).toContain('data-table')
     expect(historyTable.getAllByRole('columnheader').map(header => header.textContent)).toEqual([
       '姓名', '期別', '課程', '退費狀況', '金額', '發票編號'
     ])
@@ -221,15 +241,15 @@ describe('EnrollmentTab', () => {
     expect(screen.getByText('Bob')).not.toBeNull()
     expect(screen.queryByText('Alice')).toBeNull()
     fireEvent.change(screen.getByLabelText('搜尋姓名或課程'), { target: { value: '' } })
-    fireEvent.change(screen.getByLabelText('篩選期別'), { target: { value: '第1期' } })
+    selectOption('篩選期別', '第1期')
     expect(screen.getByText('Alice')).not.toBeNull()
     expect(screen.queryByText('Bob')).toBeNull()
-    fireEvent.change(screen.getByLabelText('篩選期別'), { target: { value: '' } })
-    fireEvent.change(screen.getByLabelText('退費狀況'), { target: { value: 'refunded' } })
+    selectOption('篩選期別', '全部期別')
+    selectOption('退費狀況', '已退費')
     expect(screen.getByText('Bob')).not.toBeNull()
     expect(screen.queryByText('Alice')).toBeNull()
     expect(screen.queryByText('Charlie')).toBeNull()
-    fireEvent.change(screen.getByLabelText('退費狀況'), { target: { value: 'partial' } })
+    selectOption('退費狀況', '部分退費')
     expect(screen.getByText('Charlie')).not.toBeNull()
     expect(screen.queryByText('Alice')).toBeNull()
     expect(screen.queryByText('Bob')).toBeNull()
@@ -287,5 +307,13 @@ describe('EnrollmentTab', () => {
     expect(screen.queryByText('Enrollment 21')).toBeNull()
     expect(firstPageButton.disabled).toBe(true)
     expect(lastPageButton.disabled).toBe(false)
+  })
+
+  it('provides named history pagination controls inside a navigation landmark', () => {
+    render(<EnrollmentTab students={[]} enrollments={[]} onSelectEnrollment={vi.fn()} />)
+
+    const navigation = screen.getByRole('navigation', { name: '歷年選課歷程分頁' })
+    expect(within(navigation).getByRole('button', { name: '上一頁' }).disabled).toBe(true)
+    expect(within(navigation).getByRole('button', { name: '下一頁' }).disabled).toBe(true)
   })
 })

@@ -5,6 +5,11 @@ import usePermissions from '../../hooks/usePermissions'
 import AdminAuditLog from './AdminAuditLog'
 import DeleteUserDialog from './DeleteUserDialog'
 import InviteUserModal from './InviteUserModal'
+import { Badge } from '../ui/badge'
+import { Button } from '../ui/button'
+import { Card } from '../ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table'
 import './admin.css'
 
 /**
@@ -110,61 +115,62 @@ function AuthorizedAdminAccountPage({ actor }) {
           <h1>帳號管理</h1>
           <p>管理後台使用者、角色與操作紀錄。因為資料庫是Free Tier，所以幾小時內能新增的使用者有限。</p>
         </div>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <button className="btn-secondary" type="button" onClick={refresh} disabled={loading} aria-label="重新整理帳號列表">
+        <div className="admin-toolbar">
+          <Button variant="outline" type="button" onClick={refresh} disabled={loading} aria-label="重新整理帳號列表">
             {loading ? '載入中…' : '重新整理'}
-          </button>
-          <button className="btn-primary" type="button" onClick={() => setInviteOpen(true)}>
+          </Button>
+          <Button type="button" onClick={() => setInviteOpen(true)}>
             邀請帳號
-          </button>
+          </Button>
         </div>
       </div>
       {errorCode && (
         <div className="sql-alert error" role="alert" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>{ERROR_MESSAGES[errorCode] || '帳號管理操作失敗，請稍後再試。'}</span>
-          <button className="btn-secondary" type="button" onClick={refresh} style={{ marginLeft: '12px', padding: '4px 10px', fontSize: '12px' }}>
+          <Button variant="outline" size="sm" type="button" onClick={refresh} style={{ marginLeft: '12px' }}>
             重試連線
-          </button>
+          </Button>
         </div>
       )}
       {roleUpdateNotice && <div className="sql-alert success">角色權限已更新。</div>}
       <section className="admin-summary-grid" aria-label="帳號摘要">
-        <div className="admin-summary-card"><span>全部帳號</span><strong className="admin-summary-value">{users.length}</strong></div>
-        <div className="admin-summary-card"><span>待接受邀請</span><strong className="admin-summary-value">{invitedCount}</strong></div>
+        <Card className="gap-0 py-0 admin-summary-card"><span>全部帳號</span><strong className="admin-summary-value">{users.length}</strong></Card>
+        <Card className="gap-0 py-0 admin-summary-card"><span>待接受邀請</span><strong className="admin-summary-value">{invitedCount}</strong></Card>
       </section>
-      {loading ? <p>載入帳號資料中…</p> : <div className="admin-user-table"><table className="data-table"><thead><tr><th>Email</th><th>角色</th><th>狀態</th><th>操作</th></tr></thead><tbody>
+      {loading ? <p>載入帳號資料中…</p> : <div className="admin-user-table"><Table className="data-table" aria-label="帳號列表"><TableHeader><TableRow><TableHead>Email</TableHead><TableHead>角色</TableHead><TableHead>狀態</TableHead><TableHead>操作</TableHead></TableRow></TableHeader><TableBody>
         {users.map(target => {
           const policy = getAccountRowPolicy(actor, target)
           const firstLoginRequired = !target.lastSignInAt
-          return <tr key={target.id}>
-            <td>{target.email}</td>
-            <td>
+          return <TableRow key={target.id}>
+            <TableCell>{target.email}</TableCell>
+            <TableCell>
               {policy.locked
-                ? <span className={`admin-role-badge admin-role-badge--${VALID_TARGET_ROLES.has(target.role) ? target.role : 'missing'}`}>{policy.roleLabel}</span>
-                : <select
-                    className={`admin-role-select admin-role-select--${target.role}`}
+                ? <Badge variant="secondary" className={`admin-role-badge admin-role-badge--${VALID_TARGET_ROLES.has(target.role) ? target.role : 'missing'}`}>{policy.roleLabel}</Badge>
+                : <Select
+                    items={policy.roleOptions.map(roleOption => ({ value: roleOption, label: ROLE_LABELS[roleOption] }))}
                     aria-label={`變更 ${target.email} 的角色`}
                     value={target.role}
                     disabled={firstLoginRequired || mutation === `role:${target.id}`}
-                    onChange={event => selectRole(target, event.target.value)}
+                    onValueChange={nextRole => selectRole(target, nextRole)}
                   >
-                    {policy.roleOptions.map(roleOption => <option key={roleOption} value={roleOption}>{ROLE_LABELS[roleOption]}</option>)}
-                  </select>}
-            </td>
-            <td><span className={`admin-status-badge ${target.status}`}>{target.status === 'active' ? '啟用中' : '已邀請'}</span></td>
-            <td className="admin-actions">
+                    <SelectTrigger className={`admin-role-select admin-role-select--${target.role}`} aria-label={`變更 ${target.email} 的角色`}><SelectValue /></SelectTrigger>
+                    <SelectContent>{policy.roleOptions.map(roleOption => <SelectItem key={roleOption} value={roleOption}>{ROLE_LABELS[roleOption]}</SelectItem>)}</SelectContent>
+                  </Select>}
+            </TableCell>
+            <TableCell><Badge variant={target.status === 'active' ? 'default' : 'secondary'} className={`admin-status-badge ${target.status}`}>{target.status === 'active' ? '啟用中' : '已邀請'}</Badge></TableCell>
+            <TableCell className="admin-actions">
               {policy.locked
                 ? <span className="admin-lock-message">{policy.lockMessage}</span>
                 : <>
                     {target.status === 'invited'
-                      ? <button className="btn-secondary" type="button" disabled={mutation === `resend:${target.id}`} onClick={() => resend(target.id)} aria-label={`重新寄送邀請 ${target.email}`}>重新寄送邀請</button>
-                      : <button className="btn-secondary" type="button" disabled={mutation === `reset:${target.id}`} onClick={() => resetPassword(target.id)} aria-label={`寄送密碼重設 ${target.email}`}>寄送密碼重設</button>}
-                    <button className="btn-delete" type="button" disabled={mutation === `delete:${target.id}`} onClick={() => setDeleteTarget(target)} aria-label={`刪除 ${target.email}`}>刪除</button>
+                      ? <Button variant="outline" type="button" disabled={mutation === `resend:${target.id}`} onClick={() => resend(target.id)} aria-label={`重新寄送邀請 ${target.email}`}>重新寄送邀請</Button>
+                      : <Button variant="outline" type="button" disabled={mutation === `reset:${target.id}`} onClick={() => resetPassword(target.id)} aria-label={`寄送密碼重設 ${target.email}`}>寄送密碼重設</Button>}
+                    <Button variant="destructive" type="button" disabled={mutation === `delete:${target.id}`} onClick={() => setDeleteTarget(target)} aria-label={`刪除 ${target.email}`}>刪除</Button>
                   </>}
-            </td>
-          </tr>
+            </TableCell>
+          </TableRow>
         })}
-      </tbody></table></div>}
+      </TableBody></Table></div>}
       <AdminAuditLog auditLogs={auditLogs} />
       {inviteOpen && <InviteUserModal open busy={mutation === 'invite'} onCancel={() => setInviteOpen(false)} onSubmit={submitInvite} />}
       <DeleteUserDialog user={deleteTarget} open={Boolean(deleteTarget)} busy={deleteBusy} onCancel={() => setDeleteTarget(null)} onConfirm={submitDelete} />

@@ -24,7 +24,7 @@ describe('MemberProfileStep', () => {
     expect(screen.getByLabelText('ID（選填）').required).toBe(false)
     expect(screen.getByLabelText('姓名').required).toBe(true)
     expect(screen.getByLabelText('性別').required).toBe(true)
-    expect(screen.getByLabelText('教育程度').required).toBe(true)
+    expect(screen.getByLabelText('教育程度').required).toBe(false)
     for (const label of ['電子郵件', '電話', '出生年月日', '通訊處', '服務機關 / 學校']) {
       expect(screen.getByLabelText(label)).not.toBeNull()
     }

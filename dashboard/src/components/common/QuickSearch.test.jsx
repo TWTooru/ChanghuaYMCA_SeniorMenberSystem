@@ -66,4 +66,14 @@ describe('QuickSearch', () => {
     
     expect(screen.queryByText('找不到符合的學員')).not.toBeNull();
   });
+
+  it('locks background scrolling while open and restores it when closed', () => {
+    document.documentElement.style.overflow = 'scroll';
+    const { unmount } = render(<QuickSearch students={students} onSelect={() => {}} onClose={() => {}} />);
+
+    expect(document.documentElement.style.overflow).toBe('hidden');
+
+    unmount();
+    expect(document.documentElement.style.overflow).toBe('scroll');
+  });
 });

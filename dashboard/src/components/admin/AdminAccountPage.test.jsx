@@ -52,8 +52,19 @@ function expectNoAccountActions(row, target) {
 
 function expectRoleOptions(row, expectedValues) {
   const select = within(row).getByRole('combobox')
-  expect(within(select).getAllByRole('option').map(option => option.value)).toEqual(expectedValues)
+  fireEvent.click(select)
+  const roleLabels = { owner: '最高管理員', admin: '管理員', editor: '編輯者', viewer: '瀏覽者' }
+  expect(screen.getAllByRole('option').map(option => option.textContent)).toEqual(expectedValues.map(value => roleLabels[value]))
+  fireEvent.keyDown(select, { key: 'Escape' })
   return select
+}
+
+function chooseRole(email, label) {
+  const select = screen.getByLabelText(`變更 ${email} 的角色`)
+  fireEvent.click(select)
+  const option = screen.getByRole('option', { name: label })
+  fireEvent.pointerDown(option, { pointerType: 'mouse' })
+  fireEvent.click(option)
 }
 
 describe('AdminAccountPage', () => {
@@ -159,7 +170,7 @@ describe('AdminAccountPage', () => {
     renderFor('admin', target)
 
     const row = getTargetRow(target)
-    expect(expectRoleOptions(row, ['editor', 'viewer']).disabled).toBe(true)
+    expect(within(row).getByRole('combobox').disabled).toBe(true)
     expect(within(row).getByLabelText(`重新寄送邀請 ${target.email}`).disabled).toBe(false)
     expect(within(row).getByLabelText(`刪除 ${target.email}`).disabled).toBe(false)
   })
@@ -208,7 +219,7 @@ describe('AdminAccountPage', () => {
     const target = makeUser('member', 'editor')
     renderFor('admin', target)
 
-    fireEvent.change(screen.getByLabelText(`變更 ${target.email} 的角色`), { target: { value: 'viewer' } })
+    chooseRole(target.email, '瀏覽者')
 
     expect(adminState.changeRole).toHaveBeenCalledWith(target.id, 'viewer')
     await waitFor(() => expect(screen.getByText('角色權限已更新。')).toBeTruthy())
@@ -220,7 +231,7 @@ describe('AdminAccountPage', () => {
     const target = makeUser('member', 'editor')
     renderFor('admin', target)
 
-    fireEvent.change(screen.getByLabelText(`變更 ${target.email} 的角色`), { target: { value: 'viewer' } })
+    chooseRole(target.email, '瀏覽者')
 
     await waitFor(() => expect(adminState.changeRole).toHaveBeenCalledWith(target.id, 'viewer'))
     expect(screen.queryByText('角色權限已更新。')).toBeNull()
@@ -306,5 +317,11 @@ describe('AdminAccountPage', () => {
     expect(screen.getByText(target.email)).toBeTruthy()
     expect(screen.getByText('至少必須保留一位最高管理員；另一項操作可能已先完成，請重新整理後再試。')).toBeTruthy()
     expect(screen.queryByText('角色權限已更新。')).toBeNull()
+  })
+
+  it('labels the account table for assistive technology', () => {
+    renderFor('admin', makeUser('member', 'viewer'))
+
+    expect(screen.getByRole('table', { name: '帳號列表' })).toBeTruthy()
   })
 })

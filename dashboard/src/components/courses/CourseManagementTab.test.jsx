@@ -40,6 +40,16 @@ describe('CourseManagementTab', () => {
     expect(screen.getByText('太極拳')).toBeTruthy()
   })
 
+  it('exposes the selected course-status filter to assistive technology', async () => {
+    render(<CourseManagementTab />)
+    await waitFor(() => expect(screen.getByText('瑜珈')).toBeTruthy())
+
+    const inactiveFilter = screen.getByRole('button', { name: '已停用' })
+    expect(inactiveFilter.getAttribute('aria-pressed')).toBe('false')
+    fireEvent.click(inactiveFilter)
+    expect(inactiveFilter.getAttribute('aria-pressed')).toBe('true')
+  })
+
   it('allows adding a new course', async () => {
     render(<CourseManagementTab />)
     await waitFor(() => expect(screen.getByText('瑜珈')).toBeTruthy())

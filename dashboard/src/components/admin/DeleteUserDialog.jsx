@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
+import useBodyScrollLock from '../../hooks/useBodyScrollLock'
 
 /** 刪除前要求輸入目標 Email，降低不可復原操作因誤點或誤選造成的風險。 */
 export default function DeleteUserDialog({ user, open, busy, onCancel, onConfirm }) {
   const [confirmation, setConfirmation] = useState('')
+  useBodyScrollLock(Boolean(open && user))
   useEffect(() => { setConfirmation('') }, [user?.id])
   if (!open || !user) return null
 

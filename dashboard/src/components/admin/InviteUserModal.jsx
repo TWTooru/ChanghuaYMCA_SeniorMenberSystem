@@ -1,10 +1,12 @@
 import { useState } from 'react'
+import useBodyScrollLock from '../../hooks/useBodyScrollLock'
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 /** 邀請流程只提交 Email；帳號預設為瀏覽者，後續角色調整由帳號管理頁另行處理。 */
 export default function InviteUserModal({ open, busy, onCancel, onSubmit }) {
   const [email, setEmail] = useState('')
+  useBodyScrollLock(open)
   if (!open) return null
 
   const validEmail = EMAIL_PATTERN.test(email.trim())
