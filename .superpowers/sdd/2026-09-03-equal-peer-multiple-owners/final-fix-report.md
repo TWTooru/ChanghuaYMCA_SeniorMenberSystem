@@ -89,7 +89,10 @@ failed restoration could permanently remove the authoritative role.
 
 The replacement is a forward-only, CLI-created migration,
 `20260905172646_add_durable_user_deletion_reservations.sql`, plus a
-non-destructive adapter protocol:
+non-destructive adapter protocol. A second forward migration,
+`20260905180439_fix_user_deletion_reservation_role_and_lease.sql`, corrects the
+`CURRENT_ROLE` name collision found by live pgTAP execution and extends the
+lease to ten minutes:
 
 - `reserve_app_user_deletion` locks the target role row, verifies the authorized
   `expected_role`, and creates or takes over a short-lived tokenized lease in
@@ -97,17 +100,22 @@ non-destructive adapter protocol:
 - A hardened trigger rejects role changes while the lease is active. This makes
   the role snapshot check and the competing role mutation serialize on the same
   row lock.
-- The same trigger rejects an Auth cascade when its durable reservation is
-  expired, released, or no longer matches the target role. Thus a worker that
-  resumes after its lease expires cannot perform its stale deletion.
+- The same trigger rejects an Auth cascade while the current durable
+  reservation is expired, released, or no longer matches the target role. This
+  rejection lasts until a later authorized request replaces that reservation.
 - On an Auth failure, `release_app_user_deletion` marks the reservation released
-  instead of deleting it. Role management is immediately unblocked, while the
-  durable marker continues to fence a resumed stale worker. A later authorized
-  request can atomically take over that released marker.
+  instead of deleting it. Role management is immediately unblocked, and an Auth
+  cascade is rejected until a later authorized request atomically takes over
+  that released marker.
 - If the worker terminates or release storage fails, the role remains intact.
-  The active lease expires after two minutes; it then permits role management
-  and can be replaced by a new authorized deletion request, while the expired
-  marker itself continues to reject the old Auth cascade.
+  The active lease expires after ten minutes, exceeding Supabase hosted Edge's
+  400-second paid-plan wall-clock limit. It then permits role management and can
+  be replaced by a new authorized deletion request.
+- The Auth Admin call carries only the user ID, not the reservation token.
+  Consequently, after takeover the database cannot distinguish a delayed old
+  worker's Auth cascade from the new request's cascade. Per the user's selected
+  option, this protocol does not claim token-level cross-worker fencing. The
+  PostgreSQL last-owner invariant remains unconditional and authoritative.
 - A successful Auth deletion cascades through the still-present role row and
   reservation row. The existing `private.maintain_owner_invariant()` trigger
   remains the authoritative last-owner check, and owner-peer deletion is still
@@ -134,10 +142,19 @@ New deterministic adapter and pgTAP cases cover:
 - exact mapping of expired/stale cascade rejection;
 - service-role-only RPC/table hardening;
 - expected-role mismatch, active-lease role mutation rejection, role-row
-  survival across failed recovery, released-marker fencing, expiration,
-  takeover, and stale-token rejection;
+  survival across failed recovery, released/expired-marker rejection before
+  takeover, expiration, takeover, and rejection of an old token attempting to
+  release the replacement lease;
 - successful viewer deletion, non-last owner-peer deletion, and final-owner
   rejection through the unchanged PostgreSQL invariant.
+
+The later RED run exposed the `CURRENT_ROLE` collision in the installed RPC:
+the application role row was `viewer`, but the function compared the special
+SQL value `current_role` (`postgres`) with the expected application role. The
+full database suite consequently had 14 failures in 90 role tests, five fixture
+files aborting on `LAST_OWNER_REQUIRED`, and one profile-schema expectation
+failure. After adding the ten-minute assertion, the focused role suite failed
+15 of 91 tests before the forward migration was applied.
 
 ### Follow-up verification
 
@@ -148,11 +165,20 @@ New deterministic adapter and pgTAP cases cover:
 - Managed-sandbox Deno remains blocked before test execution by Deno 2.9.4's
   named-pipe access error (`os error 5`); the same suite passes through the
   approved unsandboxed `deno test` command.
-- Database migration replay and pgTAP execution are blocked locally because the
-  Docker Desktop Linux engine pipe does not exist. `supabase status` failed with
-  `open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file
-  specified.` The database tests above are committed but are not reported as
-  executed or passing.
+- Both deletion-reservation migrations were applied incrementally to the local
+  Supabase database with `supabase db push --local`; no destructive reset was
+  performed.
+- Full pgTAP: PASS, 9 files and 303 tests.
+- Owner concurrency probes: PASS, 1 role-race test and 1 Auth-cascade-race test.
+  The test setup is idempotent, so the two modes no longer require a destructive
+  database reset between runs.
+- `supabase db lint --local`: PASS, no schema errors.
+- `supabase db advisors --local`: exit 0 with informational findings only. The
+  no-policy RLS findings for the private owner counter and deletion reservations
+  are intentional deny-by-default boundaries with explicit service-role access
+  only where required.
+- Dashboard verification: PASS, 545 tests (2 skipped), lint exit 0 with three
+  existing Fast Refresh warnings, and production build exit 0.
 - Focused `deno lint` is still non-zero because this pre-existing Edge suite does
   not follow the repository's current Deno lint/format defaults (inline import
   prefixes, explicit `any`, test fake `require-await`, quote/semicolon style).
