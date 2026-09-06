@@ -63,15 +63,16 @@ describe('InitialEnrollmentStep', () => {
   })
 
   it('passes multiline notes through the enrollment change contract', () => {
-    const onChange = vi.fn()
+    let captured
+    const onChange = vi.fn(event => {
+      captured = { name: event.target.name, value: event.target.value }
+    })
     render(<InitialEnrollmentStep enrollment={enrollment} onChange={onChange}
       onCoursesChange={vi.fn()} account="editor@example.com" />)
 
     fireEvent.change(screen.getByLabelText('備註'), { target: { value: '第一行\n第二行' } })
 
-    const event = onChange.mock.calls[0][0]
-    expect(event.target.name).toBe('notes')
-    expect(event.target.value).toBe('第一行\n第二行')
+    expect(captured).toEqual({ name: 'notes', value: '第一行\n第二行' })
   })
 
   it('locks editable enrollment fields while keeping the account readonly', () => {
