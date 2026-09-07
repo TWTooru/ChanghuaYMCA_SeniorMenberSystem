@@ -91,6 +91,27 @@ describe('AddStudentModal', () => {
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
+  it('keeps the wizard open when Escape dismisses a profile select', async () => {
+    const { onClose } = renderModal()
+    const trigger = screen.getByRole('combobox', { name: '性別' })
+    fireEvent.click(trigger)
+    const option = await screen.findByRole('option', { name: '男', exact: true })
+    fireEvent.keyDown(option, { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByRole('listbox')).toBeNull())
+    expect(onClose).not.toHaveBeenCalled()
+    expect(screen.getByText('步驟 1 / 2')).not.toBeNull()
+    expect(document.activeElement).toBe(trigger)
+  })
+
+  it('blocks missing gender after replacing the native select', () => {
+    renderModal()
+    fireEvent.change(screen.getByLabelText('姓名'), { target: { value: '王小明' } })
+    fireEvent.click(screen.getByRole('button', { name: '下一步' }))
+    expect(screen.getByRole('alert').textContent).toBe('請完整填寫姓名與性別')
+    expect(screen.getByText('步驟 1 / 2')).not.toBeNull()
+    expect(createStudentWithInitialEnrollment).not.toHaveBeenCalled()
+  })
+
   it('moves to step 2 and displays enrollment fields with the login account', async () => {
     renderModal()
     await goToEnrollment()
@@ -103,15 +124,28 @@ describe('AddStudentModal', () => {
     expect(screen.getByLabelText('登入帳號（自動帶入）').readOnly).toBe(true)
   })
 
-  it('preserves profile values when navigating forward then back', async () => {
+  it('preserves profile and enrollment values when navigating between steps', async () => {
     renderModal()
     fireEvent.change(screen.getByLabelText('姓名'), { target: { value: '王小明' } })
     await selectOption('性別', '男')
     await selectOption('教育程度', '高中')
     fireEvent.click(screen.getByRole('button', { name: '下一步' }))
+
+    fireEvent.change(screen.getByLabelText('開始日期'), { target: { value: '2026-09-01' } })
+    fireEvent.change(screen.getByLabelText('結束日期'), { target: { value: '2026-12-31' } })
+    fireEvent.change(screen.getByLabelText('學費'), { target: { value: '2400' } })
+    fireEvent.change(screen.getByLabelText('備註'), { target: { value: '保留測試資料' } })
     fireEvent.click(screen.getByRole('button', { name: '上一步' }))
 
     expect(screen.getByLabelText('姓名').value).toBe('王小明')
+    expect(screen.getByRole('combobox', { name: '性別' }).textContent).toContain('男')
+    expect(screen.getByRole('combobox', { name: '教育程度' }).textContent).toContain('高中')
+
+    fireEvent.click(screen.getByRole('button', { name: '下一步' }))
+    expect(screen.getByLabelText('開始日期').value).toBe('2026-09-01')
+    expect(screen.getByLabelText('結束日期').value).toBe('2026-12-31')
+    expect(screen.getByLabelText('學費').value).toBe('2400')
+    expect(screen.getByLabelText('備註').value).toBe('保留測試資料')
   })
 
   it('shows an email-format error from the visible next button and stays on step 1', async () => {
@@ -212,7 +246,7 @@ describe('AddStudentModal', () => {
   it('prevents duplicate submit while pending and disables controls', async () => {
     let resolveRequest
     createStudentWithInitialEnrollment.mockImplementation(() => new Promise(resolve => { resolveRequest = resolve }))
-    renderModal()
+    const { onClose } = renderModal()
     await goToEnrollment()
     completeEnrollment()
     const submit = screen.getByRole('button', { name: '新增會員並報名' })
@@ -224,6 +258,10 @@ describe('AddStudentModal', () => {
     expect(screen.getByRole('button', { name: '上一步' }).disabled).toBe(true)
     expect(screen.getByRole('button', { name: '取消' }).disabled).toBe(true)
     expect(screen.getByLabelText('關閉新增會員').disabled).toBe(true)
+
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
+    fireEvent.click(screen.getByLabelText('關閉新增會員'))
+    expect(onClose).not.toHaveBeenCalled()
 
     resolveRequest({ student_id: 1, enrollment_id: 2 })
     await waitFor(() => expect(submit.disabled).toBe(false))

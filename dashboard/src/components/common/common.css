@@ -28,6 +28,17 @@
   overflow: hidden;
 }
 
+.member-create-dialog {
+  width: min(650px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  gap: 0;
+  animation: none;
+  background: hsl(var(--popover));
+  color: hsl(var(--popover-foreground));
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -113,6 +124,31 @@
   gap: 16px;
   padding: 20px 24px;
   overflow-y: auto;
+}
+
+.student-profile-form {
+  min-width: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.member-create-dialog > .student-profile-form {
+  min-height: 0;
+  flex: 1;
+}
+
+.student-profile-form .form-group,
+.student-profile-form .member-wizard-section {
+  min-width: 0;
+}
+
+.student-profile-form .form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.student-profile-form .form-footer,
+.student-profile-form .student-edit-actions {
+  flex-wrap: wrap;
+  background: hsl(var(--popover));
 }
 
 .add-enrollment-form > .form-group:not(:empty),
@@ -382,5 +418,29 @@
 
 .member-wizard-period-input:has(.period-number-input:disabled) {
   opacity: 0.62;
+}
+
+.student-profile-form .member-wizard-period-input {
+  border-color: hsl(var(--input));
+  background: transparent;
+}
+
+.student-profile-form .member-wizard-period-input:focus-within {
+  border-color: hsl(var(--ring));
+  box-shadow: 0 0 0 2px hsl(var(--ring) / 0.5);
+  background: transparent;
+}
+
+.student-profile-form .member-wizard-period-input .period-prefix,
+.student-profile-form .member-wizard-period-input .period-suffix {
+  color: hsl(var(--muted-foreground));
+  background: hsl(var(--muted));
+  border-color: hsl(var(--input));
+}
+
+@media (max-width: 640px) {
+  .student-profile-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 

@@ -44,7 +44,7 @@ export default function StudentEditForm({ student, onSave, onCancel, onDirtyChan
     } catch { setError(STUDENT_ID_VALIDATION_MESSAGE) }
   }
 
-  return <div className="form-grid" style={{ padding: 0, background: 'transparent' }}>
+  return <div className="form-grid student-profile-form" style={{ padding: 0, background: 'transparent' }}>
     <Field label="ID" id="student-edit-id"><Input id="student-edit-id" className="h-10" name="student_id" inputMode="numeric" value={form.student_id} onChange={change} disabled={isSaving} /></Field>
     <Field label="姓名" id="student-edit-name"><Input id="student-edit-name" className="h-10" name="name" value={form.name} onChange={change} required disabled={isSaving} /></Field>
     <StudentProfileSelectField id="student-edit-gender" label="性別" name="gender" value={form.gender} options={['男', '女']} onChange={change} required disabled={isSaving} />

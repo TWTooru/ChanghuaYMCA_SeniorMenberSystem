@@ -36,7 +36,7 @@ export default function StudentProfileSelectField({
       onOpenChange={setOpen}
       onValueChange={nextValue => onChange({ target: { name, value: nextValue ?? '' } })}
     >
-      <SelectTrigger ref={triggerRef} id={id} className="h-10 w-full">
+      <SelectTrigger ref={triggerRef} id={id} className="w-full data-[size=default]:h-10">
         <SelectValue placeholder="請選擇" />
       </SelectTrigger>
       <SelectContent positionerClassName="z-[105]" alignItemWithTrigger={false}>

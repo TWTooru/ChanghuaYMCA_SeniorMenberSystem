@@ -99,14 +99,18 @@ export default function AddStudentModal({ onClose, onRefresh }) {
   }
 
   return <Dialog open onOpenChange={handleOpenChange}>
-    <DialogContent showCloseButton={false} className="form-modal-content" id="modal-add-student-overlay" aria-labelledby="add-member-title">
+    <DialogContent showCloseButton={false} className="form-modal-content member-create-dialog" id="modal-add-student-overlay" aria-labelledby="add-member-title">
       <div className="modal-header-centered">
         <DialogTitle id="add-member-title">新增會員與第一筆報名</DialogTitle>
-        {isSubmitting
-          ? <Button type="button" className="btn-close" disabled aria-label="關閉新增會員"><X size={20} /></Button>
-          : <DialogClose className="btn-close" aria-label="關閉新增會員"><X size={20} /></DialogClose>}
+        <DialogClose
+          disabled={isSubmitting}
+          aria-label="關閉新增會員"
+          render={<Button type="button" variant="ghost" size="icon" />}
+        >
+          <X size={20} aria-hidden="true" />
+        </DialogClose>
       </div>
-      <form noValidate onSubmit={handleSubmit} className="form-grid">
+      <form noValidate onSubmit={handleSubmit} className="form-grid student-profile-form">
         <p className="member-wizard-progress">步驟 {step} / 2</p>
         {step === 1
           ? <MemberProfileStep profile={profile} onChange={changeProfile} disabled={isSubmitting} />
