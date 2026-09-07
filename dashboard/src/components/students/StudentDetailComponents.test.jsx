@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -120,6 +120,69 @@ describe('Student detail components', () => {
     expect(screen.getByDisplayValue('王大明')).not.toBeNull()
     fireEvent.click(screen.getByRole('button', { name: '繼續編輯' }))
     expect(screen.getByDisplayValue('王大明')).not.toBeNull()
+  })
+
+  it('closes only the profile select on Escape before applying the dirty guard', async () => {
+    authState.role = 'admin'
+    const onClose = vi.fn()
+    render(<StudentDetailModal student={student} enrollments={[]} initialTab="profile" onClose={onClose} />)
+    fireEvent.click(screen.getByRole('button', { name: /編輯/ }))
+    fireEvent.change(screen.getByDisplayValue('王小明'), { target: { value: '王大明' } })
+    const trigger = screen.getByRole('combobox', { name: '性別' })
+    fireEvent.click(trigger)
+    const option = await screen.findByRole('option', { name: '女', exact: true })
+
+    fireEvent.keyDown(option, { key: 'Escape' })
+
+    await waitFor(() => expect(screen.queryByRole('listbox')).toBeNull())
+    expect(document.activeElement).toBe(trigger)
+    expect(screen.queryByText('尚有未儲存變更')).toBeNull()
+    expect(onClose).not.toHaveBeenCalled()
+
+    fireEvent.keyDown(trigger, { key: 'Escape' })
+    expect(screen.getByText('尚有未儲存變更')).not.toBeNull()
+  })
+
+  it('closes only the stacked profile select on the first Escape', async () => {
+    authState.role = 'admin'
+    const onClose = vi.fn()
+    render(<StudentDetailModal student={student} enrollments={[]} initialTab="profile" isTabbed={false} onClose={onClose} />)
+    fireEvent.click(screen.getByRole('button', { name: /編輯/ }))
+    fireEvent.change(screen.getByDisplayValue('王小明'), { target: { value: '王大明' } })
+    const trigger = screen.getByRole('combobox', { name: '性別' })
+    fireEvent.click(trigger)
+    const option = await screen.findByRole('option', { name: '女', exact: true })
+
+    fireEvent.keyDown(option, { key: 'Escape' })
+
+    await waitFor(() => expect(screen.queryByRole('listbox')).toBeNull())
+    expect(document.activeElement).toBe(trigger)
+    expect(onClose).not.toHaveBeenCalled()
+
+    fireEvent.keyDown(trigger, { key: 'Escape' })
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+
+  it('guards a tab change after the gender select makes the profile dirty', async () => {
+    authState.role = 'admin'
+    render(<StudentDetailModal student={student} enrollments={[enrollment]} initialTab="profile" onClose={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: /編輯/ }))
+    fireEvent.click(screen.getByRole('combobox', { name: '性別' }))
+    const option = await screen.findByRole('option', { name: '女', exact: true })
+    fireEvent.pointerDown(option, { pointerType: 'mouse' })
+    fireEvent.click(option)
+
+    fireEvent.click(screen.getByRole('tab', { name: '歷年修課（1 期）' }))
+
+    expect(screen.getByText('尚有未儲存變更')).not.toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: '繼續編輯' }))
+    expect(screen.getByRole('combobox', { name: '性別' }).textContent).toContain('女')
+
+    fireEvent.click(screen.getByRole('tab', { name: '歷年修課（1 期）' }))
+    fireEvent.click(screen.getByRole('button', { name: '放棄變更' }))
+
+    expect(screen.getByRole('tab', { name: '歷年修課（1 期）' }).getAttribute('aria-selected')).toBe('true')
+    expect(screen.queryByRole('combobox', { name: '性別' })).toBeNull()
   })
 
   it('discards edits and performs the pending close', () => {
