@@ -438,6 +438,10 @@
   border-color: hsl(var(--input));
 }
 
+:root[data-theme="light"] .student-profile-form input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: none;
+}
+
 @media (max-width: 640px) {
   .student-profile-form {
     grid-template-columns: minmax(0, 1fr);
