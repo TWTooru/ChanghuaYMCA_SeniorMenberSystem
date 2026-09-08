@@ -71,7 +71,7 @@ export default function EnrollmentTab({ students, enrollments, onSelectEnrollmen
             <Input
               type="text"
               id="history-search" 
-              className="h-10 search-input" 
+              className="search-input"
               placeholder="輸入姓名、課程或收據 No. 搜尋..."
               value={historySearch}
               onChange={(e) => {
@@ -90,7 +90,7 @@ export default function EnrollmentTab({ students, enrollments, onSelectEnrollmen
               setHistoryPage(1)
             }}
           >
-            <SelectTrigger id="history-season" className="h-10 select-input" aria-label="篩選季別">
+            <SelectTrigger id="history-season" className="w-full" aria-label="篩選季別">
               <SelectValue placeholder="全部期別" />
             </SelectTrigger>
             <SelectContent>
@@ -110,7 +110,7 @@ export default function EnrollmentTab({ students, enrollments, onSelectEnrollmen
               setHistoryPage(1)
             }}
           >
-            <SelectTrigger id="history-refund" className="h-10 select-input" aria-label="退費狀況">
+            <SelectTrigger id="history-refund" className="w-full" aria-label="退費狀況">
               <SelectValue placeholder="全部狀態" />
             </SelectTrigger>
             <SelectContent>

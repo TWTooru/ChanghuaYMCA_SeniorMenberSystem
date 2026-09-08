@@ -62,7 +62,7 @@ export default function ExcelSync({ onSyncComplete }) {
   return (
     <div className="flex flex-col gap-4">
       <input type="file" accept=".csv" style={{ display: 'none' }} ref={fileInputRef} onChange={handleFileChange} />
-      <button type="button" className="btn-secondary w-max" style={{ display: 'flex', gap: '6px', alignItems: 'center' }} onClick={() => fileInputRef.current?.click()} disabled={isReading || isImporting}>
+      <button type="button" className="btn-secondary w-max"  onClick={() => fileInputRef.current?.click()} disabled={isReading || isImporting}>
         <Upload size={14} className={isReading || isImporting ? 'spin' : ''} />
         <span>{isReading ? '讀取中...' : isImporting ? '匯入中...' : '匯入季度 CSV'}</span>
       </button>

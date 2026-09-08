@@ -20,7 +20,7 @@
   max-height: 90vh;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 16px;
+  border-radius: calc(var(--radius) + 4px);
   display: flex;
   flex-direction: column;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.5);
@@ -51,7 +51,7 @@
   height: min(90dvh, 900px);
   max-height: 90dvh;
   border: 1px solid var(--border-color);
-  border-radius: 16px;
+  border-radius: calc(var(--radius) + 4px);
   overflow: hidden;
   animation: fadeInCenter 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -88,7 +88,7 @@
 
 @media (max-width: 700px) {
   .student-detail-overlay { padding: 8px; }
-  .student-detail-dialog { width: 100%; height: calc(100dvh - 16px); max-height: calc(100dvh - 16px); border-radius: 12px; }
+  .student-detail-dialog { width: 100%; height: calc(100dvh - 16px); max-height: calc(100dvh - 16px); border-radius: calc(var(--radius) + 4px); }
   .student-detail-header, .student-detail-tabs { padding-left: 16px; padding-right: 16px; }
 }
 
@@ -251,7 +251,7 @@
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .form-group.full-width {
@@ -294,29 +294,6 @@
   .form-group.full-width {
     grid-column: span 1;
   }
-}
-
-.form-label {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-secondary);
-}
-
-.form-input, .form-select, .form-textarea {
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  color: var(--text-primary);
-  padding: 10px 14px;
-  font-size: 14px;
-  transition: all 0.2s ease;
-  outline: none;
-}
-
-.form-input:focus, .form-select:focus, .form-textarea:focus {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 2px var(--color-accent-glow);
-  background: rgba(0, 0, 0, 0.3);
 }
 
 .form-footer {

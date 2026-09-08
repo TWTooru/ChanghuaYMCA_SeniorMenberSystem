@@ -19,7 +19,7 @@ export default function EnrollmentTimeline({ timeline, onDelete, onAddEnrollment
     <div className="timeline-section">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
         <h3 className="timeline-title" style={{ margin: 0 }}><Activity size={16} />歷年修課歷程 ({timeline.length} 期)</h3>
-        {onAddEnrollment && <button type="button" className="btn-primary" style={{ padding: '6px 12px', fontSize: '13px' }} onClick={onAddEnrollment} id="btn-add-enrollment-modal"><span>+ 新增選課紀錄</span></button>}
+        {onAddEnrollment && <button type="button" className="btn-primary"  onClick={onAddEnrollment} id="btn-add-enrollment-modal"><span>+ 新增選課紀錄</span></button>}
       </div>
       {timeline.length > 0 ? (
         <div className="timeline-container">

@@ -153,7 +153,7 @@ function AuthorizedAdminAccountPage({ actor }) {
                     disabled={firstLoginRequired || mutation === `role:${target.id}`}
                     onValueChange={nextRole => selectRole(target, nextRole)}
                   >
-                    <SelectTrigger className={`admin-role-select admin-role-select--${target.role}`} aria-label={`變更 ${target.email} 的角色`}><SelectValue /></SelectTrigger>
+                    <SelectTrigger size="sm" className={`admin-role-select admin-role-select--${target.role}`} aria-label={`變更 ${target.email} 的角色`}><SelectValue /></SelectTrigger>
                     <SelectContent>{policy.roleOptions.map(roleOption => <SelectItem key={roleOption} value={roleOption}>{ROLE_LABELS[roleOption]}</SelectItem>)}</SelectContent>
                   </Select>}
             </TableCell>

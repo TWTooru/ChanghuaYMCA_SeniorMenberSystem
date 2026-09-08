@@ -19,7 +19,7 @@
   align-items: center;
   gap: 16px;
   min-height: 112px;
-  padding: 20px;
+  padding: 16px;
 }
 
 .kpi-card:hover {
@@ -98,10 +98,10 @@
 .overview-grid > [data-slot="collapsible"] { min-width: 0; }
 .collapsible-panel { gap: 0; padding: 0; overflow: hidden; }
 .collapsible-panel-header { padding: 0; }
-.collapsible-panel-toggle { width: 100%; height: auto; min-height: 64px; border: 0; border-radius: 0; background: transparent; color: var(--text-primary); display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; font-size: 16px; font-weight: 600; cursor: pointer; text-align: left; }
+.collapsible-panel-toggle { width: 100%; height: auto; min-height: 64px; border: 0; border-radius: 0; background: transparent; color: var(--text-primary); display: flex; align-items: center; justify-content: space-between; padding: 16px; font-size: 16px; font-weight: 600; cursor: pointer; text-align: left; }
 .collapsible-panel-toggle svg { transition: transform .2s ease; }
 .collapsible-panel-toggle svg.collapsed { transform: rotate(-90deg); }
-.collapsible-panel-body { padding: 0 24px 24px; }
+.collapsible-panel-body { padding: 0 16px 16px; }
 .collapsible-panel-body > .panel-card { padding: 0; background: transparent; border: 0; box-shadow: none; }
 .collapsible-panel-body > .panel-card > .panel-title { display: none; }
 .kpi-panel { margin-bottom: 32px; }
@@ -137,8 +137,8 @@
   background: hsl(var(--card));
   color: hsl(var(--card-foreground));
   border: 1px solid hsl(var(--border));
-  border-radius: var(--radius);
-  padding: 24px;
+  border-radius: calc(var(--radius) + 4px);
+  padding: 16px;
   box-shadow: var(--shadow-sm);
 }
 

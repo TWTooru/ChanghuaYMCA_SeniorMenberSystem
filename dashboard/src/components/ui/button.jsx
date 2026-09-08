@@ -4,30 +4,26 @@ import { cva } from "class-variance-authority";
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-colors outline-none select-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:h-4 [&_svg:not([class*='size-'])]:w-4",
+  "ui-button",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/80",
-        outline:
-          "border-border bg-background hover:bg-muted hover:text-foreground",
-        secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost:
-          "hover:bg-muted hover:text-foreground",
-        destructive:
-          "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:ring-destructive/20",
-        link: "text-primary underline-offset-4 hover:underline",
+        default: "ui-button-default",
+        outline: "ui-button-outline",
+        secondary: "ui-button-secondary",
+        ghost: "ui-button-ghost",
+        destructive: "ui-button-destructive",
+        link: "ui-button-link",
       },
       size: {
-        default: "h-8 gap-1.5 px-2.5",
-        xs: "h-6 gap-1 px-2 text-xs",
-        sm: "h-7 gap-1 px-2.5 text-[0.8rem]",
-        lg: "h-9 gap-1.5 px-3",
-        icon: "h-8 w-8",
-        "icon-xs": "h-6 w-6",
-        "icon-sm": "h-7 w-7",
-        "icon-lg": "h-9 w-9",
+        default: "ui-button-size-default",
+        xs: "ui-button-size-xs",
+        sm: "ui-button-size-sm",
+        lg: "ui-button-size-lg",
+        icon: "ui-button-size-icon",
+        "icon-xs": "ui-button-size-icon-xs",
+        "icon-sm": "ui-button-size-icon-sm",
+        "icon-lg": "ui-button-size-icon-lg",
       },
     },
     defaultVariants: {

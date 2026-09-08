@@ -87,7 +87,7 @@ export default function CourseManagementTab() {
 
       <div className="course-management-add-form">
         <Input
-          className="h-10 form-input"
+          className="course-management-input"
           placeholder="輸入課程名稱以新增或重新啟用"
           value={courseName}
           onChange={e => setCourseName(e.target.value)}

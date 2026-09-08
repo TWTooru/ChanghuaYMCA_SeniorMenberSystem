@@ -36,7 +36,7 @@ export default function Login({ onLoginSuccess }) {
     };
 
     return (
-        <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#030712] selection:bg-indigo-500/30">
+        <div className="dark relative min-h-screen flex items-center justify-center overflow-hidden bg-[#030712] selection:bg-indigo-500/30">
             {/* 裝飾背景，不承載互動或可讀內容。 */}
             <div className="absolute inset-0 z-0">
                 <div className="absolute -top-[20%] -left-[10%] w-[70vw] h-[70vw] rounded-full bg-indigo-600/10 blur-[120px] mix-blend-screen animate-pulse" style={{ animationDuration: '4s' }} />
@@ -66,11 +66,11 @@ export default function Login({ onLoginSuccess }) {
 
                     <div className="space-y-5">
                         <div className="space-y-2 group">
-                            <Label htmlFor="email" className="text-[11px] font-semibold text-zinc-500 uppercase tracking-widest group-focus-within:text-indigo-400 transition-colors duration-300">
+                            <Label htmlFor="email" className="text-muted-foreground group-focus-within:text-primary transition-colors">
                                 Email Address
                             </Label>
                             <div className="relative">
-                                <Mail className="absolute left-4 top-3.5 h-5 w-5 text-zinc-500 group-focus-within:text-indigo-400 transition-colors duration-300" />
+                                <Mail className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors duration-300" />
                                 <Input
                                     id="email"
                                     type="email"
@@ -79,19 +79,19 @@ export default function Login({ onLoginSuccess }) {
                                     onChange={(e) => setEmail(e.target.value)}
                                     required
                                     disabled={loading}
-                                    className="pl-12 h-12 bg-black/20 border-white/5 text-white placeholder:text-zinc-600 focus-visible:ring-1 focus-visible:ring-indigo-500/50 focus-visible:border-indigo-500/50 rounded-xl transition-all duration-300 shadow-inner"
+                                    className="pl-12 h-12"
                                 />
                             </div>
                         </div>
 
                         <div className="space-y-2 group">
                             <div className="flex items-center justify-between">
-                                <Label htmlFor="password" className="text-[11px] font-semibold text-zinc-500 uppercase tracking-widest group-focus-within:text-indigo-400 transition-colors duration-300">
+                                <Label htmlFor="password" className="text-muted-foreground group-focus-within:text-primary transition-colors">
                                     Password
                                 </Label>
                             </div>
                             <div className="relative">
-                                <Lock className="absolute left-4 top-3.5 h-5 w-5 text-zinc-500 group-focus-within:text-indigo-400 transition-colors duration-300" />
+                                <Lock className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors duration-300" />
                                 <Input
                                     id="password"
                                     type="password"
@@ -100,7 +100,7 @@ export default function Login({ onLoginSuccess }) {
                                     onChange={(e) => setPassword(e.target.value)}
                                     required
                                     disabled={loading}
-                                    className="pl-12 h-12 bg-black/20 border-white/5 text-white placeholder:text-zinc-600 focus-visible:ring-1 focus-visible:ring-indigo-500/50 focus-visible:border-indigo-500/50 rounded-xl transition-all duration-300 shadow-inner"
+                                    className="pl-12 h-12"
                                 />
                             </div>
                         </div>
@@ -109,10 +109,11 @@ export default function Login({ onLoginSuccess }) {
                     <Button
                         type="submit"
                         disabled={loading}
-                        className="group relative w-full h-12 mt-4 overflow-hidden bg-white text-black hover:bg-zinc-200 rounded-xl font-bold text-sm transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,255,255,0.2)]"
+                        size="lg"
+                        className="group w-full mt-4"
                     >
                         {loading ? (
-                            <Loader2 className="h-5 w-5 animate-spin text-zinc-600" />
+                            <Loader2 className="h-5 w-5 animate-spin" />
                         ) : (
                             <span className="flex items-center justify-center w-full">
                                 Sign In

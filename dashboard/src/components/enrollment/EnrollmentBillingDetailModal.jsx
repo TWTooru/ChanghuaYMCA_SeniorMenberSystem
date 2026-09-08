@@ -284,7 +284,6 @@ export default function EnrollmentBillingDetailModal({
                   <button
                     type="button"
                     className={enrollment.refunded ? 'btn-secondary' : 'btn-danger'}
-                    style={{ padding: '2px 8px', fontSize: '12px' }}
                     disabled={isSaving}
                     onClick={handleRefundToggle}
                   >
