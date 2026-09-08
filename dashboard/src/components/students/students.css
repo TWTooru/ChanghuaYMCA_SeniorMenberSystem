@@ -2,7 +2,7 @@
 .filters-panel {
   background: var(--panel-bg, rgba(17, 24, 39, 0.4));
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: calc(var(--radius) + 4px);
   padding: 20px;
   margin-bottom: 24px;
   display: grid;
@@ -34,12 +34,6 @@
   gap: 8px;
 }
 
-.filter-label {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-secondary);
-}
-
 .search-input-wrapper {
   position: relative;
   display: flex;
@@ -56,7 +50,8 @@
   z-index: 1;
 }
 
-.student-search-input {
+.student-search-input,
+.search-input-wrapper .search-input {
   padding-left: 38px;
 }
 
@@ -66,50 +61,17 @@
 
 .search-input {
   width: 100%;
-  background: var(--input-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  color: var(--text-primary);
-  padding: 10px 12px 10px 38px;
-  font-size: 14px;
-  transition: all 0.2s ease;
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-accent-glow);
-  background: var(--bg-card);
 }
 
 .select-input {
   width: 100%;
-  background: var(--input-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  color: var(--text-primary);
-  padding: 10px 12px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.select-input:focus {
-  outline: none;
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-accent-glow);
-}
-
-.select-input option {
-  background-color: var(--bg-card);
-  color: var(--text-primary);
 }
 
 /* 學員清單表格與可捲動欄位。 */
 .table-wrapper {
   background: var(--panel-bg, rgba(31, 41, 55, 0.2));
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: calc(var(--radius) + 4px);
   overflow: hidden;
   box-shadow: var(--shadow-sm);
   margin-bottom: 24px;
@@ -280,34 +242,6 @@
   cursor: pointer;
 }
 
-.btn-secondary {
-  background: var(--bg-card, rgba(255, 255, 255, 0.05));
-  border: 1px solid var(--border-color);
-  color: var(--text-primary);
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: var(--bg-card-hover);
-  border-color: var(--color-accent);
-}
-
-.btn-secondary.active {
-  background: var(--color-accent);
-  color: #ffffff;
-  border-color: var(--color-accent);
-}
-
-.btn-secondary:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
 /* 學員詳細資料的側邊對話框與遮罩。 */
 .modal-overlay {
   position: fixed;
@@ -369,24 +303,6 @@
   font-weight: 700;
 }
 
-.btn-close {
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-}
-
-.btn-close:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-primary);
-}
-
 .modal-body {
   flex: 1;
   overflow-y: auto;
@@ -437,44 +353,4 @@
   display: flex;
   gap: 8px;
   align-items: center;
-}
-
-.btn-edit {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
-  font-size: 13px;
-  border-radius: 6px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-secondary);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-edit:hover {
-  background: var(--color-info);
-  color: white;
-  border-color: var(--color-info);
-}
-
-.btn-delete {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
-  font-size: 13px;
-  border-radius: 6px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-secondary);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-delete:hover {
-  background: var(--color-danger);
-  color: white;
-  border-color: var(--color-danger);
 }

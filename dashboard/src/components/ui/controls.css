@@ -1,0 +1,140 @@
+/* Shared appearance for shadcn components and native controls. */
+
+@layer components {
+
+  .ui-button,
+  .btn-primary,
+  .btn-secondary,
+  .btn-edit,
+  .btn-delete,
+  .btn-danger,
+  .btn-close,
+  .close-btn,
+  .btn-refresh-inline,
+  .btn-theme-toggle,
+  .btn-logout,
+  .timeline-action-btn {
+    @apply inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm leading-5 font-medium whitespace-nowrap transition-colors outline-none select-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:h-4 [&_svg:not([class*='size-'])]:w-4 cursor-pointer;
+  }
+
+  .ui-button-default,
+  .btn-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90;
+  }
+
+  .ui-button-outline,
+  .btn-secondary,
+  .btn-edit,
+  .btn-refresh-inline,
+  .btn-logout {
+    @apply border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground;
+  }
+
+  .ui-button-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
+  }
+
+  .ui-button-ghost,
+  .btn-close,
+  .close-btn,
+  .btn-theme-toggle,
+  .btn-logout,
+  .timeline-action-btn {
+    @apply text-foreground hover:bg-accent hover:text-accent-foreground;
+  }
+
+  .ui-button-destructive,
+  .btn-delete,
+  .btn-danger {
+    @apply bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:ring-destructive/20;
+  }
+
+  .ui-button-link {
+    @apply text-primary underline-offset-4 hover:underline;
+  }
+
+  .ui-button-size-default,
+  .btn-primary,
+  .btn-secondary,
+  .btn-edit,
+  .btn-delete,
+  .btn-danger,
+  .btn-refresh-inline {
+    @apply h-10 gap-2 px-4;
+  }
+
+  .ui-button-size-xs {
+    @apply h-7 gap-1 px-2 text-xs;
+  }
+
+  .ui-button-size-sm {
+    @apply h-8 gap-1.5 px-3 text-sm;
+  }
+
+  .ui-button-size-lg {
+    @apply h-12 gap-2 px-5;
+  }
+
+  .ui-button-size-icon {
+    @apply h-10 w-10;
+  }
+
+  .ui-button-size-icon-xs {
+    @apply h-7 w-7;
+  }
+
+  .ui-button-size-icon-sm,
+  .btn-close,
+  .close-btn,
+  .btn-theme-toggle,
+  .btn-logout,
+  .timeline-action-btn {
+    @apply h-8 w-8;
+  }
+
+  .ui-button-size-icon-lg {
+    @apply h-12 w-12;
+  }
+
+  .btn-secondary.active {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90;
+  }
+
+  .timeline-action-btn.danger {
+    @apply bg-destructive/10 text-destructive hover:bg-destructive/20;
+  }
+
+  .ui-input,
+  .form-input,
+  .billing-edit-input,
+  .search-input,
+  .quick-search-input,
+  .password-setup-card input {
+    @apply h-10 w-full min-w-0 rounded-lg border border-input bg-field px-3 py-2 text-base leading-5 text-foreground transition-colors outline-none file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-[invalid=true]:border-destructive aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-destructive/20 md:text-sm;
+  }
+
+  .ui-textarea,
+  .form-textarea,
+  .billing-edit-textarea {
+    @apply flex min-h-[84px] w-full min-w-0 resize-y rounded-lg border border-input bg-field px-3 py-2 text-base leading-5 text-foreground outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-[invalid=true]:border-destructive aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-destructive/20 md:text-sm;
+  }
+
+  .form-select,
+  .select-input {
+    @apply ui-input cursor-pointer;
+  }
+
+  .form-select option,
+  .select-input option {
+    @apply bg-popover text-popover-foreground;
+  }
+
+  .form-label,
+  .filter-label,
+  .password-setup-card label {
+    @apply text-sm leading-5 font-medium text-foreground;
+  }
+
+}
+
+:root[data-theme="light"] input[type="date"]::-webkit-calendar-picker-indicator { filter: none; }

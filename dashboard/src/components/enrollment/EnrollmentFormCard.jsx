@@ -44,7 +44,7 @@ export default function EnrollmentFormCard({
               <button
                 type="button"
                 className={form.refunded ? 'btn-secondary' : 'btn-danger'}
-                style={{ padding: '2px 8px', fontSize: '12px' }}
+
                 disabled={disabled}
                 onClick={() => onToggleRefund?.(form)}
                 aria-label={`報名表 ${form.form_sequence} ${form.refunded ? '取消退費' : '標記退費'}`}
@@ -54,7 +54,7 @@ export default function EnrollmentFormCard({
               <button
                 type="button"
                 className="btn-secondary"
-                style={{ padding: '2px 8px', fontSize: '12px' }}
+
                 disabled={disabled}
                 onClick={() => onEdit?.(form)}
                 aria-label={`編輯報名表 ${form.form_sequence}`}
@@ -67,7 +67,7 @@ export default function EnrollmentFormCard({
             <button
               type="button"
               className="btn-danger"
-              style={{ padding: '2px 8px', fontSize: '12px' }}
+
               disabled={disabled}
               onClick={() => onDelete?.(form)}
               aria-label={`刪除報名表 ${form.form_sequence}`}

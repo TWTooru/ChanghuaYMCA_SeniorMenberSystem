@@ -7,8 +7,8 @@ export default function InitialEnrollmentStep({
   enrollment, onChange, onCoursesChange, account, disabled = false,
 }) {
   const input = (id, name, type = 'text', extra = {}) => (
-    <Input id={id} className="h-10" name={name} type={type}
-      value={enrollment[name] ?? ''} onChange={onChange} disabled={disabled} {...extra} />
+    <Input id={id} name={name} type={type}
+     value={enrollment[name] ?? ''} onChange={onChange} disabled={disabled} {...extra} />
   )
   const money = (id, name) => input(id, name, 'number', { min: '0', step: '1', inputMode: 'numeric' })
 
@@ -21,13 +21,13 @@ export default function InitialEnrollmentStep({
             <span className="period-prefix">第</span>
             <Input
               id="initial-enrollment-period"
-              className="h-10 period-number-input"
-              name="period"
+              className="period-number-input"
+             name="period"
               type="number"
               min="1"
               step="1"
               inputMode="numeric"
-              value={enrollment.period ?? ''}
+             value={enrollment.period ?? ''}
               onChange={onChange}
               disabled={disabled}
               required
@@ -62,7 +62,7 @@ export default function InitialEnrollmentStep({
       <div className="member-wizard-section-grid">
         <Field label="備註" id="initial-enrollment-notes" fullWidth><Textarea id="initial-enrollment-notes" name="notes" rows={3} value={enrollment.notes ?? ''} onChange={onChange} disabled={disabled} /></Field>
         <Field label="經手人姓名" id="initial-enrollment-handler">{input('initial-enrollment-handler', 'handled_by_name')}</Field>
-        <Field label="登入帳號（自動帶入）" id="initial-enrollment-account"><Input id="initial-enrollment-account" className="h-10" value={account || ''} readOnly aria-readonly="true" /></Field>
+        <Field label="登入帳號（自動帶入）" id="initial-enrollment-account"><Input id="initial-enrollment-account" value={account || ''} readOnly aria-readonly="true" /></Field>
         <Field label="報到日期" id="initial-enrollment-reported-on">{input('initial-enrollment-reported-on', 'reported_on', 'date')}</Field>
       </div>
     </fieldset>

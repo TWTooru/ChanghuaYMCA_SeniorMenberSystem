@@ -57,7 +57,7 @@
 .timeline-card {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: 10px;
+  border-radius: calc(var(--radius) + 4px);
   position: relative;
   transition: all 0.2s ease;
   cursor: pointer;

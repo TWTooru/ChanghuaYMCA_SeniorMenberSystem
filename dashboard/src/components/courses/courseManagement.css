@@ -34,68 +34,12 @@
 
 .course-management-add-form .form-input {
   flex: 1;
-  background: var(--input-bg, var(--bg-card));
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  color: var(--text-primary);
-  padding: 10px 14px;
-  font-size: 14px;
-}
-
-.course-management-add-form .form-input::placeholder {
-  color: var(--text-muted);
 }
 
 .course-management-filter-group {
   display: flex;
   gap: 8px;
   margin-bottom: 20px;
-}
-
-.course-management .btn-secondary {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  color: var(--text-primary);
-  padding: 6px 14px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: var(--shadow-sm);
-}
-
-.course-management .btn-secondary:hover:not(:disabled) {
-  background: var(--bg-card-hover);
-  border-color: var(--color-accent);
-  color: var(--color-accent);
-}
-
-.course-management .btn-secondary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.course-management-filter-group .btn-secondary.active {
-  background: var(--color-accent);
-  color: #ffffff;
-  border-color: var(--color-accent);
-}
-
-.course-management .btn-danger {
-  background: var(--color-danger);
-  color: #ffffff;
-  border: 1px solid var(--color-danger);
-  padding: 6px 14px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.course-management .btn-danger:hover:not(:disabled) {
-  opacity: 0.9;
 }
 
 .course-catalog-confirmation {
@@ -122,7 +66,7 @@
 
 .course-management-table-wrapper {
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: calc(var(--radius) + 4px);
   overflow: hidden;
   background: var(--bg-card);
   box-shadow: var(--shadow-sm);
@@ -188,3 +132,5 @@
   border: 1px solid var(--border-color);
   border-radius: 12px;
 }
+
+.course-management-input { flex: 1; min-width: 0; }

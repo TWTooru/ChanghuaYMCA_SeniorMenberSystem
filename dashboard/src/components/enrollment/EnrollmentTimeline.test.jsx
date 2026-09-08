@@ -2,12 +2,31 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import EnrollmentTimeline from './EnrollmentTimeline'
+import postcss from 'postcss'
+import tailwindcss from 'tailwindcss'
+import tailwindConfig from '../../../tailwind.config.js'
 
 const testDirectory = dirname(fileURLToPath(import.meta.url))
 const enrollmentStyles = readFileSync(resolve(testDirectory, './enrollment.css'), 'utf8')
 const adminStyles = readFileSync(resolve(testDirectory, '../admin/admin.css'), 'utf8')
+const sharedStyles = readFileSync(resolve(testDirectory, '../ui/controls.css'), 'utf8')
+let compiledControls
+
+beforeAll(async () => {
+  const result = await postcss([tailwindcss({
+    ...tailwindConfig,
+    content: [{ raw: 'timeline-action-btn', extension: 'html' }],
+  })]).process(`@tailwind components;\n${sharedStyles}`, { from: undefined })
+  compiledControls = result.css
+})
+
+// jsdom preserves rem units in computed styles; convert them before measuring.
+function pixels(value) {
+  const number = Number.parseFloat(value)
+  return value.endsWith('rem') ? number * 16 : number
+}
 
 vi.mock('./EnrollmentEditForm', () => ({
   default: ({ onSave, onCancel }) => (
@@ -41,7 +60,7 @@ describe('EnrollmentTimeline', () => {
 
   beforeEach(() => {
     styleElement = document.createElement('style')
-    styleElement.textContent = `${adminStyles}\n${enrollmentStyles}`
+    styleElement.textContent = `${compiledControls}\n${adminStyles}\n${enrollmentStyles}`
     document.head.append(styleElement)
   })
 
@@ -281,7 +300,7 @@ describe('EnrollmentTimeline', () => {
     const actionStyles = getComputedStyle(actions)
     const reservedSpace = Number.parseFloat(getComputedStyle(selectButton).paddingRight)
     const actionsWidth = actionButtons.reduce((total, button) => (
-      total + Number.parseFloat(getComputedStyle(button).width)
+      total + pixels(getComputedStyle(button).width)
     ), 0)
     const interButtonGap = Number.parseFloat(actionStyles.gap) * (actionButtons.length - 1)
     const rightInset = Number.parseFloat(actionStyles.right)

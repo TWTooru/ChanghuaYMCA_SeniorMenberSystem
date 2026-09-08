@@ -15,7 +15,7 @@
 .quick-search-panel {
   background-color: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: calc(var(--radius) + 4px);
   width: 100%;
   max-width: 600px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
@@ -38,28 +38,6 @@
 
 .quick-search-input {
   flex: 1;
-  border: none;
-  background: transparent;
-  font-size: 16px;
-  color: var(--text-primary);
-  outline: none;
-}
-
-.close-btn {
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  padding: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-}
-
-.close-btn:hover {
-  background-color: var(--bg-hover);
-  color: var(--text-primary);
 }
 
 .quick-search-results {
@@ -100,3 +78,6 @@
   text-align: center;
   color: var(--text-secondary);
 }
+
+.quick-search-header { gap: 8px; }
+.quick-search-header > .search-icon { position: static; flex-shrink: 0; margin: 0; }

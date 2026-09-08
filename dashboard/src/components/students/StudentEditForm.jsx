@@ -45,14 +45,14 @@ export default function StudentEditForm({ student, onSave, onCancel, onDirtyChan
   }
 
   return <div className="form-grid student-profile-form" style={{ padding: 0, background: 'transparent' }}>
-    <Field label="ID" id="student-edit-id"><Input id="student-edit-id" className="h-10" name="student_id" inputMode="numeric" value={form.student_id} onChange={change} disabled={isSaving} /></Field>
-    <Field label="姓名" id="student-edit-name"><Input id="student-edit-name" className="h-10" name="name" value={form.name} onChange={change} required disabled={isSaving} /></Field>
+    <Field label="ID" id="student-edit-id"><Input id="student-edit-id" name="student_id" inputMode="numeric" value={form.student_id} onChange={change} disabled={isSaving} /></Field>
+    <Field label="姓名" id="student-edit-name"><Input id="student-edit-name" name="name" value={form.name} onChange={change} required disabled={isSaving} /></Field>
     <StudentProfileSelectField id="student-edit-gender" label="性別" name="gender" value={form.gender} options={['男', '女']} onChange={change} required disabled={isSaving} />
-    <Field label="電子郵件" id="student-edit-email"><Input id="student-edit-email" className="h-10" name="email" type="email" value={form.email} onChange={change} disabled={isSaving} /></Field>
-    <Field label="電話" id="student-edit-phone"><Input id="student-edit-phone" className="h-10" name="phone" value={form.phone} onChange={change} disabled={isSaving} /></Field>
-    <Field label="出生年月日" id="student-edit-birth-date"><Input id="student-edit-birth-date" className="h-10" name="birth_date" type="date" value={form.birth_date} onChange={change} disabled={isSaving} /></Field>
-    <Field label="通訊處" id="student-edit-address"><Input id="student-edit-address" className="h-10" name="address" value={form.address} onChange={change} disabled={isSaving} /></Field>
-    <Field label="服務機關 / 學校" id="student-edit-organization"><Input id="student-edit-organization" className="h-10" name="organization" value={form.organization} onChange={change} disabled={isSaving} /></Field>
+    <Field label="電子郵件" id="student-edit-email"><Input id="student-edit-email" name="email" type="email" value={form.email} onChange={change} disabled={isSaving} /></Field>
+    <Field label="電話" id="student-edit-phone"><Input id="student-edit-phone" name="phone" value={form.phone} onChange={change} disabled={isSaving} /></Field>
+    <Field label="出生年月日" id="student-edit-birth-date"><Input id="student-edit-birth-date" name="birth_date" type="date" value={form.birth_date} onChange={change} disabled={isSaving} /></Field>
+    <Field label="通訊處" id="student-edit-address"><Input id="student-edit-address" name="address" value={form.address} onChange={change} disabled={isSaving} /></Field>
+    <Field label="服務機關 / 學校" id="student-edit-organization"><Input id="student-edit-organization" name="organization" value={form.organization} onChange={change} disabled={isSaving} /></Field>
     <StudentProfileSelectField id="student-edit-education" label="教育程度" name="education" value={form.education} options={EDUCATION_OPTIONS} onChange={change} required disabled={isSaving} />
     {error && <p className="student-edit-error" role="alert">{error}</p>}
     <div className="form-group full-width student-edit-actions"><Button type="button" variant="secondary" onClick={onCancel} disabled={isSaving}>取消</Button><Button type="button" onClick={save} disabled={isSaving}>儲存變更</Button></div>

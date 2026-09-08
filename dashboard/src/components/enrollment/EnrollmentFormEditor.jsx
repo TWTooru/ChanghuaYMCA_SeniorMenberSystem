@@ -105,8 +105,8 @@ export default function EnrollmentFormEditor({
             <select
               id="editor-reg-type"
               className="form-select"
-              style={{ padding: '2px 8px', fontSize: '12px' }}
-              value={formData.reg_type}
+
+             value={formData.reg_type}
               disabled={isSaving}
               onChange={e => handleFieldChange('reg_type', e.target.value)}
             >
@@ -120,7 +120,7 @@ export default function EnrollmentFormEditor({
           <button
             type="submit"
             className="btn-primary"
-            style={{ padding: '2px 10px', fontSize: '12px' }}
+
             disabled={isSaving}
           >
             儲存
@@ -128,7 +128,7 @@ export default function EnrollmentFormEditor({
           <button
             type="button"
             className="btn-secondary"
-            style={{ padding: '2px 10px', fontSize: '12px' }}
+
             disabled={isSaving}
             onClick={() => onCancel?.()}
           >
@@ -161,7 +161,7 @@ export default function EnrollmentFormEditor({
                 step="1"
                 className="billing-edit-input"
                 aria-label="預繳金額"
-                value={formData.prepaid_amount}
+               value={formData.prepaid_amount}
                 disabled={isSaving}
                 onChange={e => handleFieldChange('prepaid_amount', e.target.value)}
               />
@@ -173,7 +173,7 @@ export default function EnrollmentFormEditor({
                 type="text"
                 className="billing-edit-input"
                 aria-label="預繳收據號碼"
-                value={formData.prepaid_receipt_number}
+               value={formData.prepaid_receipt_number}
                 disabled={isSaving}
                 onChange={e => handleFieldChange('prepaid_receipt_number', e.target.value)}
               />
@@ -194,7 +194,7 @@ export default function EnrollmentFormEditor({
                 step="1"
                 className="billing-edit-input"
                 aria-label="學費"
-                value={formData.tuition_fee}
+               value={formData.tuition_fee}
                 disabled={isSaving}
                 onChange={e => handleFieldChange('tuition_fee', e.target.value)}
               />
@@ -208,7 +208,7 @@ export default function EnrollmentFormEditor({
                 step="1"
                 className="billing-edit-input"
                 aria-label="教材費"
-                value={formData.materials_fee}
+               value={formData.materials_fee}
                 disabled={isSaving}
                 onChange={e => handleFieldChange('materials_fee', e.target.value)}
               />
@@ -222,7 +222,7 @@ export default function EnrollmentFormEditor({
                 step="1"
                 className="billing-edit-input"
                 aria-label="會友費"
-                value={formData.membership_fee}
+               value={formData.membership_fee}
                 disabled={isSaving}
                 onChange={e => handleFieldChange('membership_fee', e.target.value)}
               />
@@ -242,7 +242,7 @@ export default function EnrollmentFormEditor({
                 type="text"
                 className="billing-edit-input"
                 aria-label="正式收據號碼"
-                value={formData.fee_receipt_number}
+               value={formData.fee_receipt_number}
                 disabled={isSaving}
                 onChange={e => handleFieldChange('fee_receipt_number', e.target.value)}
               />
@@ -260,7 +260,7 @@ export default function EnrollmentFormEditor({
               type="text"
               className="billing-edit-input"
               aria-label="經手人"
-              value={formData.handled_by_name}
+             value={formData.handled_by_name}
               disabled={isSaving}
               onChange={e => handleFieldChange('handled_by_name', e.target.value)}
             />
@@ -272,7 +272,7 @@ export default function EnrollmentFormEditor({
               type="date"
               className="billing-edit-input"
               aria-label="報到日期"
-              value={formData.reported_on}
+             value={formData.reported_on}
               disabled={isSaving}
               onChange={e => handleFieldChange('reported_on', e.target.value)}
             />
@@ -289,7 +289,7 @@ export default function EnrollmentFormEditor({
             className="billing-edit-textarea"
             aria-label="備註"
             rows="3"
-            value={formData.notes}
+           value={formData.notes}
             disabled={isSaving}
             onChange={e => handleFieldChange('notes', e.target.value)}
           />

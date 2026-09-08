@@ -43,7 +43,7 @@ export default function PaymentRecordsEditor({
       <div className="payment-records-header">
         <button
           type="button"
-          className="btn-secondary payment-records-add"
+          className="btn-primary"
           onClick={addRecord}
           disabled={disabled || !canAddRecord}
         >
@@ -123,7 +123,7 @@ export default function PaymentRecordsEditor({
 
               <button
                 type="button"
-                className="btn-secondary payment-records-add payment-records-remove"
+                className="btn-delete payment-records-remove"
                 onClick={() => onChange(records.filter(candidate => candidate.localId !== record.localId))}
                 disabled={disabled}
               >

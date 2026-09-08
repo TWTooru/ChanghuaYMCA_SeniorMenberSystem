@@ -16,8 +16,8 @@ export default function ConfirmDialog({ isOpen, title, message, confirmLabel = '
           <p style={{ margin: '0 0 24px 0', color: 'var(--text-secondary)', fontSize: '14px', lineHeight: '1.6' }}>{message}</p>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
             <button type="button" className="btn-secondary" onClick={onCancel}>{cancelLabel}</button>
-            <button type="button" className="btn-primary" onClick={onConfirm}
-              style={tone === 'danger' ? { backgroundColor: 'var(--color-danger)', borderColor: 'var(--color-danger)' } : undefined}>
+            <button type="button" className={tone === 'danger' ? 'btn-delete' : 'btn-primary'} onClick={onConfirm}
+              >
               {confirmLabel}
             </button>
           </div>

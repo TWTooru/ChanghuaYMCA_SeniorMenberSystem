@@ -20,7 +20,7 @@
   max-height: 90vh;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 16px;
+  border-radius: calc(var(--radius) + 4px);
   display: flex;
   flex-direction: column;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.5);
@@ -62,7 +62,7 @@
   height: min(90dvh, 900px);
   max-height: 90dvh;
   border: 1px solid var(--border-color);
-  border-radius: 16px;
+  border-radius: calc(var(--radius) + 4px);
   overflow: hidden;
   animation: fadeInCenter 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -99,7 +99,7 @@
 
 @media (max-width: 700px) {
   .student-detail-overlay { padding: 8px; }
-  .student-detail-dialog { width: 100%; height: calc(100dvh - 16px); max-height: calc(100dvh - 16px); border-radius: 12px; }
+  .student-detail-dialog { width: 100%; height: calc(100dvh - 16px); max-height: calc(100dvh - 16px); border-radius: calc(var(--radius) + 4px); }
   .student-detail-header, .student-detail-tabs { padding-left: 16px; padding-right: 16px; }
 }
 
@@ -188,7 +188,7 @@
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .form-group.full-width {
@@ -231,29 +231,6 @@
   .form-group.full-width {
     grid-column: span 1;
   }
-}
-
-.form-label {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-secondary);
-}
-
-.form-input, .form-select, .form-textarea {
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  color: var(--text-primary);
-  padding: 10px 14px;
-  font-size: 14px;
-  transition: all 0.2s ease;
-  outline: none;
-}
-
-.form-input:focus, .form-select:focus, .form-textarea:focus {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 2px var(--color-accent-glow);
-  background: rgba(0, 0, 0, 0.3);
 }
 
 .form-footer {
@@ -337,11 +314,6 @@
   gap: 16px;
 }
 
-.form-textarea {
-  min-height: 84px;
-  resize: vertical;
-}
-
 @media (max-width: 640px) {
   .member-wizard-section-grid {
     grid-template-columns: 1fr;
@@ -369,11 +341,11 @@
 
 /* 新增會員第二步的期別欄位：將前後綴與數字輸入視為同一個控制項。 */
 .member-wizard-period-input {
-  min-height: 42px;
+  min-height: 40px;
   gap: 0;
   overflow: hidden;
   border: 1px solid var(--border-color);
-  border-radius: 10px;
+  border-radius: var(--radius);
   background: rgba(0, 0, 0, 0.2);
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
@@ -422,13 +394,13 @@
 
 .student-profile-form .member-wizard-period-input {
   border-color: hsl(var(--input));
-  background: transparent;
+  background: hsl(var(--field));
 }
 
 .student-profile-form .member-wizard-period-input:focus-within {
   border-color: hsl(var(--ring));
-  box-shadow: 0 0 0 2px hsl(var(--ring) / 0.5);
-  background: transparent;
+  box-shadow: 0 0 0 2px hsl(var(--ring) / 0.3);
+  background: hsl(var(--field));
 }
 
 .student-profile-form .member-wizard-period-input .period-prefix,

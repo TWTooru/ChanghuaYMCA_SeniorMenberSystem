@@ -69,7 +69,7 @@ export default function EnrollmentTab({ students, enrollments, onSelectEnrollmen
             <Search size={16} className="search-icon" />
             <Input
               id="history-search" 
-              className="h-10 search-input"
+              className="search-input"
               placeholder="輸入姓名或課程名稱搜尋..."
               value={historySearch}
               onChange={(e) => {
