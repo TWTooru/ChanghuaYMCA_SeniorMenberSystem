@@ -3,6 +3,7 @@ const ACTION_LABELS = {
   resend_invite: '重寄邀請', send_password_reset: '寄送密碼重設',
 }
 const STATUS_LABELS = { pending: '處理中', success: '成功', failure: '失敗' }
+const ROLE_LABELS = { owner: '最高管理員', admin: '管理員', editor: '編輯者', viewer: '瀏覽者' }
 
 /** 稽核列呈現操作前後的可追溯資訊，讓管理者辨識 mutation 的操作者、目標與結果。 */
 export default function AdminAuditLog({ auditLogs }) {
@@ -14,7 +15,7 @@ export default function AdminAuditLog({ auditLogs }) {
           <strong>{ACTION_LABELS[log.action] || log.action}</strong>
           <span className={`admin-status-badge ${log.status}`}>{STATUS_LABELS[log.status] || log.status}</span>
           <span>{log.actorEmail || '已刪除的帳號'}</span><span>→</span><span>{log.targetEmail || '已刪除的帳號'}</span>
-          {(log.oldRole || log.newRole) && <span>{log.oldRole || '—'} → {log.newRole || '—'}</span>}
+          {(log.oldRole || log.newRole) && <span>{(ROLE_LABELS[log.oldRole] || log.oldRole) || '—'} → {(ROLE_LABELS[log.newRole] || log.newRole) || '—'}</span>}
           <time dateTime={log.createdAt}>{new Date(log.createdAt).toLocaleString()}</time>
         </article>
       ))}

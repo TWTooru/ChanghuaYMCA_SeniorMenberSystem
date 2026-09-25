@@ -17,6 +17,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import './enrollment.css'
 
+const REFUND_ITEMS = {
+  all: '全部狀態',
+  normal: '正常 (無退費)',
+  refunded: '已退費',
+}
+
 export default function EnrollmentTab({ students, enrollments, onSelectEnrollment }) {
   const [historySearch, setHistorySearch] = useState('')
   const [historySeasonFilter, setHistorySeasonFilter] = useState('')
@@ -91,7 +97,7 @@ export default function EnrollmentTab({ students, enrollments, onSelectEnrollmen
             }}
           >
             <SelectTrigger id="history-season" className="w-full" aria-label="篩選季別">
-              <SelectValue placeholder="全部期別" />
+              <SelectValue placeholder="全部期別">{val => val === 'all' ? '全部期別' : (val || '全部期別')}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">全部期別</SelectItem>
@@ -105,13 +111,14 @@ export default function EnrollmentTab({ students, enrollments, onSelectEnrollmen
           <Label className="filter-label" htmlFor="history-refund">退費狀況</Label>
           <Select
             value={historyRefundFilter || 'all'}
+            items={REFUND_ITEMS}
             onValueChange={(value) => {
               setHistoryRefundFilter(value === 'all' ? '' : value)
               setHistoryPage(1)
             }}
           >
             <SelectTrigger id="history-refund" className="w-full" aria-label="退費狀況">
-              <SelectValue placeholder="全部狀態" />
+              <SelectValue placeholder="全部狀態">{val => REFUND_ITEMS[val] ?? val}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">全部狀態</SelectItem>

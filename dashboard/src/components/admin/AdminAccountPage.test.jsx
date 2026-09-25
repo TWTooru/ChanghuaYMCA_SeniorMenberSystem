@@ -125,6 +125,7 @@ describe('AdminAccountPage', () => {
     renderFor('owner', target, 'owner-1')
 
     const row = getTargetRow(target)
+    expect(within(row).getByText(ROLE_LABELS[targetRole])).toBeTruthy()
     expectRoleOptions(row, ['owner', 'admin', 'editor', 'viewer'])
     expect(within(row).getByLabelText(`寄送密碼重設 ${target.email}`).disabled).toBe(false)
     expect(within(row).getByLabelText(`刪除 ${target.email}`).disabled).toBe(false)
@@ -157,6 +158,7 @@ describe('AdminAccountPage', () => {
     renderFor('admin', target)
 
     const row = getTargetRow(target)
+    expect(within(row).getByText(ROLE_LABELS[targetRole])).toBeTruthy()
     expectRoleOptions(row, ['editor', 'viewer'])
     expect(within(row).getByLabelText(`寄送密碼重設 ${target.email}`).disabled).toBe(false)
     expect(within(row).getByLabelText(`刪除 ${target.email}`).disabled).toBe(false)

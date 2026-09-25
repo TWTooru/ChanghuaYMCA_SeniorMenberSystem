@@ -34,6 +34,10 @@ const eduOptions = [
   { label: '研究所', value: 'grad' },
 ]
 
+const genderItems = Object.fromEntries(genderOptions.map(o => [o.value, o.label]))
+const ageItems = Object.fromEntries(ageOptions.map(o => [o.value, o.label]))
+const eduItems = Object.fromEntries(eduOptions.map(o => [o.value, o.label]))
+
 export default function StudentFilters({
   studentSearch,
   onSearchChange,
@@ -94,10 +98,11 @@ export default function StudentFilters({
           <label className="filter-label" htmlFor="student-gender">篩選性別</label>
           <Select
             value={studentGenderFilter || ALL_OPTIONS}
+            items={genderItems}
             onValueChange={(value) => onGenderChange(value === ALL_OPTIONS ? '' : value)}
           >
             <SelectTrigger id="student-gender" className="select-input student-filter-select">
-              <SelectValue />
+              <SelectValue>{val => genderItems[val] ?? val}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               {genderOptions.map((option) => (
@@ -112,10 +117,11 @@ export default function StudentFilters({
           <label className="filter-label" htmlFor="student-age">篩選年齡層</label>
           <Select
             value={studentAgeFilter || ALL_OPTIONS}
+            items={ageItems}
             onValueChange={(value) => onAgeChange(value === ALL_OPTIONS ? '' : value)}
           >
             <SelectTrigger id="student-age" className="select-input student-filter-select">
-              <SelectValue />
+              <SelectValue>{val => ageItems[val] ?? val}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               {ageOptions.map((option) => (
@@ -130,10 +136,11 @@ export default function StudentFilters({
           <label className="filter-label" htmlFor="student-edu">篩選學歷</label>
           <Select
             value={studentEduFilter || ALL_OPTIONS}
+            items={eduItems}
             onValueChange={(value) => onEduChange(value === ALL_OPTIONS ? '' : value)}
           >
             <SelectTrigger id="student-edu" className="select-input student-filter-select">
-              <SelectValue />
+              <SelectValue>{val => eduItems[val] ?? val}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               {eduOptions.map((option) => (
