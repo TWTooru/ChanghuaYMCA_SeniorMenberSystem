@@ -14,31 +14,42 @@ jobs:
     timeout-minutes: 5
 
     steps:
-      - name: Query Supabase health check
+            - name: Query Supabase health check
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
         run: |
           set -euo pipefail
 
-          response=$(
+          endpoint="${SUPABASE_URL}/rest/v1/health_check?id=eq.1&select=id,service_name"
+
+          echo "Checking Supabase project..."
+
+          http_code=$(
             curl \
               --silent \
               --show-error \
-              --fail \
+              --output response.json \
+              --write-out "%{http_code}" \
               --max-time 20 \
-              --retry 2 \
-              --retry-delay 5 \
-              "${SUPABASE_URL}/rest/v1/health_check?id=eq.1&select=id,service_name" \
+              "${endpoint}" \
               -H "apikey: ${SUPABASE_KEY}" \
               -H "Authorization: Bearer ${SUPABASE_KEY}"
           )
 
-          echo "Supabase response: ${response}"
+          echo "HTTP status: ${http_code}"
+          echo "Response:"
+          cat response.json
+          echo
 
-          echo "${response}" | grep -q '"service_name":"database"' || {
-            echo "Health-check response is incorrect."
+          if [ "${http_code}" != "200" ]; then
+            echo "Supabase returned HTTP ${http_code}."
             exit 1
-          }
+          fi
+
+          if ! grep -q '"service_name":"database"' response.json; then
+            echo "Unexpected health-check response."
+            exit 1
+          fi
 
           echo "Supabase database is healthy."
